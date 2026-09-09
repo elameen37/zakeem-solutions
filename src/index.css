@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy-950: #040e1d;
+  --color-navy-900: #06152b;
+  --color-navy-850: #0a1f3d;
+  --color-navy-800: #0f2b52;
+  --color-navy-700: #14396b;
+  --color-navy-600: #1b4a8a;
+  --color-navy-500: #235ea8;
+
+  --color-brand-amber: #e57804;
+  --color-brand-amber-hover: #cf6a02;
+  --color-brand-amber-glow: rgba(229, 120, 4, 0.28);
+  --color-brand-amber-subtle: rgba(229, 120, 4, 0.12);
+
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+@layer base {
+  * {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  body {
+    background-color: #06152b;
+    color: #ffffff;
+    overflow-x: hidden;
+  }
+}
+
+/* Ambient glows and decorative patterns */
+
+.bg-dot-pattern {
+  background-size: 24px 24px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+}
+
+.glow-amber {
+  box-shadow: 0 0 50px -10px rgba(229, 120, 4, 0.35);
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

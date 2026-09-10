@@ -113,11 +113,11 @@ export const ZakkyAIChatWidget: React.FC = () => {
           aria-label="Open ZakkyAI Assistant"
         >
           {/* Avatar / Icon Container */}
-          <div className="relative w-8 h-8 rounded-full overflow-hidden bg-black/40 border border-white/20 flex items-center justify-center shrink-0">
+          <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white border border-[#e57804]/40 flex items-center justify-center shrink-0 p-0.5 shadow-sm">
             <img
               src="/assets/logos/zakky-ai.png"
               alt="ZakkyAI"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
               onError={(e) => {
                 // Fallback to bot icon if image fails to load
                 e.currentTarget.style.display = "none";
@@ -157,11 +157,11 @@ export const ZakkyAIChatWidget: React.FC = () => {
           {/* Header */}
           <div className="px-5 py-4 border-b border-white/10 bg-[#0a2040]/80 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <div className="relative w-9 h-9 rounded-full overflow-hidden bg-black/50 border border-[#e57804]/40 flex items-center justify-center shrink-0">
+              <div className="relative w-9 h-9 rounded-full overflow-hidden bg-white border border-[#e57804]/50 flex items-center justify-center shrink-0 p-0.5 shadow-sm">
                 <img
                   src="/assets/logos/zakky-ai.png"
                   alt="ZakkyAI"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                   }}

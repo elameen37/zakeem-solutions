@@ -18,6 +18,7 @@ import { HomeValueComparison } from "@/components/ui/HomeValueComparison";
 import { CTASection } from "@/components/ui/CTASection";
 import { ShinyText } from "@/components/ui/ShinyText";
 import { HeroFloatingIcons } from "@/components/ui/HeroFloatingIcons";
+import { HeroSocialTimelineRail, HeroSocialMobileRow } from "@/components/ui/HeroSocialTimelineRail";
 import { ZAKEEM_APPLICATIONS } from "@/data/ecosystem";
 import { SOLUTIONS } from "@/data/solutions";
 import { SERVICES } from "@/data/services";
@@ -40,6 +41,9 @@ export const HomePage: React.FC = () => {
         <HeroFloatingIcons />
 
         <div className="container mx-auto px-4 md:px-6 max-w-7xl relative z-10">
+          {/* Left Social Timeline Rail */}
+          <HeroSocialTimelineRail />
+
           <div className="max-w-4xl mx-auto text-center">
             {/* Top Brand Pill */}
             <div className="flex justify-center mb-6">
@@ -111,6 +115,9 @@ export const HomePage: React.FC = () => {
                 <div className="text-sm font-bold text-white mt-0.5">SaaS Platforms</div>
               </div>
             </div>
+
+            {/* Mobile-Only Hero Social Row (Last Row of Hero Section) */}
+            <HeroSocialMobileRow />
           </div>
         </div>
       </section>

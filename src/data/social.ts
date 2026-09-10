@@ -8,27 +8,33 @@ export interface SocialLink {
 export const SOCIAL_LINKS: SocialLink[] = [
   {
     platform: "LinkedIn",
-    url: "https://www.linkedin.com/company/zakeem-solutions",
-    handle: "zakeem-solutions",
+    url: "https://linkedin.com/company/zakeemsolutions",
+    handle: "zakeemsolutions",
     icon: "Linkedin"
   },
   {
-    platform: "X / Twitter",
+    platform: "X",
     url: "https://x.com/zakeemsolutions",
-    handle: "@zakeemsolutions",
-    icon: "Twitter"
+    handle: "zakeemsolutions",
+    icon: "X"
   },
   {
-    platform: "WhatsApp",
-    url: "https://wa.me/2348000000000",
-    handle: "Enterprise Sales Support",
-    icon: "MessageSquare"
+    platform: "Instagram",
+    url: "https://instagram.com/zakeemsolutions",
+    handle: "zakeemsolutions",
+    icon: "Instagram"
   },
   {
-    platform: "GitHub",
-    url: "https://github.com/zakeem-solutions",
-    handle: "zakeem-solutions",
-    icon: "Github"
+    platform: "Facebook",
+    url: "https://facebook.com/zakeemsolutions",
+    handle: "zakeemsolutions",
+    icon: "Facebook"
+  },
+  {
+    platform: "TikTok",
+    url: "https://tiktok.com/@zakeem_solutions",
+    handle: "zakeem_solutions",
+    icon: "TikTok"
   }
 ];
 

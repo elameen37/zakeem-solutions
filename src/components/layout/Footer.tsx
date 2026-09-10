@@ -1,11 +1,24 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { 
-  ArrowRight, Check, Linkedin, Twitter, MessageSquare, Github, Shield, Globe, Terminal
+  ArrowRight, Check, Linkedin, Facebook, Instagram, Shield, Globe, Terminal
 } from "lucide-react";
 import { FOOTER_NAVIGATION } from "@/data/navigation";
 import { SOCIAL_LINKS, COMPANY_CONTACT } from "@/data/social";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+
+const XIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={cn("fill-current", className)} aria-hidden="true">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
+const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={cn("fill-current", className)} aria-hidden="true">
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .58.04.86.12V9.33a6.33 6.33 0 0 0-.86-.06 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.71a8.18 8.18 0 0 0 4.78 1.52v-3.4a4.85 4.85 0 0 1-1-.14z" />
+  </svg>
+);
 
 export const Footer: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -23,9 +36,11 @@ export const Footer: React.FC = () => {
     const props = { className: "w-4 h-4 text-slate-300 hover:text-[#e57804] transition-colors" };
     switch (iconName) {
       case "Linkedin": return <Linkedin {...props} />;
-      case "Twitter": return <Twitter {...props} />;
-      case "MessageSquare": return <MessageSquare {...props} />;
-      case "Github": return <Github {...props} />;
+      case "X": return <XIcon {...props} />;
+      case "Instagram": return <Instagram {...props} />;
+      case "Facebook": return <Facebook {...props} />;
+      case "TikTok": return <TikTokIcon {...props} />;
+      case "Twitter": return <XIcon {...props} />;
       default: return <Globe {...props} />;
     }
   };
@@ -94,8 +109,9 @@ export const Footer: React.FC = () => {
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={s.platform}
-                  className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#e57804]/20 hover:border-[#e57804]/40 transition-all"
+                  aria-label={`Follow Zakeem Solutions on ${s.platform} (@${s.handle})`}
+                  title={`${s.platform}: @${s.handle}`}
+                  className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#e57804]/20 hover:border-[#e57804]/40 transition-all focus:outline-none focus:ring-2 focus:ring-[#e57804] focus:ring-offset-2 focus:ring-offset-[#040e1d]"
                 >
                   {getSocialIcon(s.icon)}
                 </a>

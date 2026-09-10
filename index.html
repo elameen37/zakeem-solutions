@@ -33,7 +33,11 @@
             var size = parseInt(storedFontSize, 10);
             if (!isNaN(size) && size >= 85 && size <= 125) {
               document.documentElement.style.fontSize = size + "%";
+            } else {
+              document.documentElement.style.fontSize = "85%";
             }
+          } else {
+            document.documentElement.style.fontSize = "85%";
           }
         } catch (e) {}
       })();

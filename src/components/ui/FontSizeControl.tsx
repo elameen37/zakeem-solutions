@@ -5,14 +5,18 @@ import { useTheme } from "@/context/ThemeContext";
 
 const MIN_SCALE = 85;
 const MAX_SCALE = 125;
-const DEFAULT_SCALE = 100;
+const DEFAULT_SCALE = 85;
 const STEP = 5;
+const IDLE_DELAY_MS = 3500;
 
 export const FontSizeControl: React.FC = () => {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [scale, setScale] = useState<number>(DEFAULT_SCALE);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [isIdle, setIsIdle] = useState<boolean>(false);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [isFocused, setIsFocused] = useState<boolean>(false);
 
   // Initialize from localStorage or default
   useEffect(() => {
@@ -23,10 +27,43 @@ export const FontSizeControl: React.FC = () => {
         if (!isNaN(parsed) && parsed >= MIN_SCALE && parsed <= MAX_SCALE) {
           setScale(parsed);
           document.documentElement.style.fontSize = `${parsed}%`;
+          return;
         }
       }
+      setScale(DEFAULT_SCALE);
+      document.documentElement.style.fontSize = `${DEFAULT_SCALE}%`;
     } catch (e) {}
   }, []);
+
+  // Autohide to the right when idle
+  useEffect(() => {
+    if (isHovered || isFocused || isExpanded) {
+      setIsIdle(false);
+      return;
+    }
+
+    let timer: ReturnType<typeof setTimeout>;
+
+    const handleActivity = () => {
+      setIsIdle((prev) => (prev ? false : prev));
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setIsIdle(true);
+      }, IDLE_DELAY_MS);
+    };
+
+    timer = setTimeout(() => {
+      setIsIdle(true);
+    }, IDLE_DELAY_MS);
+
+    const events = ["mousemove", "mousedown", "scroll", "keydown", "touchstart"];
+    events.forEach((evt) => window.addEventListener(evt, handleActivity, { passive: true }));
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((evt) => window.removeEventListener(evt, handleActivity));
+    };
+  }, [isHovered, isFocused, isExpanded]);
 
   const applyScale = (newScale: number) => {
     const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, newScale));
@@ -44,7 +81,22 @@ export const FontSizeControl: React.FC = () => {
   return (
     <aside
       aria-label="Global Text Size Control"
-      className="fixed right-2 sm:right-3 top-1/2 -translate-y-1/2 z-30 select-none print:hidden"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsFocused(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+          setIsFocused(false);
+        }
+      }}
+      className={cn(
+        "fixed right-2 sm:right-3 top-1/2 -translate-y-1/2 z-30 select-none print:hidden transition-all duration-300 ease-out",
+        "motion-reduce:transition-none",
+        "focus-within:translate-x-0 focus-within:opacity-100 focus-within:pointer-events-auto",
+        isIdle
+          ? "translate-x-[calc(100%+1.5rem)] opacity-0 pointer-events-none"
+          : "translate-x-0 opacity-100 pointer-events-auto"
+      )}
     >
       <div
         role="region"
@@ -144,8 +196,8 @@ export const FontSizeControl: React.FC = () => {
                 "p-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#e57804]",
                 isDark ? "hover:bg-white/10 text-slate-300 hover:text-white" : "hover:bg-slate-100 text-slate-600 hover:text-slate-950"
               )}
-              aria-label="Reset font size to default 100%"
-              title="Reset font size"
+              aria-label={`Reset font size to default ${DEFAULT_SCALE}%`}
+              title={`Reset font size to default (${DEFAULT_SCALE}%)`}
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>

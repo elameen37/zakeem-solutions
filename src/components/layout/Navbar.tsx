@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   ChevronDown, Menu, X, ArrowRight, Building2, BrainCircuit, Workflow, ShieldCheck,
-  Building, Landmark, Home, Coins, Activity, Zap, Code2, Bot, Layers, Cloud, Shield, Compass
+  Building, Landmark, Home, Coins, Activity, Zap, Code2, Bot, Layers, Cloud, Shield, Compass, Search
 } from "lucide-react";
 import { MAIN_NAVIGATION } from "@/data/navigation";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
+import { openGlobalSearch } from "@/components/search/GlobalSearchModal";
 
 export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -200,6 +201,16 @@ export const Navbar: React.FC = () => {
 
           {/* CTA Actions */}
           <div className="hidden lg:flex items-center gap-3">
+            <button
+              type="button"
+              onClick={openGlobalSearch}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all"
+              aria-label="Search site (Cmd/Ctrl + K)"
+            >
+              <Search className="w-3.5 h-3.5 text-slate-400" />
+              <span className="font-medium">Search</span>
+              <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 text-slate-400 border border-white/10">⌘K</kbd>
+            </button>
             <Link
               to="/login"
               className="text-xs font-mono font-medium text-slate-200 hover:text-white px-3 py-2 rounded-lg transition-colors"
@@ -212,7 +223,15 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Mobile Navigation Toggle */}
-          <div className="flex lg:hidden items-center gap-2">
+          <div className="flex lg:hidden items-center gap-1.5">
+            <button
+              type="button"
+              onClick={openGlobalSearch}
+              className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              aria-label="Search site"
+            >
+              <Search className="w-5 h-5" />
+            </button>
             <Button
               variant="ghost"
               size="sm"
@@ -228,6 +247,22 @@ export const Navbar: React.FC = () => {
         {/* Mobile Navigation Drawer */}
         {isOpen && (
           <div className="lg:hidden mt-4 p-5 rounded-2xl bg-[#081b37]/90 backdrop-blur-2xl backdrop-saturate-150 border border-white/20 shadow-2xl shadow-black/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] space-y-6 max-h-[75vh] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* Quick Search in Mobile Menu */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                openGlobalSearch();
+              }}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white text-xs font-medium"
+            >
+              <div className="flex items-center gap-2">
+                <Search className="w-4 h-4 text-[#e57804]" />
+                <span>Search products, solutions, careers...</span>
+              </div>
+              <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 border border-white/10 text-slate-400">⌘K</kbd>
+            </button>
+
             <div className="space-y-4">
               {MAIN_NAVIGATION.map((item) => (
                 <div key={item.label} className="border-b border-white/5 pb-3">

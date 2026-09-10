@@ -1,9 +1,12 @@
+export type BillingPeriod = "monthly" | "annual";
+
 export interface ProductPricingTier {
   id: string;
   name: string;
   tierCode: "STARTER" | "GROWTH" | "BUSINESS" | "ENTERPRISE";
   tagline: string;
   priceModel: "Starting from" | "Custom";
+  baseMonthlyPrice?: number | null; // Authoritative monthly base in NGN
   priceAmount: string;
   billingPeriod?: string;
   targetScale: string;
@@ -16,6 +19,68 @@ export interface ProductPricingTier {
   ctaLabel: string;
   ctaHref: string;
 }
+
+export const formatNaira = (amount: number): string => {
+  return "₦" + amount.toLocaleString("en-NG");
+};
+
+export interface ComputedTierPricing {
+  displayAmount: string;
+  billingPeriodLabel: string;
+  monthlyRate: number | null;
+  annualTotal: number | null;
+  savingsAnnual: number | null;
+  savingsPercentage: number;
+  savingsAmount?: string;
+  annualTotalDisplay?: string;
+}
+
+export const calculateTierPricing = (
+  tier: ProductPricingTier,
+  period: BillingPeriod
+): ComputedTierPricing => {
+  if (!tier.baseMonthlyPrice) {
+    return {
+      displayAmount: "Custom Agreement",
+      billingPeriodLabel: "annual enterprise agreement (NGN)",
+      monthlyRate: null,
+      annualTotal: null,
+      savingsAnnual: null,
+      savingsPercentage: 0,
+    };
+  }
+
+  const base = tier.baseMonthlyPrice;
+
+  if (period === "monthly") {
+    return {
+      displayAmount: formatNaira(base),
+      billingPeriodLabel: "per month (billed monthly in NGN)",
+      monthlyRate: base,
+      annualTotal: base * 12,
+      savingsAnnual: 0,
+      savingsPercentage: 0,
+      annualTotalDisplay: `Total: ${formatNaira(base * 12)} / year`,
+    };
+  }
+
+  // Annual billing: exact 20% discount on monthly rate
+  const discountedMonthly = Math.round(base * 0.8);
+  const annualTotal = discountedMonthly * 12;
+  const fullYearBase = base * 12;
+  const savingsAnnual = fullYearBase - annualTotal;
+
+  return {
+    displayAmount: formatNaira(discountedMonthly),
+    billingPeriodLabel: "per month (billed annually in NGN)",
+    monthlyRate: discountedMonthly,
+    annualTotal,
+    savingsAnnual,
+    savingsPercentage: 20,
+    savingsAmount: `Save ${formatNaira(savingsAnnual)} / yr`,
+    annualTotalDisplay: `Billed annually at ${formatNaira(annualTotal)} / yr`,
+  };
+};
 
 export interface ServiceEngagementModel {
   id: string;
@@ -54,6 +119,7 @@ export const PRODUCT_PRICING_TIERS: ProductPricingTier[] = [
     tierCode: "STARTER",
     tagline: "For mid-market operators establishing digital core automation",
     priceModel: "Starting from",
+    baseMonthlyPrice: 2500000,
     priceAmount: "₦2,500,000",
     billingPeriod: "per month (billed annually in NGN)",
     targetScale: "Up to 50 active users • Single Business Entity",
@@ -78,6 +144,7 @@ export const PRODUCT_PRICING_TIERS: ProductPricingTier[] = [
     tierCode: "BUSINESS",
     tagline: "For high-volume multi-branch enterprises and developers",
     priceModel: "Starting from",
+    baseMonthlyPrice: 6000000,
     priceAmount: "₦6,000,000",
     billingPeriod: "per month (billed annually in NGN)",
     targetScale: "Up to 250 active users • Multi-Entity / Subsidiary Support",
@@ -104,6 +171,7 @@ export const PRODUCT_PRICING_TIERS: ProductPricingTier[] = [
     tierCode: "ENTERPRISE",
     tagline: "For institutional conglomerates, financial institutions & government bodies",
     priceModel: "Custom",
+    baseMonthlyPrice: null,
     priceAmount: "Custom Agreement",
     billingPeriod: "annual enterprise agreement (NGN)",
     targetScale: "Unlimited Users • Institutional & National Scope",

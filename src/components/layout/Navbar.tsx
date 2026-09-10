@@ -47,6 +47,25 @@ export const Navbar: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Handle body scroll lock & Escape key when mobile menu is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          setIsOpen(false);
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.body.style.overflow = "";
+        window.removeEventListener("keydown", handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [isOpen]);
+
   const renderIcon = (name?: string) => {
     const iconClass = "w-4 h-4 text-[#e57804] group-hover:text-white transition-colors shrink-0";
     switch (name) {
@@ -295,6 +314,8 @@ export const Navbar: React.FC = () => {
               size="sm"
               onClick={() => setIsOpen(!isOpen)}
               aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isOpen}
+              aria-controls="mobile-navigation"
               className={cn("p-2", isDark ? "text-white hover:bg-white/10" : "text-slate-900 hover:bg-slate-100")}
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -305,11 +326,15 @@ export const Navbar: React.FC = () => {
         {/* Mobile Navigation Drawer */}
         {isOpen && (
           <div
+            id="mobile-navigation"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile Navigation"
             className={cn(
               "lg:hidden mt-4 p-5 rounded-2xl backdrop-blur-2xl backdrop-saturate-150 border space-y-5 max-h-[75vh] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200",
               isDark
                 ? "bg-[#081b37]/90 border-white/20 shadow-2xl shadow-black/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] text-white"
-                : "bg-white/95 border-slate-200 shadow-2xl shadow-slate-300/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] text-slate-900"
+                : "bg-[#06152b]/95 border-white/15 shadow-2xl shadow-navy-950/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] text-white"
             )}
           >
             {/* Quick Search in Mobile Menu */}
@@ -319,25 +344,13 @@ export const Navbar: React.FC = () => {
                 setIsOpen(false);
                 openGlobalSearch();
               }}
-              className={cn(
-                "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs font-medium transition-colors",
-                isDark
-                  ? "bg-white/5 border-white/10 text-slate-300 hover:text-white"
-                  : "bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-950"
-              )}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 text-xs font-medium transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <Search className="w-4 h-4 text-[#e57804]" />
                 <span>Search products, solutions, careers...</span>
               </div>
-              <kbd
-                className={cn(
-                  "text-[10px] font-mono px-1.5 py-0.5 rounded border",
-                  isDark
-                    ? "bg-black/40 border-white/10 text-slate-400"
-                    : "bg-white border-slate-300 text-slate-600"
-                )}
-              >
+              <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded border bg-black/40 border-white/10 text-slate-400">
                 ⌘K
               </kbd>
             </button>
@@ -347,13 +360,10 @@ export const Navbar: React.FC = () => {
 
             <div className="space-y-4">
               {MAIN_NAVIGATION.map((item) => (
-                <div key={item.label} className={cn("border-b pb-3", isDark ? "border-white/5" : "border-slate-200")}>
+                <div key={item.label} className="border-b border-white/10 pb-3">
                   <Link
                     to={item.href}
-                    className={cn(
-                      "text-base font-bold block mb-2",
-                      isDark ? "text-white" : "text-slate-900"
-                    )}
+                    className="text-base font-bold block mb-2 text-white hover:text-[#e57804] transition-colors"
                   >
                     {item.label}
                   </Link>
@@ -363,10 +373,7 @@ export const Navbar: React.FC = () => {
                         <Link
                           key={sub.label}
                           to={sub.href}
-                          className={cn(
-                            "flex items-center justify-between text-xs py-1 transition-colors",
-                            isDark ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-950"
-                          )}
+                          className="flex items-center justify-between text-xs py-1.5 text-slate-300 hover:text-white transition-colors"
                         >
                           <span>{sub.label}</span>
                           {sub.badge && (
@@ -386,10 +393,10 @@ export const Navbar: React.FC = () => {
               <Button variant="primary" size="md" href="/request-demo" className="w-full">
                 Request a Demo
               </Button>
-              <Button variant="outline" size="md" href="/contact" className="w-full">
+              <Button variant="outline" size="md" href="/contact" className="w-full border-white/20 text-white hover:bg-white/10">
                 Contact Sales
               </Button>
-              <Button variant="ghost" size="sm" href="/login" className="w-full">
+              <Button variant="ghost" size="sm" href="/login" className="w-full text-slate-300 hover:text-white hover:bg-white/5">
                 Client Portal Login
               </Button>
             </div>

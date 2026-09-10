@@ -76,6 +76,7 @@ export const Footer: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@enterprise.com"
                     required
+                    aria-label="Corporate work email for executive briefing"
                     className="flex-1 bg-[#06152b] border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-400 focus:outline-none focus:border-[#e57804]"
                   />
                   <Button variant="primary" size="sm" type="submit">

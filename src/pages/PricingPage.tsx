@@ -54,32 +54,32 @@ export const PricingPage: React.FC = () => {
             </p>
 
             {/* Model Switcher Tabs */}
-            <div className="inline-flex items-center p-1.5 rounded-2xl bg-[#081c38] border border-white/15 shadow-xl">
+            <div className="flex flex-col sm:inline-flex sm:flex-row items-stretch sm:items-center p-1.5 rounded-2xl bg-[#081c38] border border-white/15 shadow-xl max-w-full gap-1 sm:gap-0">
               <button
                 onClick={() => setActiveTab("products")}
                 className={cn(
-                  "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center gap-2",
+                  "px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2",
                   activeTab === "products"
                     ? "bg-[#e57804] text-black shadow-md shadow-[#e57804]/20"
                     : "text-slate-300 hover:text-white"
                 )}
                 aria-pressed={activeTab === "products"}
               >
-                <Layers className="w-4 h-4" />
+                <Layers className="w-4 h-4 shrink-0" />
                 <span>Proprietary Software Subscriptions</span>
               </button>
 
               <button
                 onClick={() => setActiveTab("services")}
                 className={cn(
-                  "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center gap-2",
+                  "px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2",
                   activeTab === "services"
                     ? "bg-[#e57804] text-black shadow-md shadow-[#e57804]/20"
                     : "text-slate-300 hover:text-white"
                 )}
                 aria-pressed={activeTab === "services"}
               >
-                <Cpu className="w-4 h-4" />
+                <Cpu className="w-4 h-4 shrink-0" />
                 <span>Enterprise Engineering & Transformation</span>
               </button>
             </div>

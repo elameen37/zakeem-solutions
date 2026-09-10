@@ -5,6 +5,7 @@ import { Footer } from "./Footer";
 import { BackToTop } from "@/components/ui/BackToTop";
 import { GlobalSearchModal } from "@/components/search/GlobalSearchModal";
 import { ZakkyAIChatWidget } from "@/components/zakky/ZakkyAIChatWidget";
+import { FontSizeControl } from "@/components/ui/FontSizeControl";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <BackToTop />
       <GlobalSearchModal />
       <ZakkyAIChatWidget />
+      <FontSizeControl />
     </div>
   );
 };

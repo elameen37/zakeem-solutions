@@ -41,6 +41,14 @@ export const ZakkyAIChatWidget: React.FC = () => {
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          setIsOpen(false);
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
     }
   }, [isOpen, messages, streamingContent]);
 

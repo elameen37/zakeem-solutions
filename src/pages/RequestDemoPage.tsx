@@ -76,10 +76,11 @@ export const RequestDemoPage: React.FC = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                      <label htmlFor="demo-full-name" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
                         Full Name *
                       </label>
                       <input
+                        id="demo-full-name"
                         type="text"
                         required
                         value={formData.fullName}
@@ -89,10 +90,11 @@ export const RequestDemoPage: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                      <label htmlFor="demo-work-email" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
                         Corporate Work Email *
                       </label>
                       <input
+                        id="demo-work-email"
                         type="email"
                         required
                         value={formData.workEmail}
@@ -104,10 +106,11 @@ export const RequestDemoPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                    <label htmlFor="demo-company" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
                       Organization / Company *
                     </label>
                     <input
+                      id="demo-company"
                       type="text"
                       required
                       value={formData.company}
@@ -119,10 +122,11 @@ export const RequestDemoPage: React.FC = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                      <label htmlFor="demo-interest" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
                         Primary Interest *
                       </label>
                       <select
+                        id="demo-interest"
                         value={formData.interest}
                         onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
@@ -136,10 +140,11 @@ export const RequestDemoPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                      <label htmlFor="demo-deployment" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
                         Deployment Model
                       </label>
                       <select
+                        id="demo-deployment"
                         value={formData.deploymentType}
                         onChange={(e) => setFormData({ ...formData, deploymentType: e.target.value })}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
@@ -152,14 +157,15 @@ export const RequestDemoPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                    <label htmlFor="demo-notes" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
                       Scope & Requirements (Optional)
                     </label>
                     <textarea
+                      id="demo-notes"
                       rows={3}
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      placeholder="Briefly describe your current systems, scale, and expected timeline..."
+                      placeholder="Estimated user count, legacy systems in place, timeline..."
                       className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
                     />
                   </div>

@@ -18,7 +18,7 @@
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <!-- Anti-FOUC Theme Script -->
+    <!-- Anti-FOUC Theme & Font Scale Script -->
     <script>
       (function () {
         try {
@@ -27,6 +27,14 @@
           document.documentElement.classList.remove("light", "dark");
           document.documentElement.classList.add(theme);
           document.documentElement.setAttribute("data-theme", theme);
+
+          var storedFontSize = localStorage.getItem("zakeem-font-size");
+          if (storedFontSize) {
+            var size = parseInt(storedFontSize, 10);
+            if (!isNaN(size) && size >= 85 && size <= 125) {
+              document.documentElement.style.fontSize = size + "%";
+            }
+          }
         } catch (e) {}
       })();
     </script>

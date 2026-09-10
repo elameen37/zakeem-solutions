@@ -268,7 +268,7 @@ export const HeroFloatingIcons: React.FC = () => {
               right: item.right,
               bottom: item.bottom
             }}
-            className={`absolute ${item.hiddenOnMobile ? "hidden lg:block" : "block"}`}
+            className={`absolute ${item.hiddenOnMobile ? "hidden lg:block" : "hidden md:block"}`}
           >
             <div
               title={item.label}

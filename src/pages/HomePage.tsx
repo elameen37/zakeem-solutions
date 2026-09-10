@@ -116,7 +116,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 2. CREDIBILITY & MEASURABLE OUTCOMES BAR */}
-      <section data-surface="dark" className="py-12 bg-[#040e1d] border-y border-white/10 relative z-20">
+      <section data-surface="dark" className="py-12 bg-[#040e1d] border-t border-white/10 relative z-20">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             <MetricCard
@@ -143,6 +143,27 @@ export const HomePage: React.FC = () => {
               subtext="Banking, Real Estate, Government, Energy, & Health"
               trend="Pan-African"
             />
+          </div>
+        </div>
+      </section>
+
+      {/* 2B. TRUSTED BY LEADING REAL ESTATE COMPANIES */}
+      <section
+        data-surface="dark"
+        className="py-5 bg-[#06152b] border-y border-white/10 relative z-20"
+        aria-label="Trusted by Africa's Leading Real Estate Companies"
+      >
+        <div className="container mx-auto px-4 md:px-6 max-w-7xl">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
+              Trusted by Africa's Leading Real Estate Companies
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8">
+              <span className="text-sm font-bold font-mono tracking-tight text-white flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-[#e57804]" />
+                Quantum Construct
+              </span>
+            </div>
           </div>
         </div>
       </section>

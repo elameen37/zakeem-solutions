@@ -93,10 +93,11 @@ export const ContactPage: React.FC = () => {
                   <h3 className="text-xl font-bold text-white mb-2">Send Message</h3>
 
                   <div>
-                    <label className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                    <label htmlFor="contact-name" className="block text-xs font-mono uppercase text-slate-400 mb-1">
                       Full Name *
                     </label>
                     <input
+                      id="contact-name"
                       type="text"
                       required
                       value={name}
@@ -107,10 +108,11 @@ export const ContactPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                    <label htmlFor="contact-email" className="block text-xs font-mono uppercase text-slate-400 mb-1">
                       Email Address *
                     </label>
                     <input
+                      id="contact-email"
                       type="email"
                       required
                       value={email}
@@ -121,10 +123,11 @@ export const ContactPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                    <label htmlFor="contact-message" className="block text-xs font-mono uppercase text-slate-400 mb-1">
                       Message *
                     </label>
                     <textarea
+                      id="contact-message"
                       rows={4}
                       required
                       value={message}

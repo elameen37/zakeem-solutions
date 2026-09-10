@@ -7,6 +7,7 @@ import {
 import { zakkyService } from "../../lib/zakky/zakkyService";
 import { ZakkyMessage } from "../../lib/zakky/types";
 import { cn } from "../../lib/utils";
+import { useTheme } from "../../context/ThemeContext";
 
 const PROMPT_SUGGESTIONS = [
   "What modules are included in Zakeem Realty ERP?",
@@ -17,6 +18,8 @@ const PROMPT_SUGGESTIONS = [
 ];
 
 export const ZakkyAIChatWidget: React.FC = () => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ZakkyMessage[]>([
     zakkyService.getInitialGreeting(),
@@ -106,9 +109,10 @@ export const ZakkyAIChatWidget: React.FC = () => {
           type="button"
           onClick={() => setIsOpen(true)}
           className={cn(
-            "group relative flex items-center gap-3 pl-3 pr-4 py-2.5 rounded-full shadow-2xl transition-all duration-300",
-            "bg-[#081c38]/90 hover:bg-[#0c2850] text-white border border-[#e57804]/40 hover:border-[#e57804]",
-            "backdrop-blur-xl hover:shadow-[0_0_25px_rgba(229,120,4,0.35)] hover:scale-[1.03] active:scale-[0.98]"
+            "group relative flex items-center gap-3 pl-3 pr-4 py-2.5 rounded-full shadow-2xl transition-all duration-300 backdrop-blur-xl hover:scale-[1.03] active:scale-[0.98]",
+            isDark
+              ? "bg-[#081c38]/90 hover:bg-[#0c2850] text-white border border-[#e57804]/40 hover:border-[#e57804] hover:shadow-[0_0_25px_rgba(229,120,4,0.35)]"
+              : "bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 shadow-xl shadow-slate-200/60 hover:border-[#e57804]/60 hover:shadow-slate-300/80"
           )}
           aria-label="Open ZakkyAI Assistant"
         >
@@ -131,14 +135,21 @@ export const ZakkyAIChatWidget: React.FC = () => {
 
           <div className="text-left">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-extrabold tracking-tight text-white group-hover:text-[#e57804] transition-colors">
+              <span
+                className={cn(
+                  "text-xs font-extrabold tracking-tight group-hover:text-[#e57804] transition-colors",
+                  isDark ? "text-white" : "text-slate-900"
+                )}
+              >
                 ZakkyAI
               </span>
               <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-[#e57804]/20 text-[#e57804] border border-[#e57804]/30">
                 AI
               </span>
             </div>
-            <p className="text-[10px] text-slate-300 font-mono">Ask Zakeem Solutions</p>
+            <p className={cn("text-[10px] font-mono", isDark ? "text-slate-300" : "text-slate-500")}>
+              Ask Zakeem Solutions
+            </p>
           </div>
         </button>
       )}
@@ -148,14 +159,21 @@ export const ZakkyAIChatWidget: React.FC = () => {
         <div
           className={cn(
             "w-[94vw] sm:w-[420px] max-w-[440px] h-[580px] max-h-[84vh]",
-            "bg-[#07172e]/95 backdrop-blur-2xl border border-white/15 rounded-3xl shadow-2xl flex flex-col overflow-hidden",
-            "animate-in fade-in slide-in-from-bottom-5 duration-200"
+            "backdrop-blur-2xl border rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200",
+            isDark
+              ? "bg-[#07172e]/95 border-white/15 text-white shadow-black/80"
+              : "bg-white/95 border-slate-200 text-slate-900 shadow-slate-300/60"
           )}
           role="dialog"
           aria-label="ZakkyAI Chat Window"
         >
           {/* Header */}
-          <div className="px-5 py-4 border-b border-white/10 bg-[#0a2040]/80 flex items-center justify-between shrink-0">
+          <div
+            className={cn(
+              "px-5 py-4 border-b flex items-center justify-between shrink-0",
+              isDark ? "border-white/10 bg-[#0a2040]/80 text-white" : "border-slate-200 bg-slate-50 text-slate-900"
+            )}
+          >
             <div className="flex items-center gap-3">
               <div className="relative w-9 h-9 rounded-full overflow-hidden bg-white border border-[#e57804]/50 flex items-center justify-center shrink-0 p-0.5 shadow-sm">
                 <img
@@ -171,12 +189,14 @@ export const ZakkyAIChatWidget: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-extrabold text-white">ZakkyAI</span>
-                  <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <span className={cn("text-sm font-extrabold", isDark ? "text-white" : "text-slate-900")}>ZakkyAI</span>
+                  <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
                     Online
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-300 font-mono">Enterprise Knowledge Agent</p>
+                <p className={cn("text-[11px] font-mono", isDark ? "text-slate-300" : "text-slate-500")}>
+                  Enterprise Knowledge Agent
+                </p>
               </div>
             </div>
 
@@ -185,7 +205,10 @@ export const ZakkyAIChatWidget: React.FC = () => {
                 type="button"
                 onClick={handleReset}
                 title="Reset Conversation"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                className={cn(
+                  "p-1.5 rounded-lg transition-colors",
+                  isDark ? "text-slate-400 hover:text-white hover:bg-white/10" : "text-slate-500 hover:text-slate-900 hover:bg-slate-200"
+                )}
                 aria-label="Reset Conversation"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -194,7 +217,10 @@ export const ZakkyAIChatWidget: React.FC = () => {
                 type="button"
                 onClick={() => setIsOpen(false)}
                 title="Minimize Window"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                className={cn(
+                  "p-1.5 rounded-lg transition-colors",
+                  isDark ? "text-slate-400 hover:text-white hover:bg-white/10" : "text-slate-500 hover:text-slate-900 hover:bg-slate-200"
+                )}
                 aria-label="Minimize"
               >
                 <Minimize2 className="w-4 h-4" />
@@ -203,7 +229,10 @@ export const ZakkyAIChatWidget: React.FC = () => {
                 type="button"
                 onClick={() => setIsOpen(false)}
                 title="Close"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                className={cn(
+                  "p-1.5 rounded-lg transition-colors",
+                  isDark ? "text-slate-400 hover:text-white hover:bg-white/10" : "text-slate-500 hover:text-slate-900 hover:bg-slate-200"
+                )}
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
@@ -224,8 +253,10 @@ export const ZakkyAIChatWidget: React.FC = () => {
                     className={cn(
                       "max-w-[85%] rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed",
                       isUser
-                        ? "bg-[#e57804] text-white font-medium rounded-tr-none shadow-md shadow-[#e57804]/20"
-                        : "bg-[#091f3e] text-slate-200 border border-white/10 rounded-tl-none whitespace-pre-line shadow-lg"
+                        ? "bg-[#e57804] text-white font-medium rounded-tr-none shadow-md shadow-[#e57804]/20 btn-keep-white"
+                        : isDark
+                        ? "bg-[#091f3e] text-slate-200 border border-white/10 rounded-tl-none whitespace-pre-line shadow-lg"
+                        : "bg-slate-100 text-slate-800 border border-slate-200 rounded-tl-none whitespace-pre-line shadow-xs"
                     )}
                   >
                     {msg.content}
@@ -243,7 +274,12 @@ export const ZakkyAIChatWidget: React.FC = () => {
                               href={act.href}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/15 text-white transition-colors"
+                              className={cn(
+                                "inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-lg border transition-colors",
+                                isDark
+                                  ? "bg-white/5 hover:bg-white/10 border-white/15 text-white"
+                                  : "bg-white hover:bg-slate-100 border-slate-300 text-slate-800 shadow-2xs"
+                              )}
                             >
                               <span>{act.label}</span>
                               <ExternalLink className="w-3 h-3 text-[#e57804]" />
@@ -255,7 +291,12 @@ export const ZakkyAIChatWidget: React.FC = () => {
                             key={i}
                             to={act.href}
                             onClick={() => setIsOpen(false)}
-                            className="inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-lg bg-[#e57804]/15 hover:bg-[#e57804]/25 border border-[#e57804]/40 text-[#e57804] hover:text-white transition-colors"
+                            className={cn(
+                              "inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-lg border transition-colors",
+                              isDark
+                                ? "bg-[#e57804]/15 hover:bg-[#e57804]/25 border-[#e57804]/40 text-[#e57804] hover:text-white"
+                                : "bg-[#e57804]/10 hover:bg-[#e57804]/20 border-[#e57804]/30 text-[#e57804] hover:text-[#cf6a02]"
+                            )}
                           >
                             <span>{act.label}</span>
                             <ArrowRight className="w-3 h-3" />
@@ -278,7 +319,14 @@ export const ZakkyAIChatWidget: React.FC = () => {
             {/* Live Streaming Response Bubble */}
             {streamingContent !== null && (
               <div className="flex flex-col items-start">
-                <div className="max-w-[85%] rounded-2xl rounded-tl-none px-4 py-3 text-xs sm:text-sm leading-relaxed bg-[#091f3e] text-slate-200 border border-[#e57804]/30 whitespace-pre-line shadow-lg">
+                <div
+                  className={cn(
+                    "max-w-[85%] rounded-2xl rounded-tl-none px-4 py-3 text-xs sm:text-sm leading-relaxed whitespace-pre-line shadow-lg border",
+                    isDark
+                      ? "bg-[#091f3e] text-slate-200 border-[#e57804]/30"
+                      : "bg-slate-100 text-slate-800 border-[#e57804]/40"
+                  )}
+                >
                   {streamingContent || (
                     <span className="flex items-center gap-1.5 text-slate-400">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#e57804] animate-pulse" />
@@ -299,8 +347,18 @@ export const ZakkyAIChatWidget: React.FC = () => {
 
           {/* Prompt Suggestions (shown if conversation is at starter state) */}
           {messages.length <= 2 && !streamingContent && (
-            <div className="px-4 py-2 border-t border-white/5 bg-[#051325]/50 overflow-x-auto no-scrollbar flex items-center gap-1.5">
-              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+            <div
+              className={cn(
+                "px-4 py-2 border-t overflow-x-auto no-scrollbar flex items-center gap-1.5",
+                isDark ? "border-white/5 bg-[#051325]/50" : "border-slate-200 bg-slate-50"
+              )}
+            >
+              <span
+                className={cn(
+                  "text-[10px] font-mono uppercase tracking-wider shrink-0 flex items-center gap-1",
+                  isDark ? "text-slate-400" : "text-slate-600"
+                )}
+              >
                 <MessageSquare className="w-3 h-3 text-[#e57804]" /> Prompts:
               </span>
               {PROMPT_SUGGESTIONS.map((sug, i) => (
@@ -308,7 +366,12 @@ export const ZakkyAIChatWidget: React.FC = () => {
                   key={i}
                   type="button"
                   onClick={() => handleSend(sug)}
-                  className="text-[11px] px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/5 whitespace-nowrap transition-colors"
+                  className={cn(
+                    "text-[11px] px-2.5 py-1 rounded-full border whitespace-nowrap transition-colors",
+                    isDark
+                      ? "bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/5"
+                      : "bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-950 border-slate-200 shadow-2xs"
+                  )}
                 >
                   {sug}
                 </button>
@@ -317,7 +380,12 @@ export const ZakkyAIChatWidget: React.FC = () => {
           )}
 
           {/* Input Bar */}
-          <div className="p-3 border-t border-white/10 bg-[#06172f] shrink-0">
+          <div
+            className={cn(
+              "p-3 border-t shrink-0",
+              isDark ? "border-white/10 bg-[#06172f]" : "border-slate-200 bg-slate-50"
+            )}
+          >
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -332,24 +400,34 @@ export const ZakkyAIChatWidget: React.FC = () => {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about Realty ERP, NGN pricing, careers..."
                 disabled={isLoading}
-                className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-[#e57804] transition-colors disabled:opacity-50"
+                className={cn(
+                  "flex-1 border rounded-xl px-3.5 py-2.5 text-xs sm:text-sm transition-colors disabled:opacity-50 focus:outline-none focus:border-[#e57804]",
+                  isDark
+                    ? "bg-black/40 border-white/10 text-white placeholder-slate-400"
+                    : "bg-white border-slate-200 text-slate-900 placeholder-slate-400"
+                )}
               />
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading}
-                className="p-2.5 rounded-xl bg-[#e57804] hover:bg-[#ff890a] disabled:opacity-40 disabled:hover:bg-[#e57804] text-white transition-colors shrink-0 shadow-lg shadow-[#e57804]/20"
+                className="p-2.5 rounded-xl bg-[#e57804] hover:bg-[#ff890a] disabled:opacity-40 disabled:hover:bg-[#e57804] text-white transition-colors shrink-0 shadow-lg shadow-[#e57804]/20 btn-keep-white"
                 aria-label="Send Message"
               >
                 <Send className="w-4 h-4" />
               </button>
             </form>
 
-            <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mt-2 px-1">
+            <div
+              className={cn(
+                "flex items-center justify-between text-[10px] font-mono mt-2 px-1",
+                isDark ? "text-slate-400" : "text-slate-500"
+              )}
+            >
               <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                <ShieldCheck className="w-3 h-3 text-emerald-500" />
                 <span>Grounded in Zakeem Enterprise Data</span>
               </span>
-              <span className="text-slate-400">All prices in NGN (₦)</span>
+              <span>All prices in NGN (₦)</span>
             </div>
           </div>
         </div>

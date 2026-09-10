@@ -26,7 +26,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service }) => {
   };
 
   return (
-    <div className="group relative flex flex-col justify-between p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/10 hover:border-[#e57804]/60 hover:bg-[#0c254c] transition-all duration-300">
+    <div data-surface="dark" className="group relative flex flex-col justify-between p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/10 hover:border-[#e57804]/60 hover:bg-[#0c254c] transition-all duration-300">
       <div>
         <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-105 group-hover:bg-[#e57804]/15 group-hover:border-[#e57804]/30 transition-all">
           {getIcon(service.iconName)}

@@ -38,7 +38,7 @@ export const SolutionDetailPage: React.FC = () => {
             <span className="text-xs font-mono text-slate-400">{solution.stats.label}: {solution.stats.value}</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-950 dark:text-white tracking-tight mb-4">
             {solution.title}
           </h1>
 
@@ -46,11 +46,11 @@ export const SolutionDetailPage: React.FC = () => {
             {solution.tagline}
           </p>
 
-          <p className="text-base sm:text-lg text-slate-300 leading-relaxed mb-10">
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed mb-10">
             {solution.description}
           </p>
 
-          <div className="p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/15 mb-12">
+          <div data-surface="dark" className="p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/15 mb-12">
             <h3 className="text-lg font-bold text-white mb-6">Core Transformation Capabilities:</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {solution.capabilities.map((cap, i) => (

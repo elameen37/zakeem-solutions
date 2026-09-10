@@ -44,6 +44,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
 
   return (
     <div
+      data-surface="dark"
       className={cn(
         "group relative flex flex-col justify-between rounded-2xl border transition-all duration-300 p-6 md:p-8",
         featured
@@ -108,7 +109,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
           variant={featured ? "primary" : "secondary"}
           size="md"
           href={targetPath}
-          className="flex-1"
+          className={cn("flex-1", !featured && "bg-white/10 hover:bg-white/15 text-white border-white/15")}
           rightIcon={<ArrowUpRight className="w-4 h-4" />}
         >
           {product.ctaText || (featured ? "Explore Flagship Platform" : "View Architecture")}
@@ -121,6 +122,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
             isExternal={true}
             rightIcon={<ExternalLink className="w-4 h-4" />}
             title="Launch live web application"
+            className="text-white border-white/20 hover:border-[#e57804] hover:bg-white/10"
           >
             Launch App
           </Button>

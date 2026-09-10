@@ -85,7 +85,7 @@ export const ZakeemRealtyERPHighlight: React.FC = () => {
   const current = tabContent[activeTab];
 
   return (
-    <section className="py-20 lg:py-28 relative overflow-hidden bg-[#040e1d] border-y border-white/10">
+    <section data-surface="dark" className="py-20 lg:py-28 relative overflow-hidden bg-[#040e1d] border-y border-white/10">
       {/* Background radial glow */}
       <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-[#e57804]/10 rounded-full blur-[140px] pointer-events-none" />
 
@@ -115,6 +115,7 @@ export const ZakeemRealtyERPHighlight: React.FC = () => {
               isExternal
               leftIcon={<KeyRound className="w-4 h-4 text-[#e57804]" />}
               rightIcon={<ExternalLink className="w-3.5 h-3.5 text-slate-300" />}
+              className="text-white border-white/20 hover:border-[#e57804] hover:bg-white/10"
             >
               Access ERP Portal
             </Button>

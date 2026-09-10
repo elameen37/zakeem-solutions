@@ -78,18 +78,18 @@ export const CareersPage: React.FC = () => {
             <div className="flex justify-center mb-4">
               <Badge variant="neon">Engineering Fellowship & Open Roles</Badge>
             </div>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.15] mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-[1.15] mb-6">
               Build high-consequence technology with{" "}
-              <span className="bg-gradient-to-r from-white via-amber-200 to-[#e57804] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-slate-950 via-amber-700 to-[#e57804] dark:from-white dark:via-amber-200 dark:to-[#e57804] bg-clip-text text-transparent">
                 exceptional minds.
               </span>
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-slate-300 leading-relaxed max-w-2xl mx-auto mb-10">
+            <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto mb-10">
               We are assembling an elite team of distributed systems engineers, AI researchers, product architects, and enterprise advisory leaders who reject superficial code and build software for multi-decade durability.
             </p>
 
             {/* Quick Metrics */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto p-3 rounded-2xl bg-[#081c38]/80 border border-white/10 backdrop-blur-xl">
+            <div data-surface="dark" className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto p-3 rounded-2xl bg-[#081c38]/80 border border-white/10 backdrop-blur-xl">
               <div className="p-3 border-r border-white/10">
                 <div className="text-xs font-mono text-[#e57804] font-semibold">CULTURE</div>
                 <div className="text-sm font-bold text-white mt-0.5">High Agency</div>
@@ -112,7 +112,7 @@ export const CareersPage: React.FC = () => {
       </section>
 
       {/* 2. CULTURE & WHY ZAKEEM */}
-      <section className="py-20 bg-[#040e1d] border-b border-white/10 relative">
+      <section className="py-20 bg-[#040e1d] border-b border-white/10 relative" data-surface="dark">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <SectionHeader
             badge="Engineering Philosophy"
@@ -120,12 +120,14 @@ export const CareersPage: React.FC = () => {
             highlightedWord="Our Work."
             description="We do not operate like a traditional agency. We work with the intellectual rigor of a research lab and the precision of an aerospace contractor."
             align="center"
+            inverted={true}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
             {CULTURE_PILLARS.map((pillar) => (
               <div 
                 key={pillar.id}
+                data-surface="dark"
                 className="p-6 rounded-2xl bg-[#081c38] border border-white/10 hover:border-[#e57804]/50 transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
@@ -162,6 +164,7 @@ export const CareersPage: React.FC = () => {
             
             <button
               onClick={() => setIsTalentModalOpen(true)}
+              data-surface="dark"
               className="px-4 py-2.5 rounded-xl border border-white/15 bg-[#081c38] hover:bg-[#0c254c] text-xs font-semibold text-white transition-colors shrink-0 flex items-center gap-2"
             >
               <Briefcase className="w-4 h-4 text-[#e57804]" />
@@ -170,7 +173,7 @@ export const CareersPage: React.FC = () => {
           </div>
 
           {/* Department Filters & Search Controls */}
-          <div className="p-4 rounded-2xl bg-[#081c38] border border-white/10 mb-8 space-y-4">
+          <div data-surface="dark" className="p-4 rounded-2xl bg-[#081c38] border border-white/10 mb-8 space-y-4">
             {/* Department Pills */}
             <div className="flex flex-wrap items-center gap-2">
               {CAREER_DEPARTMENTS.map((dept) => {
@@ -222,7 +225,7 @@ export const CareersPage: React.FC = () => {
 
           {/* Job Listings Grid */}
           {filteredJobs.length === 0 ? (
-            <div className="p-12 rounded-2xl bg-[#081c38]/50 border border-white/10 text-center max-w-xl mx-auto">
+            <div data-surface="dark" className="p-12 rounded-2xl bg-[#081c38]/50 border border-white/10 text-center max-w-xl mx-auto">
               <AlertCircle className="w-8 h-8 text-[#e57804] mx-auto mb-3" />
               <h3 className="text-lg font-bold text-white mb-1">No Openings Matching Filter</h3>
               <p className="text-xs text-slate-300 mb-6">
@@ -237,6 +240,7 @@ export const CareersPage: React.FC = () => {
               {filteredJobs.map((job) => (
                 <div
                   key={job.id}
+                  data-surface="dark"
                   className="group p-6 rounded-2xl bg-[#081c38] border border-white/10 hover:border-[#e57804]/50 hover:bg-[#0a2347] transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-6"
                 >
                   <div className="space-y-2.5 flex-1">
@@ -310,7 +314,7 @@ export const CareersPage: React.FC = () => {
       </section>
 
       {/* 4. COMPREHENSIVE BENEFITS & WELLBEING */}
-      <section className="py-20 bg-[#040e1d] border-t border-white/10 relative">
+      <section className="py-20 bg-[#040e1d] border-t border-white/10 relative" data-surface="dark">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <SectionHeader
             badge="Fellowship Inclusions"
@@ -318,12 +322,14 @@ export const CareersPage: React.FC = () => {
             highlightedWord="Peak Performance."
             description="We believe engineers do their best work when fully empowered, well-compensated, and freed from operational friction."
             align="center"
+            inverted={true}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
             {COMPANY_BENEFITS.map((b) => (
               <div
                 key={b.id}
+                data-surface="dark"
                 className="p-6 rounded-2xl bg-[#081c38] border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between"
               >
                 <div>
@@ -347,7 +353,7 @@ export const CareersPage: React.FC = () => {
       {/* 5. SPECULATIVE TALENT NETWORK CTA */}
       <section className="py-20 relative">
         <div className="container mx-auto px-4 md:px-6 max-w-5xl">
-          <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-[#0a2347] via-[#081c38] to-[#040e1d] border border-[#e57804]/40 shadow-2xl relative overflow-hidden text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-8">
+          <div data-surface="dark" className="p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-[#0a2347] via-[#081c38] to-[#040e1d] border border-[#e57804]/40 shadow-2xl relative overflow-hidden text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-8">
             <div className="max-w-xl">
               <Badge variant="neon" className="mb-3">General Talent Network</Badge>
               <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
@@ -379,7 +385,10 @@ export const CareersPage: React.FC = () => {
           aria-modal="true"
           aria-labelledby="job-modal-title"
         >
-          <div className="relative w-full max-w-3xl rounded-3xl bg-[#081c38] border border-white/20 p-6 sm:p-8 md:p-10 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+          <div
+            data-surface="dark"
+            className="relative w-full max-w-3xl rounded-3xl bg-[#081c38] border border-white/20 p-6 sm:p-8 md:p-10 max-h-[90vh] overflow-y-auto shadow-2xl my-8"
+          >
             {/* Close Button */}
             <button
               onClick={() => {
@@ -576,7 +585,10 @@ export const CareersPage: React.FC = () => {
           aria-modal="true"
           aria-labelledby="talent-modal-title"
         >
-          <div className="relative w-full max-w-2xl rounded-3xl bg-[#081c38] border border-white/20 p-6 sm:p-8 md:p-10 shadow-2xl my-8">
+          <div
+            data-surface="dark"
+            className="relative w-full max-w-2xl rounded-3xl bg-[#081c38] border border-white/20 p-6 sm:p-8 md:p-10 shadow-2xl my-8"
+          >
             <button
               onClick={() => setIsTalentModalOpen(false)}
               className="absolute top-6 right-6 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
@@ -644,7 +656,13 @@ export const CareersPage: React.FC = () => {
               />
 
               <div className="flex items-center justify-end gap-3 pt-2">
-                <Button variant="outline" size="md" type="button" onClick={() => setIsTalentModalOpen(false)}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  type="button"
+                  onClick={() => setIsTalentModalOpen(false)}
+                  className="border-white/20 text-white hover:bg-white/10 hover:text-white"
+                >
                   Cancel
                 </Button>
                 <Button variant="primary" size="md" type="submit" rightIcon={<Send className="w-4 h-4" />}>

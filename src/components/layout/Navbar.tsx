@@ -9,8 +9,12 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import { openGlobalSearch } from "@/components/search/GlobalSearchModal";
+import { useTheme } from "@/context/ThemeContext";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export const Navbar: React.FC = () => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [isOpen, setIsOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -72,33 +76,30 @@ export const Navbar: React.FC = () => {
         <div
           className={cn(
             "pointer-events-auto rounded-2xl border transition-all duration-300 px-4 md:px-6",
-            "backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)]",
-            scrolled
-              ? "bg-[#06152b]/85 border-white/20 shadow-2xl shadow-black/50 py-2.5"
-              : "bg-[#06152b]/65 border-white/15 shadow-xl shadow-black/30 py-3 hover:bg-[#06152b]/75 hover:border-white/25"
+            "backdrop-blur-2xl backdrop-saturate-150",
+            isDark
+              ? cn(
+                  "shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)]",
+                  scrolled
+                    ? "bg-[#06152b]/85 border-white/20 shadow-2xl shadow-black/50 py-2.5"
+                    : "bg-[#06152b]/65 border-white/15 shadow-xl shadow-black/30 py-3 hover:bg-[#06152b]/75 hover:border-white/25"
+                )
+              : cn(
+                  "shadow-[0_8px_24px_0_rgba(15,23,42,0.08)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]",
+                  scrolled
+                    ? "bg-white/90 border-slate-200/90 shadow-lg shadow-slate-200/50 py-2.5"
+                    : "bg-white/80 border-slate-200/70 shadow-md shadow-slate-200/30 py-3 hover:bg-white/90 hover:border-slate-300"
+                )
           )}
         >
           <div className="flex items-center justify-between">
           {/* Brand Identity / Logo */}
           <Link to="/" className="flex items-center group py-0.5">
             <div className="relative h-8 md:h-9 w-auto flex items-center">
-              {/* White Logo (Normal State) */}
               <img
-                src="/assets/logos/logo-white.png"
+                src={isDark ? "/assets/logos/logo-white.png" : "/assets/logos/logo-color.png"}
                 alt="Zakeem Solutions"
-                className={cn(
-                  "h-8 md:h-9 w-auto object-contain transition-opacity duration-300 group-hover:scale-[1.02]",
-                  scrolled ? "opacity-0 absolute pointer-events-none" : "opacity-100 relative"
-                )}
-              />
-              {/* Colored Logo (Scrolled State) */}
-              <img
-                src="/assets/logos/logo-color.png"
-                alt="Zakeem Solutions"
-                className={cn(
-                  "h-8 md:h-9 w-auto object-contain transition-opacity duration-300 group-hover:scale-[1.02]",
-                  scrolled ? "opacity-100 relative" : "opacity-0 absolute pointer-events-none"
-                )}
+                className="h-8 md:h-9 w-auto object-contain transition-all duration-300 group-hover:scale-[1.02]"
               />
             </div>
           </Link>
@@ -114,7 +115,12 @@ export const Navbar: React.FC = () => {
                   <Link
                     key={item.label}
                     to={item.href}
-                    className="px-3.5 py-2 text-sm font-medium text-slate-200 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                    className={cn(
+                      "px-3.5 py-2 text-sm font-medium rounded-lg transition-colors",
+                      isDark
+                        ? "text-slate-200 hover:text-white hover:bg-white/5"
+                        : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
+                    )}
                   >
                     {item.label}
                   </Link>
@@ -129,8 +135,12 @@ export const Navbar: React.FC = () => {
                     className={cn(
                       "flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg transition-all",
                       isActive
-                        ? "text-white bg-white/10"
-                        : "text-slate-200 hover:text-white hover:bg-white/5"
+                        ? isDark
+                          ? "text-white bg-white/10"
+                          : "text-slate-950 bg-slate-100 font-semibold"
+                        : isDark
+                        ? "text-slate-200 hover:text-white hover:bg-white/5"
+                        : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
                     )}
                     aria-expanded={isActive}
                   >
@@ -145,17 +155,24 @@ export const Navbar: React.FC = () => {
 
                   {/* Desktop Dropdown Mega-Menu */}
                   {isActive && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[560px] p-4 rounded-2xl bg-[#081b37]/85 backdrop-blur-2xl backdrop-saturate-150 border border-white/20 shadow-2xl shadow-black/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] animate-in fade-in slide-in-from-top-2 duration-200 z-50">
-                      <div className="px-3 py-2 border-b border-white/10 mb-3 flex items-center justify-between">
+                    <div
+                      className={cn(
+                        "absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[560px] p-4 rounded-2xl backdrop-blur-2xl backdrop-saturate-150 border animate-in fade-in slide-in-from-top-2 duration-200 z-50",
+                        isDark
+                          ? "bg-[#081b37]/90 border-white/20 shadow-2xl shadow-black/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
+                          : "bg-white/95 border-slate-200 shadow-2xl shadow-slate-300/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] text-slate-900"
+                      )}
+                    >
+                      <div className={cn("px-3 py-2 border-b mb-3 flex items-center justify-between", isDark ? "border-white/10" : "border-slate-200")}>
                         <div>
                           <div className="text-xs font-mono uppercase tracking-wider text-[#e57804]">
                             {item.label} Overview
                           </div>
-                          <div className="text-xs text-slate-300">{item.description}</div>
+                          <div className={cn("text-xs", isDark ? "text-slate-300" : "text-slate-600")}>{item.description}</div>
                         </div>
                         <Link
                           to={item.href}
-                          className="text-xs font-semibold text-[#e57804] hover:text-white flex items-center gap-1 transition-colors"
+                          className="text-xs font-semibold text-[#e57804] hover:text-[#cf6a02] flex items-center gap-1 transition-colors"
                           onClick={() => setActiveDropdown(null)}
                         >
                           <span>View all</span>
@@ -168,15 +185,30 @@ export const Navbar: React.FC = () => {
                           <Link
                             key={sub.label}
                             to={sub.href}
-                            className="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-colors"
+                            className={cn(
+                              "group flex items-start gap-3 p-2.5 rounded-xl transition-colors",
+                              isDark ? "hover:bg-white/5" : "hover:bg-slate-100"
+                            )}
                             onClick={() => setActiveDropdown(null)}
                           >
-                            <div className="mt-0.5 p-2 rounded-lg bg-white/5 border border-white/10 group-hover:bg-[#e57804]/15 group-hover:border-[#e57804]/40 transition-all shrink-0">
+                            <div
+                              className={cn(
+                                "mt-0.5 p-2 rounded-lg border transition-all shrink-0",
+                                isDark
+                                  ? "bg-white/5 border-white/10 group-hover:bg-[#e57804]/15 group-hover:border-[#e57804]/40"
+                                  : "bg-slate-100 border-slate-200 group-hover:bg-[#e57804]/10 group-hover:border-[#e57804]/30"
+                              )}
+                            >
                               {renderIcon(sub.icon)}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-white group-hover:text-[#e57804] transition-colors truncate">
+                                <span
+                                  className={cn(
+                                    "text-sm font-semibold group-hover:text-[#e57804] transition-colors truncate",
+                                    isDark ? "text-white" : "text-slate-900"
+                                  )}
+                                >
                                   {sub.label}
                                 </span>
                                 {sub.badge && (
@@ -185,7 +217,7 @@ export const Navbar: React.FC = () => {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-slate-300 line-clamp-2 mt-0.5">
+                              <p className={cn("text-xs line-clamp-2 mt-0.5", isDark ? "text-slate-300" : "text-slate-600")}>
                                 {sub.description}
                               </p>
                             </div>
@@ -200,20 +232,40 @@ export const Navbar: React.FC = () => {
           </nav>
 
           {/* CTA Actions */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-2.5">
             <button
               type="button"
               onClick={openGlobalSearch}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all"
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border transition-all",
+                isDark
+                  ? "text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
+                  : "text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 border-slate-200 shadow-sm"
+              )}
               aria-label="Search site (Cmd/Ctrl + K)"
             >
-              <Search className="w-3.5 h-3.5 text-slate-400" />
+              <Search className={cn("w-3.5 h-3.5", isDark ? "text-slate-400" : "text-slate-500")} />
               <span className="font-medium">Search</span>
-              <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 text-slate-400 border border-white/10">⌘K</kbd>
+              <kbd
+                className={cn(
+                  "text-[10px] font-mono px-1.5 py-0.5 rounded border",
+                  isDark
+                    ? "bg-black/40 text-slate-400 border-white/10"
+                    : "bg-white text-slate-600 border-slate-300 shadow-2xs"
+                )}
+              >
+                ⌘K
+              </kbd>
             </button>
+            <ThemeToggle />
             <Link
               to="/login"
-              className="text-xs font-mono font-medium text-slate-200 hover:text-white px-3 py-2 rounded-lg transition-colors"
+              className={cn(
+                "text-xs font-mono font-medium px-3 py-2 rounded-lg transition-colors",
+                isDark
+                  ? "text-slate-200 hover:text-white hover:bg-white/5"
+                  : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
+              )}
             >
               Client Login
             </Link>
@@ -227,17 +279,23 @@ export const Navbar: React.FC = () => {
             <button
               type="button"
               onClick={openGlobalSearch}
-              className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              className={cn(
+                "p-2 rounded-lg transition-colors",
+                isDark
+                  ? "text-slate-300 hover:text-white hover:bg-white/10"
+                  : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
+              )}
               aria-label="Search site"
             >
               <Search className="w-5 h-5" />
             </button>
+            <ThemeToggle />
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsOpen(!isOpen)}
               aria-label={isOpen ? "Close menu" : "Open menu"}
-              className="p-2 text-white"
+              className={cn("p-2", isDark ? "text-white hover:bg-white/10" : "text-slate-900 hover:bg-slate-100")}
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </Button>
@@ -246,7 +304,14 @@ export const Navbar: React.FC = () => {
 
         {/* Mobile Navigation Drawer */}
         {isOpen && (
-          <div className="lg:hidden mt-4 p-5 rounded-2xl bg-[#081b37]/90 backdrop-blur-2xl backdrop-saturate-150 border border-white/20 shadow-2xl shadow-black/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] space-y-6 max-h-[75vh] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+          <div
+            className={cn(
+              "lg:hidden mt-4 p-5 rounded-2xl backdrop-blur-2xl backdrop-saturate-150 border space-y-5 max-h-[75vh] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200",
+              isDark
+                ? "bg-[#081b37]/90 border-white/20 shadow-2xl shadow-black/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] text-white"
+                : "bg-white/95 border-slate-200 shadow-2xl shadow-slate-300/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] text-slate-900"
+            )}
+          >
             {/* Quick Search in Mobile Menu */}
             <button
               type="button"
@@ -254,21 +319,41 @@ export const Navbar: React.FC = () => {
                 setIsOpen(false);
                 openGlobalSearch();
               }}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white text-xs font-medium"
+              className={cn(
+                "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs font-medium transition-colors",
+                isDark
+                  ? "bg-white/5 border-white/10 text-slate-300 hover:text-white"
+                  : "bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-950"
+              )}
             >
               <div className="flex items-center gap-2">
                 <Search className="w-4 h-4 text-[#e57804]" />
                 <span>Search products, solutions, careers...</span>
               </div>
-              <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 border border-white/10 text-slate-400">⌘K</kbd>
+              <kbd
+                className={cn(
+                  "text-[10px] font-mono px-1.5 py-0.5 rounded border",
+                  isDark
+                    ? "bg-black/40 border-white/10 text-slate-400"
+                    : "bg-white border-slate-300 text-slate-600"
+                )}
+              >
+                ⌘K
+              </kbd>
             </button>
+
+            {/* Mobile Theme Toggle Bar */}
+            <ThemeToggle variant="mobile" />
 
             <div className="space-y-4">
               {MAIN_NAVIGATION.map((item) => (
-                <div key={item.label} className="border-b border-white/5 pb-3">
+                <div key={item.label} className={cn("border-b pb-3", isDark ? "border-white/5" : "border-slate-200")}>
                   <Link
                     to={item.href}
-                    className="text-base font-bold text-white block mb-2"
+                    className={cn(
+                      "text-base font-bold block mb-2",
+                      isDark ? "text-white" : "text-slate-900"
+                    )}
                   >
                     {item.label}
                   </Link>
@@ -278,7 +363,10 @@ export const Navbar: React.FC = () => {
                         <Link
                           key={sub.label}
                           to={sub.href}
-                          className="flex items-center justify-between text-xs text-slate-300 hover:text-white py-1"
+                          className={cn(
+                            "flex items-center justify-between text-xs py-1 transition-colors",
+                            isDark ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-950"
+                          )}
                         >
                           <span>{sub.label}</span>
                           {sub.badge && (

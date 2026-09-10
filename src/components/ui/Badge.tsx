@@ -17,8 +17,10 @@ export const Badge: React.FC<BadgeProps> = ({
   const variantStyles = {
     blue: "bg-[#e57804]/10 text-[#e57804] border-[#e57804]/30",
     neon: "bg-[#e57804]/15 text-[#e57804] border-[#e57804]/40 font-semibold",
-    neutral: "bg-white/5 text-slate-200 border-white/15",
-    outline: "bg-transparent text-white border-white/20"
+    neutral:
+      "bg-slate-100 text-slate-700 border-slate-200 dark:bg-white/5 dark:text-slate-200 dark:border-white/15",
+    outline:
+      "bg-transparent text-slate-800 border-slate-300 dark:text-white dark:border-white/20",
   };
 
   return (

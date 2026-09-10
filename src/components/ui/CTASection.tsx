@@ -29,7 +29,7 @@ export const CTASection: React.FC<CTASectionProps> = ({
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#e57804]/15 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="container mx-auto px-4 md:px-6 relative z-10 max-w-6xl">
-        <div className="rounded-3xl border border-white/15 bg-gradient-to-b from-[#0b1e3b] to-[#040e1d] p-8 md:p-14 lg:p-16 text-center shadow-2xl relative overflow-hidden">
+        <div data-surface="dark" className="rounded-3xl border border-white/15 bg-gradient-to-b from-[#0b1e3b] to-[#040e1d] p-8 md:p-14 lg:p-16 text-center shadow-2xl relative overflow-hidden">
 
           <div className="relative z-10 max-w-3xl mx-auto">
             <div className="flex justify-center mb-6">
@@ -60,7 +60,7 @@ export const CTASection: React.FC<CTASectionProps> = ({
                 variant="outline"
                 size="lg"
                 href={secondaryCtaLink}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto text-white border-white/20 hover:border-[#e57804] hover:bg-white/10"
               >
                 {secondaryCtaText}
               </Button>

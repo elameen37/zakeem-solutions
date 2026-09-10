@@ -22,31 +22,31 @@ export const AboutPage: React.FC = () => {
             <div className="flex justify-center mb-4">
               <Badge variant="neon">Company Overview</Badge>
             </div>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-950 dark:text-white tracking-tight mb-6">
               Engineering Africa's Most Consequential{" "}
-              <span className="bg-gradient-to-r from-white via-amber-200 to-[#e57804] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-slate-950 via-amber-700 to-[#e57804] dark:from-white dark:via-amber-200 dark:to-[#e57804] bg-clip-text text-transparent">
                 Digital Infrastructure.
               </span>
             </h1>
-            <p className="text-lg text-slate-300 leading-relaxed">
+            <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
               Zakeem Solutions exists to build high-trust software and AI platforms capable of operating at national and continental scale.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-            <div className="p-6 rounded-2xl bg-[#081c38] border border-white/10">
+            <div data-surface="dark" className="p-6 rounded-2xl bg-[#081c38] border border-white/10">
               <h3 className="text-lg font-bold text-white mb-2">Technology</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 We believe software in emerging markets must be engineered with higher reliability and stronger fault-tolerance than anywhere else in the world.
               </p>
             </div>
-            <div className="p-6 rounded-2xl bg-[#081c38] border border-white/10">
+            <div data-surface="dark" className="p-6 rounded-2xl bg-[#081c38] border border-white/10">
               <h3 className="text-lg font-bold text-white mb-2">Intelligence</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Artificial intelligence is not a novelty; it is an economic force multiplier that bridges operational deficits and scales institutional decision-making.
               </p>
             </div>
-            <div className="p-6 rounded-2xl bg-[#081c38] border border-white/10">
+            <div data-surface="dark" className="p-6 rounded-2xl bg-[#081c38] border border-white/10">
               <h3 className="text-lg font-bold text-white mb-2">Delivery</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Strategy without mathematical execution is friction. We hold a relentless standard for on-time, zero-defect software deployment.
@@ -54,7 +54,7 @@ export const AboutPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-8 md:p-12 rounded-3xl bg-[#081c38] border border-white/15 space-y-6">
+          <div data-surface="dark" className="p-8 md:p-12 rounded-3xl bg-[#081c38] border border-white/15 space-y-6">
             <h2 className="text-2xl md:text-3xl font-bold text-white">Our Strategic Dual Identity</h2>
             <p className="text-sm md:text-base text-slate-300 leading-relaxed">
               Unlike traditional IT agencies that resell third-party platforms, or pure-play SaaS startups lacking enterprise integration capabilities, Zakeem Solutions is intentionally structured as both:

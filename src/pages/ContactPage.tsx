@@ -36,7 +36,7 @@ export const ContactPage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-12">
             {/* Contact Details */}
-            <div className="lg:col-span-5 p-8 rounded-3xl bg-[#081c38] border border-white/10 space-y-6">
+            <div data-surface="dark" className="lg:col-span-5 p-8 rounded-3xl bg-[#081c38] border border-white/10 space-y-6">
               <h3 className="text-xl font-bold text-white">Direct Contact</h3>
 
               <div className="space-y-4 text-xs md:text-sm text-slate-300">
@@ -79,7 +79,7 @@ export const ContactPage: React.FC = () => {
             </div>
 
             {/* Form */}
-            <div className="lg:col-span-7 p-8 rounded-3xl bg-[#081c38] border border-white/15">
+            <div data-surface="dark" className="lg:col-span-7 p-8 rounded-3xl bg-[#081c38] border border-white/15">
               {submitted ? (
                 <div className="text-center py-10 space-y-4">
                   <CheckCircle2 className="w-12 h-12 text-[#e57804] mx-auto" />

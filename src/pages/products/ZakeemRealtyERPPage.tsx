@@ -159,14 +159,14 @@ export const ZakeemRealtyERPPage: React.FC = () => {
               <Badge variant="neutral">Release 2.4 Enterprise</Badge>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-tight mb-6">
               The Digital Operating System for{" "}
-              <span className="bg-gradient-to-r from-white via-amber-200 to-[#e57804] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-slate-950 via-amber-700 to-[#e57804] dark:from-white dark:via-amber-200 dark:to-[#e57804] bg-clip-text text-transparent">
                 Modern Real Estate.
               </span>
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-200 font-normal leading-relaxed mb-8">
+            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-200 font-normal leading-relaxed mb-8">
               Zakeem Realty ERP unifies property sales, GIS land registry, multi-tenant leasing, construction procurement, and financial accounting into an audit-grade, AI-accelerated platform.
             </p>
 
@@ -185,7 +185,7 @@ export const ZakeemRealtyERPPage: React.FC = () => {
                 href="https://realty.zakeemsolutions.com"
                 isExternal
                 leftIcon={<KeyRound className="w-4 h-4 text-[#e57804]" />}
-                rightIcon={<ExternalLink className="w-3.5 h-3.5 text-slate-300" />}
+                rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
               >
                 Customer Portal Login
               </Button>
@@ -195,7 +195,7 @@ export const ZakeemRealtyERPPage: React.FC = () => {
       </section>
 
       {/* Metrics Bar */}
-      <section className="py-10 bg-[#040e1d] border-b border-white/10">
+      <section className="py-10 bg-[#040e1d] border-b border-white/10" data-surface="dark">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div className="p-4">
@@ -238,7 +238,7 @@ export const ZakeemRealtyERPPage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Module Selector List */}
-            <div className="lg:col-span-5 space-y-2">
+            <div data-surface="dark" className="lg:col-span-5 space-y-2">
               {modules.map((m, idx) => {
                 const Icon = m.icon;
                 const isSelected = activeModuleIndex === idx;
@@ -268,7 +268,7 @@ export const ZakeemRealtyERPPage: React.FC = () => {
             </div>
 
             {/* Right Detailed Module Display */}
-            <div className="lg:col-span-7 p-8 md:p-10 rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl relative overflow-hidden">
+            <div data-surface="dark" className="lg:col-span-7 p-8 md:p-10 rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl relative overflow-hidden">
               <div className="flex items-center justify-between mb-6">
                 <Badge variant="neon">{activeModule.highlight}</Badge>
                 <span className="text-xs font-mono text-slate-400">Module {activeModuleIndex + 1} of {modules.length}</span>
@@ -308,6 +308,7 @@ export const ZakeemRealtyERPPage: React.FC = () => {
                   variant="ghost"
                   size="md"
                   href="/contact"
+                  className="text-white hover:bg-white/10 hover:text-white"
                 >
                   Consult Architecture Team
                 </Button>
@@ -318,7 +319,7 @@ export const ZakeemRealtyERPPage: React.FC = () => {
       </section>
 
       {/* Licensing & Deployment Architecture */}
-      <section className="py-20 lg:py-28 bg-[#040e1d] border-t border-white/10">
+      <section className="py-20 lg:py-28 bg-[#040e1d] border-t border-white/10" data-surface="dark">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <SectionHeader
             badge="Licensing & Deployment"
@@ -326,11 +327,12 @@ export const ZakeemRealtyERPPage: React.FC = () => {
             highlightedWord="Models."
             description="Deploy Zakeem Realty ERP in the architecture that fits your governance, sovereignty, and data compliance standards."
             align="center"
+            inverted={true}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
             {/* Tier 1 */}
-            <div className="p-8 rounded-2xl bg-[#081c38] border border-white/10 flex flex-col justify-between">
+            <div data-surface="dark" className="p-8 rounded-2xl bg-[#081c38] border border-white/10 flex flex-col justify-between">
               <div>
                 <Badge variant="blue" className="mb-4">Zakeem Managed Cloud</Badge>
                 <h4 className="text-xl font-bold text-white mb-2">Dedicated Cloud Instance</h4>
@@ -343,13 +345,13 @@ export const ZakeemRealtyERPPage: React.FC = () => {
                   <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#e57804]" /> 24/7 Monitoring & uptime guarantee</li>
                 </ul>
               </div>
-              <Button variant="outline" size="md" href="/request-demo" className="w-full">
+              <Button variant="outline" size="md" href="/request-demo" className="w-full border-white/20 text-white hover:bg-white/10 hover:text-white">
                 Select Cloud Deployment
               </Button>
             </div>
 
             {/* Tier 2 */}
-            <div className="p-8 rounded-2xl bg-gradient-to-b from-[#0a2347] to-[#06152b] border border-[#e57804]/60 shadow-xl shadow-[#e57804]/15 flex flex-col justify-between relative">
+            <div data-surface="dark" className="p-8 rounded-2xl bg-gradient-to-b from-[#0a2347] to-[#06152b] border border-[#e57804]/60 shadow-xl shadow-[#e57804]/15 flex flex-col justify-between relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <Badge variant="neon">Most Popular for Developers</Badge>
               </div>
@@ -371,7 +373,7 @@ export const ZakeemRealtyERPPage: React.FC = () => {
             </div>
 
             {/* Tier 3 */}
-            <div className="p-8 rounded-2xl bg-[#081c38] border border-white/10 flex flex-col justify-between">
+            <div data-surface="dark" className="p-8 rounded-2xl bg-[#081c38] border border-white/10 flex flex-col justify-between">
               <div>
                 <Badge variant="neutral" className="mb-4">Institutional</Badge>
                 <h4 className="text-xl font-bold text-white mb-2">On-Premise Appliance</h4>
@@ -384,7 +386,7 @@ export const ZakeemRealtyERPPage: React.FC = () => {
                   <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#e57804]" /> Onsite engineering enablement team</li>
                 </ul>
               </div>
-              <Button variant="outline" size="md" href="/contact" className="w-full">
+              <Button variant="outline" size="md" href="/contact" className="w-full border-white/20 text-white hover:bg-white/10 hover:text-white">
                 Talk to Enterprise Sales
               </Button>
             </div>

@@ -35,23 +35,23 @@ export const RequestDemoPage: React.FC = () => {
             {/* Left Context */}
             <div className="lg:col-span-5 space-y-6">
               <Badge variant="neon">Enterprise Briefing</Badge>
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-tight">
                 Request a Confidential Technical Walkthrough.
               </h1>
-              <p className="text-sm md:text-base text-slate-300 leading-relaxed">
+              <p className="text-sm md:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
                 Connect directly with a Lead Solutions Architect. We will tailor the session around your organization’s specific workflows, data schemas, and security requirements.
               </p>
 
               <div className="space-y-3.5 pt-4">
-                <div className="flex items-start gap-3 text-xs md:text-sm text-slate-300">
+                <div className="flex items-start gap-3 text-xs md:text-sm text-slate-600 dark:text-slate-300">
                   <CheckCircle2 className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
                   <span>Live demonstration of Zakeem Realty ERP or AI models</span>
                 </div>
-                <div className="flex items-start gap-3 text-xs md:text-sm text-slate-300">
+                <div className="flex items-start gap-3 text-xs md:text-sm text-slate-600 dark:text-slate-300">
                   <CheckCircle2 className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
                   <span>Architecture, cloud VPC, and security review</span>
                 </div>
-                <div className="flex items-start gap-3 text-xs md:text-sm text-slate-300">
+                <div className="flex items-start gap-3 text-xs md:text-sm text-slate-600 dark:text-slate-300">
                   <CheckCircle2 className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
                   <span>Custom migration and pricing roadmap</span>
                 </div>
@@ -59,7 +59,7 @@ export const RequestDemoPage: React.FC = () => {
             </div>
 
             {/* Right Form Card */}
-            <div className="lg:col-span-7 p-8 md:p-10 rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl">
+            <div data-surface="dark" className="lg:col-span-7 p-8 md:p-10 rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl">
               {submitted ? (
                 <div className="text-center py-10 space-y-4">
                   <div className="w-14 h-14 rounded-full bg-[#e57804]/20 border border-[#e57804]/40 flex items-center justify-center mx-auto text-[#e57804]">

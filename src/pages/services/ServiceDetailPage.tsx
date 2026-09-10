@@ -38,7 +38,7 @@ export const ServiceDetailPage: React.FC = () => {
             <span className="text-xs font-mono text-slate-400">{service.engagementModel}</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-950 dark:text-white tracking-tight mb-4">
             {service.title}
           </h1>
 
@@ -46,12 +46,12 @@ export const ServiceDetailPage: React.FC = () => {
             {service.tagline}
           </p>
 
-          <p className="text-base sm:text-lg text-slate-300 leading-relaxed mb-10">
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed mb-10">
             {service.description}
           </p>
 
           {/* Deliverables */}
-          <div className="p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/15 mb-10">
+          <div data-surface="dark" className="p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/15 mb-10">
             <h3 className="text-lg font-bold text-white mb-6">Key Engineering Deliverables:</h3>
             <div className="space-y-3">
               {service.deliverables.map((deliv, i) => (
@@ -64,7 +64,7 @@ export const ServiceDetailPage: React.FC = () => {
           </div>
 
           {/* Tech Stack Matrix */}
-          <div className="p-6 rounded-2xl bg-[#040e1d] border border-white/10 mb-10">
+          <div data-surface="dark" className="p-6 rounded-2xl bg-[#040e1d] border border-white/10 mb-10">
             <h4 className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-4">
               Core Technologies & Tooling:
             </h4>

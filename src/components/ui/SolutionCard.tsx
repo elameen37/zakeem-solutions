@@ -31,6 +31,7 @@ export const SolutionCard: React.FC<SolutionCardProps> = ({ solution }) => {
   return (
     <Link
       to={`/solutions/${solution.slug}`}
+      data-surface="dark"
       className="group relative flex flex-col justify-between p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/10 hover:border-[#e57804]/60 hover:bg-[#0c254c] transition-all duration-300"
     >
       <div>

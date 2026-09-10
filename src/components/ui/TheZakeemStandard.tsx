@@ -270,6 +270,7 @@ export const TheZakeemStandard: React.FC = () => {
   return (
     <section 
       id="the-zakeem-standard" 
+      data-surface="dark"
       className="py-20 lg:py-32 bg-[#040e1d] border-t border-white/10 relative overflow-hidden"
       onKeyDown={handleKeyDown}
       tabIndex={0}

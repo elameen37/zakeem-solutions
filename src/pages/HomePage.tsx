@@ -59,15 +59,15 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* Hero Main Heading */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-[1.1] mb-6">
               Technology that moves{" "}
-              <span className="bg-gradient-to-r from-white via-amber-200 to-[#e57804] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-slate-950 via-amber-700 to-[#e57804] dark:from-white dark:via-amber-200 dark:to-[#e57804] bg-clip-text text-transparent">
                 enterprises forward.
               </span>
             </h1>
 
             {/* Value Proposition */}
-            <p className="text-base sm:text-lg md:text-xl text-slate-200 font-normal leading-relaxed max-w-2xl mx-auto mb-10">
+            <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-200 font-normal leading-relaxed max-w-2xl mx-auto mb-10">
               Zakeem Solutions engineers high-consequence software, deployable AI automation, and proprietary enterprise platforms designed for the world’s most demanding industries.
             </p>
 
@@ -93,7 +93,7 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* Four Strategic Pillars Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 p-3 rounded-2xl bg-[#081c38]/90 border border-white/10 backdrop-blur-xl max-w-3xl mx-auto text-left">
+            <div data-surface="dark" className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 p-3 rounded-2xl bg-[#081c38]/90 border border-white/10 backdrop-blur-xl max-w-3xl mx-auto text-left">
               <div className="p-3 border-r border-white/10 last:border-0">
                 <div className="text-xs font-mono text-[#e57804] font-semibold">01 / SOFTWARE</div>
                 <div className="text-sm font-bold text-white mt-0.5">Core Engineering</div>
@@ -116,7 +116,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 2. CREDIBILITY & MEASURABLE OUTCOMES BAR */}
-      <section className="py-12 bg-[#040e1d] border-y border-white/10 relative z-20">
+      <section data-surface="dark" className="py-12 bg-[#040e1d] border-y border-white/10 relative z-20">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             <MetricCard
@@ -160,7 +160,7 @@ export const HomePage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Pillar 1: Enterprise Technology Services */}
-            <div className="p-8 md:p-10 rounded-3xl bg-gradient-to-b from-[#081c38] to-[#040e1d] border border-white/15 relative overflow-hidden group hover:border-[#e57804]/60 transition-all">
+            <div data-surface="dark" className="p-8 md:p-10 rounded-3xl bg-gradient-to-b from-[#081c38] to-[#040e1d] border border-white/15 relative overflow-hidden group hover:border-[#e57804]/60 transition-all">
               <div className="flex items-center justify-between mb-6">
                 <div className="w-12 h-12 rounded-2xl bg-[#e57804]/15 border border-[#e57804]/30 flex items-center justify-center">
                   <Code2 className="w-6 h-6 text-[#e57804]" />
@@ -195,14 +195,14 @@ export const HomePage: React.FC = () => {
                 size="md"
                 href="/services"
                 rightIcon={<ArrowRight className="w-4 h-4" />}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto text-white border-white/20 hover:border-[#e57804] hover:bg-white/10"
               >
                 Explore Services Practice
               </Button>
             </div>
 
             {/* Pillar 2: Proprietary Digital Products */}
-            <div className="p-8 md:p-10 rounded-3xl bg-gradient-to-b from-[#081c38] to-[#040e1d] border border-white/15 relative overflow-hidden group hover:border-[#e57804]/60 transition-all">
+            <div data-surface="dark" className="p-8 md:p-10 rounded-3xl bg-gradient-to-b from-[#081c38] to-[#040e1d] border border-white/15 relative overflow-hidden group hover:border-[#e57804]/60 transition-all">
               <div className="flex items-center justify-between mb-6">
                 <div className="w-12 h-12 rounded-2xl bg-[#e57804]/20 border border-[#e57804]/40 flex items-center justify-center">
                   <Layers className="w-6 h-6 text-[#e57804]" />
@@ -268,7 +268,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 6. INDUSTRY SOLUTIONS MATRIX */}
-      <section className="py-20 lg:py-28 bg-[#040e1d] border-y border-white/10 relative">
+      <section data-surface="dark" className="py-20 lg:py-28 bg-[#040e1d] border-y border-white/10 relative">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-12 gap-6">
             <SectionHeader
@@ -277,8 +277,9 @@ export const HomePage: React.FC = () => {
               highlightedWord="10 Core Sectors."
               description="We combine deep industry operational knowledge with modern software engineering to resolve stubborn regulatory, logistics, and data bottlenecks."
               className="mb-0"
+              inverted={true}
             />
-            <Button variant="outline" size="md" href="/solutions" rightIcon={<ArrowRight className="w-4 h-4" />}>
+            <Button variant="outline" size="md" href="/solutions" rightIcon={<ArrowRight className="w-4 h-4" />} className="text-white border-white/20 hover:border-[#e57804] hover:bg-white/10">
               View All 10 Solutions
             </Button>
           </div>

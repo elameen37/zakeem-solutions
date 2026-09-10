@@ -43,13 +43,13 @@ export const PricingPage: React.FC = () => {
             <div className="flex justify-center mb-4">
               <Badge variant="neon">Enterprise Commercial Architecture</Badge>
             </div>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.15] mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-[1.15] mb-6">
               Predictable Engineering Investment.{" "}
-              <span className="bg-gradient-to-r from-white via-amber-200 to-[#e57804] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-slate-950 via-amber-700 to-[#e57804] dark:from-white dark:via-amber-200 dark:to-[#e57804] bg-clip-text text-transparent">
                 Sovereign Value.
               </span>
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-slate-300 leading-relaxed max-w-3xl mx-auto mb-10">
+            <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl mx-auto mb-10">
               We design transparent commercial agreements centered on verifiable business outcomes, high-concurrency SLAs, and full intellectual property protection — with zero hidden seat penalties.
             </p>
 
@@ -88,7 +88,7 @@ export const PricingPage: React.FC = () => {
       </section>
 
       {/* 2. PRICING TIERS OR SERVICES MATRIX */}
-      <section className="py-20 bg-[#040e1d] relative">
+      <section className="py-20 bg-[#040e1d] relative" data-surface="dark">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           {activeTab === "products" ? (
             <div>
@@ -122,6 +122,7 @@ export const PricingPage: React.FC = () => {
                   return (
                     <div
                       key={tier.id}
+                      data-surface="dark"
                       className={cn(
                         "rounded-3xl border p-6 sm:p-8 flex flex-col justify-between transition-all duration-300 relative",
                         tier.featured
@@ -208,7 +209,7 @@ export const PricingPage: React.FC = () => {
                         variant={tier.featured ? "primary" : "outline"}
                         size="lg"
                         href={dynamicCtaHref}
-                        className="w-full"
+                        className={cn("w-full", !tier.featured && "border-white/20 text-white hover:bg-white/10 hover:text-white")}
                         rightIcon={<ArrowRight className="w-4 h-4" />}
                       >
                         {tier.ctaLabel}
@@ -236,6 +237,7 @@ export const PricingPage: React.FC = () => {
                 {SERVICE_ENGAGEMENT_MODELS.map((model) => (
                   <div
                     key={model.id}
+                    data-surface="dark"
                     className="rounded-3xl bg-[#081c38] border border-white/10 p-6 sm:p-8 flex flex-col justify-between hover:border-[#e57804]/50 transition-all duration-300"
                   >
                     <div>
@@ -308,7 +310,7 @@ export const PricingPage: React.FC = () => {
       </section>
 
       {/* 3. ENTERPRISE ASSURANCE & SOVEREIGN GOVERNANCE */}
-      <section className="py-16 bg-[#06152b] border-y border-white/10 relative">
+      <section className="py-16 bg-[#06152b] border-y border-white/10 relative" data-surface="dark">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center md:text-left">
             <div className="p-4 rounded-2xl bg-[#081c38] border border-white/10 flex items-start gap-4">
@@ -380,6 +382,7 @@ export const PricingPage: React.FC = () => {
               return (
                 <div
                   key={faq.id}
+                  data-surface="dark"
                   className="rounded-2xl bg-[#081c38] border border-white/10 overflow-hidden transition-all"
                 >
                   <button
@@ -415,7 +418,7 @@ export const PricingPage: React.FC = () => {
       </section>
 
       {/* 5. CONSULTATION CTA */}
-      <section className="py-20 bg-[#040e1d] border-t border-white/10 relative">
+      <section className="py-20 bg-[#040e1d] border-t border-white/10 relative" data-surface="dark">
         <div className="container mx-auto px-4 md:px-6 max-w-5xl text-center">
           <Badge variant="neon" className="mb-4">Solutions Advisory</Badge>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
@@ -438,6 +441,7 @@ export const PricingPage: React.FC = () => {
               variant="outline"
               size="lg"
               href="/request-demo"
+              className="border-white/20 text-white hover:bg-white/10 hover:text-white"
               rightIcon={<ArrowUpRight className="w-4 h-4" />}
             >
               Request Platform Demo

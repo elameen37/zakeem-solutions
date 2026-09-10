@@ -50,7 +50,7 @@ const ICONS_CONFIG: FloatingIconConfig[] = [
     label: "Enterprise Security",
     top: "29%",
     left: "6%",
-    colorClass: "text-white border-white/25 bg-white/10 shadow-[0_0_25px_-5px_rgba(255,255,255,0.25)]",
+    colorClass: "text-slate-700 dark:text-white border-slate-300 dark:border-white/25 bg-slate-900/5 dark:bg-white/10 shadow-[0_0_25px_-5px_rgba(0,0,0,0.08)] dark:shadow-[0_0_25px_-5px_rgba(255,255,255,0.25)]",
     initialDelay: 3.4,
     duration: 7.0
   },
@@ -113,7 +113,7 @@ const ICONS_CONFIG: FloatingIconConfig[] = [
     label: "Full-Stack Platforms",
     top: "24%",
     left: "26%",
-    colorClass: "text-white border-white/25 bg-white/10 shadow-[0_0_25px_-5px_rgba(255,255,255,0.25)]",
+    colorClass: "text-slate-700 dark:text-white border-slate-300 dark:border-white/25 bg-slate-900/5 dark:bg-white/10 shadow-[0_0_25px_-5px_rgba(0,0,0,0.08)] dark:shadow-[0_0_25px_-5px_rgba(255,255,255,0.25)]",
     initialDelay: 4.8,
     duration: 7.7,
     hiddenOnMobile: true
@@ -189,7 +189,7 @@ const ICONS_CONFIG: FloatingIconConfig[] = [
     label: "Industrial Operations",
     top: "65%",
     right: "16%",
-    colorClass: "text-white border-white/25 bg-white/10 shadow-[0_0_25px_-5px_rgba(255,255,255,0.25)]",
+    colorClass: "text-slate-700 dark:text-white border-slate-300 dark:border-white/25 bg-slate-900/5 dark:bg-white/10 shadow-[0_0_25px_-5px_rgba(0,0,0,0.08)] dark:shadow-[0_0_25px_-5px_rgba(255,255,255,0.25)]",
     initialDelay: 1.0,
     duration: 7.2,
     hiddenOnMobile: true
@@ -232,7 +232,7 @@ const ICONS_CONFIG: FloatingIconConfig[] = [
     label: "Digital Transformation",
     top: "69%",
     right: "28%",
-    colorClass: "text-white border-white/25 bg-white/10 shadow-[0_0_25px_-5px_rgba(255,255,255,0.25)]",
+    colorClass: "text-slate-700 dark:text-white border-slate-300 dark:border-white/25 bg-slate-900/5 dark:bg-white/10 shadow-[0_0_25px_-5px_rgba(0,0,0,0.08)] dark:shadow-[0_0_25px_-5px_rgba(255,255,255,0.25)]",
     initialDelay: 3.3,
     duration: 7.3,
     hiddenOnMobile: true

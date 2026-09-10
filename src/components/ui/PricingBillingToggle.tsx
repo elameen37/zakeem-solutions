@@ -19,7 +19,7 @@ export const PricingBillingToggle: React.FC<PricingBillingToggleProps> = ({
       <div 
         role="radiogroup" 
         aria-label="Billing cycle frequency"
-        className="relative inline-flex items-center p-1.5 rounded-2xl bg-[#081c38] border border-white/15 shadow-xl backdrop-blur-xl"
+        className="relative inline-flex items-center p-1.5 rounded-2xl bg-slate-200/80 border border-slate-300 dark:bg-[#081c38] dark:border-white/15 shadow-lg backdrop-blur-xl"
       >
         {/* Monthly Option */}
         <button
@@ -31,7 +31,7 @@ export const PricingBillingToggle: React.FC<PricingBillingToggleProps> = ({
             "relative z-10 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#e57804]",
             period === "monthly"
               ? "text-black font-bold"
-              : "text-slate-300 hover:text-white"
+              : "text-slate-600 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
           )}
         >
           <span>Monthly Billing</span>
@@ -47,7 +47,7 @@ export const PricingBillingToggle: React.FC<PricingBillingToggleProps> = ({
             "relative z-10 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#e57804]",
             period === "annual"
               ? "text-black font-bold"
-              : "text-slate-300 hover:text-white"
+              : "text-slate-600 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
           )}
         >
           <span>Annual Billing</span>
@@ -74,8 +74,8 @@ export const PricingBillingToggle: React.FC<PricingBillingToggleProps> = ({
         />
       </div>
 
-      <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
+      <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
         <span>Annual commitments include 20% discount & priority provisioning</span>
       </div>
     </div>

@@ -49,7 +49,7 @@ export const InsightsPage: React.FC = () => {
           />
           <div className="space-y-6 mt-12">
             {articles.map((art, idx) => (
-              <div key={idx} className="p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/10 hover:border-[#e57804]/50 transition-all">
+              <div key={idx} data-surface="dark" className="p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/10 hover:border-[#e57804]/50 transition-all">
                 <div className="flex items-center gap-3 mb-3">
                   <Badge variant="blue">{art.category}</Badge>
                   <span className="text-xs font-mono text-slate-400">{art.date} • {art.readTime}</span>

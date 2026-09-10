@@ -20,17 +20,17 @@ export const LoginPage: React.FC = () => {
             <div className="flex justify-center mb-4">
               <Badge variant="blue">Ecosystem Access Gate</Badge>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white tracking-tight mb-4">
               Zakeem Identity & Product Gateway
             </h1>
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
               Select your deployed application or authenticated client environment to proceed.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {/* Zakeem Realty ERP Gateway */}
-            <div className="p-6 md:p-8 rounded-2xl bg-gradient-to-b from-[#0a2347] to-[#040e1d] border border-[#e57804]/50 shadow-xl flex flex-col justify-between">
+            <div data-surface="dark" className="p-6 md:p-8 rounded-2xl bg-gradient-to-b from-[#0a2347] to-[#040e1d] border border-[#e57804]/50 shadow-xl flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-[#e57804]/20 border border-[#e57804]/30 flex items-center justify-center mb-4 text-[#e57804]">
                   <Building2 className="w-6 h-6" />
@@ -56,7 +56,7 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {/* Enterprise Support & Admin Portal */}
-            <div className="p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/10 flex flex-col justify-between">
+            <div data-surface="dark" className="p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/10 flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 text-[#e57804]">
                   <ShieldCheck className="w-6 h-6" />
@@ -73,7 +73,7 @@ export const LoginPage: React.FC = () => {
                 size="md"
                 href="/support"
                 rightIcon={<ArrowRight className="w-4 h-4" />}
-                className="w-full"
+                className="w-full border-white/20 text-white hover:bg-white/10 hover:text-white"
               >
                 Access Support Desk
               </Button>

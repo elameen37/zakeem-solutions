@@ -57,6 +57,7 @@ export const HomeValueComparison: React.FC = () => {
   return (
     <section 
       id="value-comparison" 
+      data-surface="dark"
       className="py-20 lg:py-28 bg-[#040e1d] border-t border-white/10 relative overflow-hidden"
       aria-label="Enterprise Value Comparison: Why Zakeem"
     >
@@ -224,7 +225,7 @@ export const HomeValueComparison: React.FC = () => {
                 variant="outline"
                 size="md"
                 href="/pricing"
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-none text-white border-white/20 hover:border-[#e57804] hover:bg-white/10"
               >
                 View Detailed Pricing
               </Button>

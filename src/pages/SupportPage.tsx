@@ -22,7 +22,7 @@ export const SupportPage: React.FC = () => {
             description="Our round-the-clock site reliability engineering and product support team guarantees rapid incident triage."
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-            <div className="p-6 rounded-2xl bg-[#081c38] border border-white/10">
+            <div data-surface="dark" className="p-6 rounded-2xl bg-[#081c38] border border-white/10">
               <LifeBuoy className="w-8 h-8 text-[#e57804] mb-3" />
               <h3 className="text-lg font-bold text-white mb-2">Zakeem Realty ERP Support</h3>
               <p className="text-xs text-slate-300 leading-relaxed mb-4">
@@ -32,7 +32,7 @@ export const SupportPage: React.FC = () => {
                 support@zakeemsolutions.com
               </a>
             </div>
-            <div className="p-6 rounded-2xl bg-[#081c38] border border-white/10">
+            <div data-surface="dark" className="p-6 rounded-2xl bg-[#081c38] border border-white/10">
               <MessageSquare className="w-8 h-8 text-[#e57804] mb-3" />
               <h3 className="text-lg font-bold text-white mb-2">Emergency Incident Escalation</h3>
               <p className="text-xs text-slate-300 leading-relaxed mb-4">

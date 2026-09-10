@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-navy-950: #040e1d;
   --color-navy-900: #06152b;
@@ -19,14 +21,67 @@
 }
 
 @layer base {
+  :root {
+    /* Light Page Surface Tokens */
+    --bg-base: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-elevated: #f1f5f9;
+    --bg-subtle: #f1f5f9;
+    --text-primary: #09172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --border-base: rgba(15, 23, 42, 0.12);
+    --border-subtle: rgba(15, 23, 42, 0.06);
+    --card-bg: #ffffff;
+    --card-border: rgba(15, 23, 42, 0.08);
+    --dot-color: rgba(15, 23, 42, 0.08);
+
+    /* Dark Architectural Surface Tokens (Constant across both themes) */
+    --surface-dark: #081c38;
+    --surface-dark-base: #040e1d;
+    --surface-dark-elevated: #0a2040;
+    --surface-dark-foreground: #ffffff;
+    --surface-dark-secondary: #cbd5e1;
+    --surface-dark-muted: #94a3b8;
+    --surface-dark-border: rgba(255, 255, 255, 0.12);
+    --surface-dark-accent: #e57804;
+  }
+
+  .dark, [data-theme="dark"] {
+    /* Dark Page Surface Tokens */
+    --bg-base: #06152b;
+    --bg-surface: #081c38;
+    --bg-elevated: #0a2040;
+    --bg-subtle: #040e1d;
+    --text-primary: #ffffff;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --border-base: rgba(255, 255, 255, 0.1);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --card-bg: #081c38;
+    --card-border: rgba(255, 255, 255, 0.1);
+    --dot-color: rgba(255, 255, 255, 0.08);
+
+    /* Dark Architectural Surface Tokens */
+    --surface-dark: #081c38;
+    --surface-dark-base: #040e1d;
+    --surface-dark-elevated: #0a2040;
+    --surface-dark-foreground: #ffffff;
+    --surface-dark-secondary: #cbd5e1;
+    --surface-dark-muted: #94a3b8;
+    --surface-dark-border: rgba(255, 255, 255, 0.12);
+    --surface-dark-accent: #e57804;
+  }
+
   * {
     border-color: rgba(255, 255, 255, 0.08);
   }
 
   body {
-    background-color: #06152b;
-    color: #ffffff;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
     overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
@@ -34,11 +89,238 @@
 
 .bg-dot-pattern {
   background-size: 24px 24px;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
 }
 
 .glow-amber {
   box-shadow: 0 0 50px -10px rgba(229, 120, 4, 0.35);
+}
+
+/* ==========================================================================
+   SURFACE-AWARE ARCHITECTURAL SYSTEM
+   Ensures intentional dark navy cards/surfaces always retain crisp,
+   high-contrast light typography in BOTH light and dark themes.
+   ========================================================================== */
+
+/* ==========================================================================
+   SECTION HEADER SEMANTIC TYPOGRAPHY
+   ========================================================================== */
+.section-header-light h2,
+.section-header-light h2 > span:first-child {
+  color: #06152b !important;
+}
+.dark .section-header-light h2,
+.dark .section-header-light h2 > span:first-child {
+  color: #ffffff !important;
+}
+.section-header-light p {
+  color: #475569 !important;
+}
+.dark .section-header-light p {
+  color: #cbd5e1 !important;
+}
+
+.section-header-inverted h2,
+.section-header-inverted h2 > span:first-child {
+  color: #ffffff !important;
+}
+.section-header-inverted p {
+  color: #cbd5e1 !important;
+}
+
+/* Dark Architectural Surfaces: Headings */
+.surface-dark h1,
+.surface-dark h2,
+.surface-dark h3,
+.surface-dark h4,
+[data-surface="dark"] h1,
+[data-surface="dark"] h2,
+[data-surface="dark"] h3,
+[data-surface="dark"] h4,
+#the-zakeem-standard h2,
+#the-zakeem-standard h3,
+#the-zakeem-standard h4,
+#value-comparison h2,
+#value-comparison h3,
+#value-comparison h4,
+footer h3,
+footer h4 {
+  color: #ffffff;
+}
+
+/* Explicit text color retention on dark surfaces */
+.surface-dark .text-white,
+[data-surface="dark"] .text-white,
+.bg-\[\#081c38\] .text-white,
+.bg-\[\#0a2040\] .text-white,
+.bg-\[\#07172e\] .text-white,
+.bg-\[\#091f3e\] .text-white,
+.bg-\[\#091f3d\] .text-white,
+.bg-\[\#0a2347\] .text-white,
+.bg-\[\#081b37\] .text-white,
+.bg-\[\#06172f\] .text-white,
+.bg-\[\#030913\] .text-white,
+.bg-\[\#0b1e3b\] .text-white,
+.bg-\[\#051122\] .text-white,
+[class*="from-\[\#081c38\]"] .text-white,
+[class*="from-\[\#0a2347\]"] .text-white,
+[class*="from-\[\#0b1e3b\]"] .text-white,
+[class*="from-\[\#091f3d\]"] .text-white,
+[class*="from-\[\#06152b\]"] .text-white,
+#the-zakeem-standard .text-white,
+#value-comparison .text-white,
+footer .text-white {
+  color: #ffffff !important;
+}
+
+.surface-dark .text-slate-200,
+[data-surface="dark"] .text-slate-200,
+.bg-\[\#081c38\] .text-slate-200,
+.bg-\[\#0a2040\] .text-slate-200,
+.bg-\[\#07172e\] .text-slate-200,
+.bg-\[\#091f3e\] .text-slate-200,
+.bg-\[\#091f3d\] .text-slate-200,
+.bg-\[\#0a2347\] .text-slate-200,
+.bg-\[\#081b37\] .text-slate-200,
+.bg-\[\#06172f\] .text-slate-200,
+.bg-\[\#030913\] .text-slate-200,
+.bg-\[\#0b1e3b\] .text-slate-200,
+.bg-\[\#051122\] .text-slate-200,
+[class*="from-\[\#081c38\]"] .text-slate-200,
+[class*="from-\[\#0a2347\]"] .text-slate-200,
+[class*="from-\[\#0b1e3b\]"] .text-slate-200,
+[class*="from-\[\#091f3d\]"] .text-slate-200,
+[class*="from-\[\#06152b\]"] .text-slate-200,
+#the-zakeem-standard .text-slate-200,
+#value-comparison .text-slate-200,
+footer .text-slate-200 {
+  color: #cbd5e1 !important;
+}
+
+.surface-dark .text-slate-300,
+[data-surface="dark"] .text-slate-300,
+.bg-\[\#081c38\] .text-slate-300,
+.bg-\[\#0a2040\] .text-slate-300,
+.bg-\[\#07172e\] .text-slate-300,
+.bg-\[\#091f3e\] .text-slate-300,
+.bg-\[\#091f3d\] .text-slate-300,
+.bg-\[\#0a2347\] .text-slate-300,
+.bg-\[\#081b37\] .text-slate-300,
+.bg-\[\#06172f\] .text-slate-300,
+.bg-\[\#030913\] .text-slate-300,
+.bg-\[\#0b1e3b\] .text-slate-300,
+.bg-\[\#051122\] .text-slate-300,
+[class*="from-\[\#081c38\]"] .text-slate-300,
+[class*="from-\[\#0a2347\]"] .text-slate-300,
+[class*="from-\[\#0b1e3b\]"] .text-slate-300,
+[class*="from-\[\#091f3d\]"] .text-slate-300,
+[class*="from-\[\#06152b\]"] .text-slate-300,
+#the-zakeem-standard .text-slate-300,
+#value-comparison .text-slate-300,
+footer .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+
+.surface-dark .text-slate-400,
+[data-surface="dark"] .text-slate-400,
+.bg-\[\#081c38\] .text-slate-400,
+.bg-\[\#0a2040\] .text-slate-400,
+.bg-\[\#07172e\] .text-slate-400,
+.bg-\[\#091f3e\] .text-slate-400,
+.bg-\[\#091f3d\] .text-slate-400,
+.bg-\[\#0a2347\] .text-slate-400,
+.bg-\[\#081b37\] .text-slate-400,
+.bg-\[\#06172f\] .text-slate-400,
+.bg-\[\#030913\] .text-slate-400,
+.bg-\[\#0b1e3b\] .text-slate-400,
+.bg-\[\#051122\] .text-slate-400,
+[class*="from-\[\#081c38\]"] .text-slate-400,
+[class*="from-\[\#0a2347\]"] .text-slate-400,
+[class*="from-\[\#0b1e3b\]"] .text-slate-400,
+[class*="from-\[\#091f3d\]"] .text-slate-400,
+[class*="from-\[\#06152b\]"] .text-slate-400,
+#the-zakeem-standard .text-slate-400,
+#value-comparison .text-slate-400,
+footer .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Outline buttons inside dark surfaces must remain crisp white */
+.surface-dark a[class*="border-slate"],
+.surface-dark button[class*="border-slate"],
+[data-surface="dark"] a[class*="border-slate"],
+[data-surface="dark"] button[class*="border-slate"],
+.bg-\[\#081c38\] a[class*="border-slate"],
+.bg-\[\#081c38\] button[class*="border-slate"],
+[class*="from-\[\#081c38\]"] a[class*="border-slate"],
+[class*="from-\[\#081c38\]"] button[class*="border-slate"],
+#the-zakeem-standard a[class*="border-slate"],
+#the-zakeem-standard button[class*="border-slate"],
+#value-comparison a[class*="border-slate"],
+#value-comparison button[class*="border-slate"] {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Inset wells inside dark surfaces */
+.surface-dark .bg-black\/40,
+.surface-dark .bg-black\/50,
+.surface-dark .bg-black\/20,
+[data-surface="dark"] .bg-black\/40,
+[data-surface="dark"] .bg-black\/50,
+.bg-\[\#081c38\] .bg-black\/40,
+.bg-\[\#081c38\] .bg-black\/50,
+[class*="from-\[\#081c38\]"] .bg-black\/40,
+[class*="from-\[\#081c38\]"] .bg-black\/50,
+#the-zakeem-standard .bg-black\/40,
+#the-zakeem-standard .bg-black\/50,
+#the-zakeem-standard .bg-black\/60,
+#value-comparison .bg-black\/40,
+#value-comparison .bg-black\/20 {
+  background-color: rgba(0, 0, 0, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Console terminal blocks preserve authentic dark developer styling */
+pre,
+pre code,
+.font-mono.bg-black,
+.font-mono.bg-\[\#020b18\],
+.font-mono.bg-\[\#040e1d\],
+.font-mono.bg-\[\#030913\] {
+  background-color: #030913 !important;
+  color: #cbd5e1 !important;
+}
+
+pre .text-white,
+pre code .text-white {
+  color: #f8fafc !important;
+}
+
+/* ==========================================================================
+   LIGHT THEME REFINEMENTS
+   For elements that sit directly on light page surfaces.
+   ========================================================================== */
+
+html:not(.dark) {
+  /* Subtle borders for light page elements */
+  body > * {
+    border-color: rgba(15, 23, 42, 0.12);
+  }
+
+  /* Form inputs situated on light surfaces */
+  input:not([data-surface="dark"] input):not(.surface-dark input):not(.bg-\[\#081c38\] input):not(.bg-\[\#06152b\] input):not(.bg-\[\#040e1d\] input):not(footer input),
+  textarea:not([data-surface="dark"] textarea):not(.surface-dark textarea):not(.bg-\[\#081c38\] textarea):not(.bg-\[\#06152b\] textarea):not(footer textarea),
+  select:not([data-surface="dark"] select):not(.surface-dark select):not(.bg-\[\#081c38\] select):not(.bg-\[\#06152b\] select) {
+    background-color: #ffffff;
+    color: #09172a;
+    border-color: rgba(15, 23, 42, 0.15);
+  }
+
+  input:not([data-surface="dark"] input):not(.surface-dark input):not(.bg-\[\#081c38\] input):not(.bg-\[\#06152b\] input):not(.bg-\[\#040e1d\] input):not(footer input)::placeholder,
+  textarea:not([data-surface="dark"] textarea):not(.surface-dark textarea):not(.bg-\[\#081c38\] textarea):not(.bg-\[\#06152b\] textarea):not(footer textarea)::placeholder {
+    color: #64748b;
+  }
 }
 
 /* Reduced motion preference */

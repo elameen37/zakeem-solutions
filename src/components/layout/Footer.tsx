@@ -31,7 +31,7 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-[#040e1d] border-t border-white/10 text-slate-300 text-sm relative z-20 overflow-hidden">
+    <footer data-surface="dark" className="bg-[#040e1d] border-t border-white/10 text-slate-300 text-sm relative z-20 overflow-hidden">
       {/* Subtle top architectural line */}
       <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[#e57804]/50 to-transparent" />
 

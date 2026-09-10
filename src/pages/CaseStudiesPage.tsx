@@ -22,7 +22,7 @@ export const CaseStudiesPage: React.FC = () => {
             highlightedWord="Enterprise Proof."
             description="How Zakeem Solutions delivers tangible speed, financial reconciliation accuracy, and scale for institutional clients."
           />
-          <div className="p-8 md:p-12 rounded-3xl bg-[#081c38] border border-white/15 space-y-6 mt-12">
+          <div data-surface="dark" className="p-8 md:p-12 rounded-3xl bg-[#081c38] border border-white/15 space-y-6 mt-12">
             <Badge variant="neon">Flagship Case Study</Badge>
             <h3 className="text-2xl md:text-3xl font-bold text-white">
               Tier-1 Real Estate Development Conglomerate

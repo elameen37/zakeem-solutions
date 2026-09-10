@@ -18,7 +18,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#06152b] text-white selection:bg-[#e57804] selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] selection:bg-[#e57804] selection:text-white transition-colors duration-200">
       <Navbar />
       <main className="flex-1 pt-24 md:pt-28">{children}</main>
       <Footer />

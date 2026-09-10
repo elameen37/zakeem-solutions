@@ -31,15 +31,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantStyles = {
       primary:
-        "bg-[#e57804] hover:bg-[#cf6a02] text-white shadow-lg shadow-[#e57804]/25 hover:shadow-[#e57804]/40 border border-[#e57804] focus:ring-[#e57804]",
+        "bg-[#e57804] hover:bg-[#cf6a02] text-white shadow-lg shadow-[#e57804]/25 hover:shadow-[#e57804]/40 border border-[#e57804] focus:ring-[#e57804] btn-keep-white",
       secondary:
-        "bg-[#0b1e3b] hover:bg-[#10284d] text-white border border-white/10 hover:border-white/20 focus:ring-white",
+        "bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-200 dark:bg-[#0b1e3b] dark:hover:bg-[#10284d] dark:text-white dark:border-white/10 focus:ring-slate-400 dark:focus:ring-white",
       outline:
-        "bg-transparent hover:bg-white/10 text-white border border-white/20 hover:border-[#e57804]/60 focus:ring-[#e57804]",
+        "bg-transparent hover:bg-slate-100 text-slate-800 border-slate-300 hover:border-[#e57804] dark:hover:bg-white/10 dark:text-white dark:border-white/20 dark:hover:border-[#e57804]/60 focus:ring-[#e57804]",
       ghost:
-        "bg-transparent hover:bg-white/5 text-slate-300 hover:text-white border-transparent focus:ring-slate-400",
+        "bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-950 dark:hover:bg-white/5 dark:text-slate-300 dark:hover:text-white border-transparent focus:ring-slate-400",
       neon:
-        "bg-[#e57804] hover:bg-[#cf6a02] text-white font-semibold shadow-lg shadow-[#e57804]/20 hover:shadow-[#e57804]/40 border border-[#e57804] focus:ring-[#e57804]"
+        "bg-[#e57804] hover:bg-[#cf6a02] text-white font-semibold shadow-lg shadow-[#e57804]/20 hover:shadow-[#e57804]/40 border border-[#e57804] focus:ring-[#e57804] btn-keep-white",
     };
 
     const sizeStyles = {

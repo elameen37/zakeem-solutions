@@ -60,7 +60,7 @@ export const PricingPage: React.FC = () => {
                 className={cn(
                   "px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2",
                   activeTab === "products"
-                    ? "bg-[#e57804] text-black shadow-md shadow-[#e57804]/20"
+                    ? "bg-[#e57804] text-slate-950 shadow-md shadow-[#e57804]/20"
                     : "text-slate-300 hover:text-white"
                 )}
                 aria-pressed={activeTab === "products"}
@@ -74,7 +74,7 @@ export const PricingPage: React.FC = () => {
                 className={cn(
                   "px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2",
                   activeTab === "services"
-                    ? "bg-[#e57804] text-black shadow-md shadow-[#e57804]/20"
+                    ? "bg-[#e57804] text-slate-950 shadow-md shadow-[#e57804]/20"
                     : "text-slate-300 hover:text-white"
                 )}
                 aria-pressed={activeTab === "services"}

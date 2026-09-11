@@ -10,7 +10,7 @@ export const SolutionsIndexPage: React.FC = () => {
     <>
       <SEO
         title="Industry Solutions — Zakeem Solutions"
-        description="Explore how Zakeem Solutions transforms 10 critical industries through bespoke software engineering, enterprise ERP, and AI-driven automation."
+        description="Explore how Zakeem Solutions transforms 11 critical industries through bespoke software engineering, enterprise ERP, and AI-driven automation."
         canonical="https://www.zakeemsolutions.com/solutions"
       />
 
@@ -19,7 +19,7 @@ export const SolutionsIndexPage: React.FC = () => {
           <SectionHeader
             badge="Industry Transformation"
             title="Strategic Technology Tailored for"
-            highlightedWord="10 Core Sectors."
+            highlightedWord="11 Core Sectors."
             description="From sovereign government registry digitization and banking settlement backbones to real estate lifecycle management, explore our domain solutions."
           />
 

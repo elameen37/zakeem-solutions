@@ -27,7 +27,7 @@ export const SolutionDetailPage: React.FC = () => {
         <div className="container mx-auto px-4 md:px-6 max-w-5xl">
           <Link
             to="/solutions"
-            className="inline-flex items-center gap-2 text-xs font-mono text-slate-400 hover:text-white mb-8 transition-colors"
+            className="inline-flex items-center gap-2 text-xs font-mono text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white mb-8 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to All Solutions</span>
@@ -62,11 +62,11 @@ export const SolutionDetailPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-gradient-to-r from-[#e57804]/15 to-[#e57804]/10 border border-white/10 mb-10">
-            <h4 className="text-xs font-mono uppercase tracking-wider text-[#e57804] mb-2">
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-[#e57804]/15 to-[#e57804]/10 border border-amber-500/20 dark:border-white/10 mb-10">
+            <h4 className="text-xs font-mono uppercase tracking-wider text-[#e57804] font-semibold mb-2">
               Transformational Impact
             </h4>
-            <p className="text-sm md:text-base text-slate-200">
+            <p className="text-sm md:text-base text-slate-800 dark:text-slate-200 leading-relaxed">
               {solution.transformationImpact}
             </p>
           </div>

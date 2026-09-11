@@ -27,7 +27,7 @@ export const ServiceDetailPage: React.FC = () => {
         <div className="container mx-auto px-4 md:px-6 max-w-5xl">
           <Link
             to="/services"
-            className="inline-flex items-center gap-2 text-xs font-mono text-slate-400 hover:text-white mb-8 transition-colors"
+            className="inline-flex items-center gap-2 text-xs font-mono text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white mb-8 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to All Services</span>

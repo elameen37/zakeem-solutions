@@ -44,6 +44,23 @@ export const SOLUTIONS: SolutionItem[] = [
     transformationImpact: "Eliminates administrative bottlenecks, reduces leakages, and restores citizen trust through frictionless digital service delivery."
   },
   {
+    id: "e-legal",
+    slug: "e-legal",
+    title: "e-Legal & Justice Systems",
+    tagline: "Practice Management, Case Intelligence & Court Digitization",
+    description: "Enterprise legal operations and judicial infrastructure built for private law firms, corporate legal departments, and government ministries of justice. Features digital matter management, court e-filing, cryptographic evidence vaults, and AI-powered precedent research.",
+    iconName: "Scale",
+    stats: { label: "Filing & Search Speed", value: "4x Faster" },
+    capabilities: [
+      "Matter & Case Dossier Lifecycle Management for Law Firms & Prosecutors",
+      "Automated Court e-Filing, Cause Lists & Judicial Registry Interoperability",
+      "Cryptographic Evidence Chain-of-Custody & Tamper-Proof Document Vaults",
+      "AI-Powered Statutory Research, Precedent Search & Contract Intelligence",
+      "Trust Accounting, Billable Time Tracking & Court Fee Reconciliation"
+    ],
+    transformationImpact: "Eliminates physical case file loss, accelerates judicial turnaround, and bridges private law firms and public justice ministries with transparent, verifiable digital workflows."
+  },
+  {
     id: "real-estate",
     slug: "real-estate",
     title: "Real Estate & Infrastructure",

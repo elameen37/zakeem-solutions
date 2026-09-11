@@ -54,7 +54,7 @@ export const BackToTop: React.FC = () => {
         onClick={scrollToTop}
         aria-label="Back to top of page"
         title="Back to top"
-        className="group relative flex items-center justify-center w-12 h-12 rounded-full bg-[#06152b]/90 hover:bg-[#091f3d] backdrop-blur-xl border border-white/15 hover:border-[#e57804]/60 shadow-xl shadow-black/50 hover:shadow-[#e57804]/25 transition-all duration-300 active:scale-90 hover:-translate-y-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#e57804] focus:ring-offset-2 focus:ring-offset-[#06152b]"
+        className="group relative flex items-center justify-center w-12 h-12 rounded-full bg-[#06152b]/90 hover:bg-[#091f3d] backdrop-blur-xl border border-white/15 hover:border-[#e57804]/60 shadow-xl shadow-black/50 hover:shadow-[#e57804]/25 transition-all duration-300 active:scale-90 hover:-translate-y-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#e57804] focus:ring-offset-2 focus:ring-offset-[var(--bg-base)]"
       >
         {/* Circular Progress Ring */}
         <svg

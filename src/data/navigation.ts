@@ -31,6 +31,12 @@ export const MAIN_NAVIGATION: NavItem[] = [
         icon: "Landmark"
       },
       {
+        label: "e-Legal & Justice Systems",
+        href: "/solutions/e-legal",
+        description: "Case management, court e-filing, and practice automation for law firms & ministries.",
+        icon: "Scale"
+      },
+      {
         label: "Real Estate & Infrastructure",
         href: "/solutions/real-estate",
         description: "Property sales, land parcel subdivision, and asset automation.",
@@ -164,6 +170,7 @@ export const FOOTER_NAVIGATION = {
   solutions: [
     { label: "Enterprise Systems", href: "/solutions/enterprise" },
     { label: "Public Sector & Government", href: "/solutions/government" },
+    { label: "e-Legal & Justice Systems", href: "/solutions/e-legal" },
     { label: "Real Estate & Land", href: "/solutions/real-estate" },
     { label: "Banking & Financial Services", href: "/solutions/finance" },
     { label: "Healthcare & Life Sciences", href: "/solutions/healthcare" },

@@ -302,13 +302,13 @@ export const HomePage: React.FC = () => {
             <SectionHeader
               badge="Industry Solutions"
               title="Tailored Transformation Across"
-              highlightedWord="10 Core Sectors."
+              highlightedWord="11 Core Sectors."
               description="We combine deep industry operational knowledge with modern software engineering to resolve stubborn regulatory, logistics, and data bottlenecks."
               className="mb-0"
               inverted={true}
             />
             <Button variant="outline" size="md" href="/solutions" rightIcon={<ArrowRight className="w-4 h-4" />} className="text-white border-white/20 hover:border-[#e57804] hover:bg-white/10">
-              View All 10 Solutions
+              View All 11 Solutions
             </Button>
           </div>
 

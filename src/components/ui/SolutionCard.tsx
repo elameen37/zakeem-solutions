@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { 
   Building, Landmark, Home, Coins, Activity, GraduationCap, Zap, Sprout, Factory, Truck, 
-  ArrowRight 
+  Scale, ArrowRight 
 } from "lucide-react";
 import { SolutionItem } from "@/data/solutions";
 
@@ -24,6 +24,7 @@ export const SolutionCard: React.FC<SolutionCardProps> = ({ solution }) => {
       case "Sprout": return <Sprout {...props} />;
       case "Factory": return <Factory {...props} />;
       case "Truck": return <Truck {...props} />;
+      case "Scale": return <Scale {...props} />;
       default: return <Building {...props} />;
     }
   };

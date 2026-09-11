@@ -35,12 +35,19 @@ export const SOCIAL_LINKS: SocialLink[] = [
     url: "https://tiktok.com/@zakeem_solutions",
     handle: "zakeem_solutions",
     icon: "TikTok"
+  },
+  {
+    platform: "YouTube",
+    url: "https://youtube.com/@zakeemsolutions",
+    handle: "zakeemsolutions",
+    icon: "Youtube"
   }
 ];
 
 export const COMPANY_CONTACT = {
-  phone: "+234 (0) 800 ZAKEEM",
-  email: "contact@zakeemsolutions.com",
+  phone: "+234 806 3291 667",
+  mobile: "+234 806 3291 667",
+  email: "info@zakeemsolutions.com",
   salesEmail: "sales@zakeemsolutions.com",
   supportEmail: "support@zakeemsolutions.com",
   address: "Abuja / Lagos, Nigeria",

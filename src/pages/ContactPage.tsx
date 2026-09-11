@@ -1,10 +1,37 @@
 import React, { useState } from "react";
-import { Mail, Phone, MapPin, Clock, CheckCircle2, ArrowRight } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, CheckCircle2, ArrowRight, Linkedin, Facebook, Instagram, Youtube, Globe } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { COMPANY_CONTACT } from "@/data/social";
+import { COMPANY_CONTACT, SOCIAL_LINKS } from "@/data/social";
+import { cn } from "@/lib/utils";
+
+const XIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={cn("fill-current", className)} aria-hidden="true">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
+const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={cn("fill-current", className)} aria-hidden="true">
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .58.04.86.12V9.33a6.33 6.33 0 0 0-.86-.06 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.71a8.18 8.18 0 0 0 4.78 1.52v-3.4a4.85 4.85 0 0 1-1-.14z" />
+  </svg>
+);
+
+const getSocialIcon = (iconName: string) => {
+  const props = { className: "w-4 h-4 text-slate-300 group-hover:text-[#e57804] transition-colors" };
+  switch (iconName) {
+    case "Linkedin": return <Linkedin {...props} />;
+    case "X": return <XIcon {...props} />;
+    case "Instagram": return <Instagram {...props} />;
+    case "Facebook": return <Facebook {...props} />;
+    case "TikTok": return <TikTokIcon {...props} />;
+    case "YouTube": return <Youtube {...props} />;
+    case "Youtube": return <Youtube {...props} />;
+    default: return <Globe {...props} />;
+  }
+};
 
 export const ContactPage: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -44,7 +71,7 @@ export const ContactPage: React.FC = () => {
                   <Mail className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
                   <div>
                     <div className="font-semibold text-white">General & Corporate</div>
-                    <a href={`mailto:${COMPANY_CONTACT.email}`} className="text-slate-400 hover:text-white">
+                    <a href={`mailto:${COMPANY_CONTACT.email}`} className="text-slate-400 hover:text-white transition-colors">
                       {COMPANY_CONTACT.email}
                     </a>
                   </div>
@@ -54,8 +81,18 @@ export const ContactPage: React.FC = () => {
                   <Mail className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
                   <div>
                     <div className="font-semibold text-white">Enterprise Sales</div>
-                    <a href={`mailto:${COMPANY_CONTACT.salesEmail}`} className="text-slate-400 hover:text-white">
+                    <a href={`mailto:${COMPANY_CONTACT.salesEmail}`} className="text-slate-400 hover:text-white transition-colors">
                       {COMPANY_CONTACT.salesEmail}
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Phone className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-white">Direct Line / Mobile</div>
+                    <a href={`tel:${COMPANY_CONTACT.mobile.replace(/\s+/g, '')}`} className="text-slate-400 hover:text-white transition-colors font-mono">
+                      {COMPANY_CONTACT.mobile}
                     </a>
                   </div>
                 </div>
@@ -73,6 +110,28 @@ export const ContactPage: React.FC = () => {
                   <div>
                     <div className="font-semibold text-white">Operating Hours</div>
                     <div className="text-slate-400">{COMPANY_CONTACT.hours}</div>
+                  </div>
+                </div>
+
+                {/* Official Social Channels */}
+                <div className="pt-4 border-t border-white/10">
+                  <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3">
+                    Official Social Channels
+                  </div>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    {SOCIAL_LINKS.map((s) => (
+                      <a
+                        key={s.platform}
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Connect with Zakeem Solutions on ${s.platform} (@${s.handle})`}
+                        title={`${s.platform}: @${s.handle}`}
+                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:text-[#e57804] hover:bg-[#e57804]/20 hover:border-[#e57804]/40 transition-all focus:outline-none focus:ring-2 focus:ring-[#e57804]"
+                      >
+                        {getSocialIcon(s.icon)}
+                      </a>
+                    ))}
                   </div>
                 </div>
               </div>

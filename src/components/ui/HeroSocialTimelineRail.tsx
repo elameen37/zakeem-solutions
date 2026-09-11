@@ -1,5 +1,5 @@
 import React from "react";
-import { Linkedin, Facebook, Instagram } from "lucide-react";
+import { Linkedin, Facebook, Instagram, Youtube } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SocialNode {
@@ -65,6 +65,13 @@ const HERO_SOCIAL_ACCOUNTS: SocialNode[] = [
     url: "https://tiktok.com/@zakeem_solutions",
     icon: TikTokIcon,
     ariaLabel: "Follow Zakeem Solutions on TikTok (zakeem_solutions)",
+  },
+  {
+    platform: "YouTube",
+    handle: "zakeemsolutions",
+    url: "https://youtube.com/@zakeemsolutions",
+    icon: Youtube,
+    ariaLabel: "Subscribe to Zakeem Solutions on YouTube (zakeemsolutions)",
   },
 ];
 

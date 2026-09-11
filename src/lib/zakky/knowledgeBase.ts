@@ -73,7 +73,7 @@ export const ZAKKY_KNOWLEDGE_BASE: KnowledgeFact[] = [
     summary:
       "Zakeem Solutions operates corporate headquarters in Lagos and an executive sovereign systems facility in Abuja, Nigeria.",
     details:
-      "Locations:\n- Lagos Corporate Headquarters:\n  Zakeem Innovation Tower, Level 14, Victoria Island, Lagos, Nigeria.\n\n- Abuja Public Sector & Sovereign Systems Lab:\n  Zakeem Federal Pavilion, Central Business District, Abuja, FCT, Nigeria.\n\nPhone: +234 (0) 1 888 9253\nEmail: contact@zakeemsolutions.com / enterprise@zakeemsolutions.com",
+      "Locations:\n- Lagos Corporate Headquarters:\n  Zakeem Innovation Tower, Level 14, Victoria Island, Lagos, Nigeria.\n\n- Abuja Public Sector & Sovereign Systems Lab:\n  Zakeem Federal Pavilion, Central Business District, Abuja, FCT, Nigeria.\n\nPhone: +234 806 3291 667\nEmail: info@zakeemsolutions.com / enterprise@zakeemsolutions.com",
     actions: [
       { label: "View Office Details & Contact", href: "/contact" },
       { label: "Book a Physical Consultation", href: "/contact" },

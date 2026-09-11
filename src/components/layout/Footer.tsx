@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { 
-  ArrowRight, Check, Linkedin, Facebook, Instagram, Shield, Globe, Terminal
+  ArrowRight, Check, Linkedin, Facebook, Instagram, Youtube, Shield, Globe, Terminal
 } from "lucide-react";
 import { FOOTER_NAVIGATION } from "@/data/navigation";
 import { SOCIAL_LINKS, COMPANY_CONTACT } from "@/data/social";
@@ -40,6 +40,8 @@ export const Footer: React.FC = () => {
       case "Instagram": return <Instagram {...props} />;
       case "Facebook": return <Facebook {...props} />;
       case "TikTok": return <TikTokIcon {...props} />;
+      case "YouTube": return <Youtube {...props} />;
+      case "Youtube": return <Youtube {...props} />;
       case "Twitter": return <XIcon {...props} />;
       default: return <Globe {...props} />;
     }

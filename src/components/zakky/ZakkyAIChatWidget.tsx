@@ -92,7 +92,7 @@ export const ZakkyAIChatWidget: React.FC = () => {
         id: `assistant-error-${Date.now()}`,
         role: "assistant",
         content:
-          "I encountered an error processing your query. Please contact our enterprise team directly at contact@zakeemsolutions.com or try again in a moment.",
+          "I encountered an error processing your query. Please contact our enterprise team directly at info@zakeemsolutions.com or try again in a moment.",
         timestamp: new Date(),
         actions: [{ label: "Contact Sales", href: "/contact" }],
       };

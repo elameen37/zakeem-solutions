@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { 
   Briefcase, Search, MapPin, Clock, ArrowRight, CheckCircle2, 
   Shield, Cpu, Code2, Globe, HeartPulse, GraduationCap, 
@@ -15,12 +16,51 @@ import {
 import { cn } from "@/lib/utils";
 
 export const CareersPage: React.FC = () => {
+  const { slug } = useParams<{ slug?: string }>();
+  const navigate = useNavigate();
+
   const [selectedDept, setSelectedDept] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [activeJobModal, setActiveJobModal] = useState<JobPosting | null>(null);
   const [isTalentModalOpen, setIsTalentModalOpen] = useState<boolean>(false);
   const [applicationSubmitted, setApplicationSubmitted] = useState<boolean>(false);
+
+  // Synchronize route slug with active job modal
+  useEffect(() => {
+    if (slug) {
+      const found = JOB_POSTINGS.find((j) => j.slug === slug);
+      if (found) {
+        setActiveJobModal(found);
+      } else {
+        setActiveJobModal(null);
+      }
+    } else {
+      setActiveJobModal(null);
+    }
+  }, [slug]);
+
+  // Gracefully close modal and restore /careers route if on deep-link
+  const handleCloseJobModal = () => {
+    setActiveJobModal(null);
+    setApplicationSubmitted(false);
+    if (slug) {
+      navigate("/careers", { replace: true });
+    }
+  };
+
+  // Keyboard Escape listener for modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && activeJobModal) {
+        handleCloseJobModal();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeJobModal, slug]);
+
+  const isInvalidSlug = Boolean(slug && !JOB_POSTINGS.some((j) => j.slug === slug));
 
   // Filter jobs
   const filteredJobs = useMemo(() => {
@@ -63,9 +103,9 @@ export const CareersPage: React.FC = () => {
   return (
     <>
       <SEO
-        title="Careers & Engineering Fellowship — Zakeem Solutions"
-        description="Join an elite engineering culture building mission-critical software systems, sovereign cloud platforms, and enterprise AI automation across Africa and globally."
-        canonical="https://www.zakeemsolutions.com/careers"
+        title={activeJobModal ? `${activeJobModal.title} — Careers — Zakeem Solutions` : "Careers & Engineering Fellowship — Zakeem Solutions"}
+        description={activeJobModal ? activeJobModal.summary : "Join an elite engineering culture building mission-critical software systems, sovereign cloud platforms, and enterprise AI automation across Africa and globally."}
+        canonical={activeJobModal ? `https://www.zakeemsolutions.com/careers/${activeJobModal.slug}` : "https://www.zakeemsolutions.com/careers"}
       />
 
       {/* 1. CAREERS HERO */}
@@ -171,6 +211,19 @@ export const CareersPage: React.FC = () => {
               <span>Join Speculative Talent Network</span>
             </button>
           </div>
+
+          {/* Invalid Role Slug Notice */}
+          {isInvalidSlug && (
+            <div data-surface="dark" className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 mb-8 flex items-start gap-3.5">
+              <AlertCircle className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-semibold text-white mb-0.5">Position Not Found</p>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  The requested career opening <code className="text-amber-300 font-mono">"{slug}"</code> is no longer active or could not be found. Please review our current open positions below.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Department Filters & Search Controls */}
           <div data-surface="dark" className="p-4 rounded-2xl bg-[#081c38] border border-white/10 mb-8 space-y-4">
@@ -299,7 +352,10 @@ export const CareersPage: React.FC = () => {
                     <Button
                       variant="primary"
                       size="md"
-                      onClick={() => setActiveJobModal(job)}
+                      onClick={() => {
+                        setActiveJobModal(job);
+                        navigate(`/careers/${job.slug}`);
+                      }}
                       rightIcon={<ArrowRight className="w-4 h-4" />}
                       className="w-full sm:w-auto"
                     >
@@ -384,6 +440,11 @@ export const CareersPage: React.FC = () => {
           role="dialog"
           aria-modal="true"
           aria-labelledby="job-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              handleCloseJobModal();
+            }
+          }}
         >
           <div
             data-surface="dark"
@@ -391,11 +452,8 @@ export const CareersPage: React.FC = () => {
           >
             {/* Close Button */}
             <button
-              onClick={() => {
-                setActiveJobModal(null);
-                setApplicationSubmitted(false);
-              }}
-              className="absolute top-6 right-6 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+              onClick={handleCloseJobModal}
+              className="absolute top-6 right-6 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
               aria-label="Close role details modal"
             >
               <X className="w-5 h-5" />

@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { COMPANY_CONTACT } from "@/data/social";
 
 interface SEOProps {
   title?: string;
@@ -64,7 +65,7 @@ export const SEO: React.FC<SEOProps> = ({
           description: "Enterprise technology, software engineering, AI, and digital transformation company.",
           contactPoint: {
             "@type": "ContactPoint",
-            telephone: "+2348000000000",
+            telephone: COMPANY_CONTACT.phone,
             contactType: "sales",
             availableLanguage: ["English"]
           }

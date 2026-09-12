@@ -48,9 +48,13 @@ export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const wasOpenRef = useRef(false);
 
   // Close menus on route change
   useEffect(() => {
+    wasOpenRef.current = false;
     setIsOpen(false);
     setActiveDropdown(null);
   }, [location.pathname]);
@@ -75,22 +79,69 @@ export const Navbar: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle body scroll lock & Escape key when mobile menu is open
+  // Handle body scroll lock, Escape key, focus trapping & restoration when mobile menu is open
   useEffect(() => {
     if (isOpen) {
+      wasOpenRef.current = true;
       document.body.style.overflow = "hidden";
+
+      // Focus first focusable element inside the drawer after opening
+      const focusTimer = setTimeout(() => {
+        if (mobileMenuRef.current) {
+          const focusables = Array.from(
+            mobileMenuRef.current.querySelectorAll<HTMLElement>(
+              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            )
+          ).filter((el) => !el.hasAttribute("disabled") && el.offsetParent !== null);
+          focusables[0]?.focus();
+        }
+      }, 50);
+
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === "Escape") {
+          e.preventDefault();
           setIsOpen(false);
+          menuTriggerRef.current?.focus();
+        } else if (e.key === "Tab" && mobileMenuRef.current) {
+          const focusables = Array.from(
+            mobileMenuRef.current.querySelectorAll<HTMLElement>(
+              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            )
+          ).filter((el) => !el.hasAttribute("disabled") && el.offsetParent !== null);
+
+          if (focusables.length === 0) {
+            e.preventDefault();
+            return;
+          }
+
+          const firstEl = focusables[0];
+          const lastEl = focusables[focusables.length - 1];
+
+          if (e.shiftKey) {
+            if (document.activeElement === firstEl || !mobileMenuRef.current.contains(document.activeElement)) {
+              e.preventDefault();
+              lastEl.focus();
+            }
+          } else {
+            if (document.activeElement === lastEl || !mobileMenuRef.current.contains(document.activeElement)) {
+              e.preventDefault();
+              firstEl.focus();
+            }
+          }
         }
       };
+
       window.addEventListener("keydown", handleKeyDown);
       return () => {
+        clearTimeout(focusTimer);
         document.body.style.overflow = "";
         window.removeEventListener("keydown", handleKeyDown);
       };
     } else {
       document.body.style.overflow = "";
+      if (wasOpenRef.current) {
+        menuTriggerRef.current?.focus();
+      }
     }
   }, [isOpen]);
 
@@ -328,7 +379,7 @@ export const Navbar: React.FC = () => {
               type="button"
               onClick={openGlobalSearch}
               className={cn(
-                "p-2 rounded-lg transition-colors",
+                "min-w-[44px] min-h-[44px] p-2.5 flex items-center justify-center rounded-lg transition-colors",
                 isDark
                   ? "text-slate-300 hover:text-white hover:bg-white/10"
                   : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
@@ -339,13 +390,14 @@ export const Navbar: React.FC = () => {
             </button>
             <ThemeToggle />
             <Button
+              ref={menuTriggerRef}
               variant="ghost"
               size="sm"
               onClick={() => setIsOpen(!isOpen)}
               aria-label={isOpen ? "Close menu" : "Open menu"}
               aria-expanded={isOpen}
               aria-controls="mobile-navigation"
-              className={cn("p-2", isDark ? "text-white hover:bg-white/10" : "text-slate-900 hover:bg-slate-100")}
+              className={cn("min-w-[44px] min-h-[44px] p-2.5 flex items-center justify-center", isDark ? "text-white hover:bg-white/10" : "text-slate-900 hover:bg-slate-100")}
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </Button>
@@ -355,6 +407,7 @@ export const Navbar: React.FC = () => {
         {/* Mobile Navigation Drawer */}
         {isOpen && (
           <div
+            ref={mobileMenuRef}
             id="mobile-navigation"
             role="dialog"
             aria-modal="true"
@@ -383,9 +436,6 @@ export const Navbar: React.FC = () => {
                 ⌘K
               </kbd>
             </button>
-
-            {/* Mobile Theme Toggle Bar */}
-            <ThemeToggle variant="mobile" />
 
             <div className="space-y-4">
               {MAIN_NAVIGATION.map((item) => (
@@ -444,7 +494,7 @@ export const Navbar: React.FC = () => {
                     rel="noopener noreferrer"
                     aria-label={`Follow Zakeem Solutions on ${s.platform} (@${s.handle})`}
                     title={`${s.platform}: @${s.handle}`}
-                    className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:text-[#e57804] hover:bg-[#e57804]/20 hover:border-[#e57804]/40 transition-all focus:outline-none focus:ring-2 focus:ring-[#e57804]"
+                    className="w-11 h-11 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:text-[#e57804] hover:bg-[#e57804]/20 hover:border-[#e57804]/40 transition-all focus:outline-none focus:ring-2 focus:ring-[#e57804]"
                   >
                     {renderSocialIcon(s.icon)}
                   </a>

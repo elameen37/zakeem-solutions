@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { 
   CheckCircle2, ArrowRight, ShieldCheck, 
   Building2, BrainCircuit, Scale, Workflow, Shield 
@@ -50,7 +50,9 @@ export const StandaloneProductsGrid: React.FC<StandaloneProductsGridProps> = ({
           <div className="text-center max-w-3xl mx-auto mb-8">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Badge variant="neon">Flagship SaaS Platform</Badge>
-              <Badge variant="outline">v2.4 Live in Production</Badge>
+              <Badge variant="outline" className="text-white border-white/20 bg-white/5">
+                v2.4 Live in Production
+              </Badge>
             </div>
             <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               Zakeem Realty ERP Subscription Plans

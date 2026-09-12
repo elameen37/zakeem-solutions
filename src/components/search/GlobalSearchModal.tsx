@@ -58,6 +58,9 @@ export const GlobalSearchModal: React.FC = () => {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedElement = useRef<HTMLElement | null>(null);
+  const hasOpenedRef = useRef(false);
 
   // All searchable items
   const allItems = useMemo(() => getAllSearchItems(), []);
@@ -85,7 +88,14 @@ export const GlobalSearchModal: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setIsOpen((prev) => !prev);
+        setIsOpen((prev) => {
+          if (!prev) {
+            previouslyFocusedElement.current = document.activeElement as HTMLElement | null;
+            return true;
+          } else {
+            return false;
+          }
+        });
       } else if (e.key === "Escape" && isOpen) {
         e.preventDefault();
         setIsOpen(false);
@@ -93,6 +103,7 @@ export const GlobalSearchModal: React.FC = () => {
     };
 
     const handleCustomOpen = () => {
+      previouslyFocusedElement.current = document.activeElement as HTMLElement | null;
       setIsOpen(true);
     };
 
@@ -105,9 +116,52 @@ export const GlobalSearchModal: React.FC = () => {
     };
   }, [isOpen]);
 
-  // Autofocus input when opened
+  // Trap focus inside modal when open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleModalKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+
+      if (!modalRef.current) return;
+      const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const focusable = Array.from(focusableElements).filter(
+        (el) => !el.hasAttribute("disabled") && el.offsetParent !== null
+      );
+
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+
+      const firstElement = focusable[0];
+      const lastElement = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement || !modalRef.current.contains(document.activeElement)) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement || !modalRef.current.contains(document.activeElement)) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleModalKeyDown);
+    return () => window.removeEventListener("keydown", handleModalKeyDown);
+  }, [isOpen]);
+
+  // Autofocus input when opened and restore focus when closed
   useEffect(() => {
     if (isOpen) {
+      hasOpenedRef.current = true;
       setSelectedIndex(0);
       setTimeout(() => {
         inputRef.current?.focus();
@@ -117,6 +171,9 @@ export const GlobalSearchModal: React.FC = () => {
     } else {
       document.body.style.overflow = "";
       setQuery("");
+      if (hasOpenedRef.current && previouslyFocusedElement.current) {
+        previouslyFocusedElement.current.focus();
+      }
     }
 
     return () => {
@@ -174,6 +231,7 @@ export const GlobalSearchModal: React.FC = () => {
       aria-label="Global Search"
     >
       <div
+        ref={modalRef}
         className={cn(
           "w-full max-w-2xl border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in fade-in zoom-in-95 duration-150",
           isDark ? "bg-[#07172e] border-white/15" : "bg-white border-slate-200 text-slate-900"

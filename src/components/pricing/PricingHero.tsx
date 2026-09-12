@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { ArrowDown, PhoneCall, ShieldCheck, CheckCircle2, Lock, Landmark } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -9,7 +9,7 @@ interface PricingHeroProps {
 
 export const PricingHero: React.FC<PricingHeroProps> = ({ onExplorePlans }) => {
   return (
-    <section className="relative pt-12 pb-16 md:pt-20 md:pb-24 border-b border-white/10 overflow-hidden">
+    <section className="relative pt-12 pb-16 md:pt-20 md:pb-24 border-b border-slate-200 dark:border-white/10 overflow-hidden">
       {/* Ambient Radial Lighting */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[720px] h-[360px] bg-gradient-to-b from-[#e57804]/20 via-[#06152b]/10 to-transparent rounded-full blur-[130px] pointer-events-none" />
 
@@ -52,42 +52,42 @@ export const PricingHero: React.FC<PricingHeroProps> = ({ onExplorePlans }) => {
 
           {/* Trust & Transparency Value Pillars */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 pt-4 text-left">
-            <div className="p-3.5 rounded-2xl bg-[#081c38]/60 border border-white/10 backdrop-blur-md">
+            <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-[#081c38]/60 border border-slate-200/80 dark:border-white/10 backdrop-blur-md shadow-xs dark:shadow-none">
               <div className="flex items-center gap-2 text-[#e57804] mb-1">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span className="text-xs font-bold text-white font-mono">Zero Seat Penalties</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">Zero Seat Penalties</span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-snug">
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
                 Transparent scale limits without surprise per-user billing spikes.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#081c38]/60 border border-white/10 backdrop-blur-md">
-              <div className="flex items-center gap-2 text-amber-300 mb-1">
+            <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-[#081c38]/60 border border-slate-200/80 dark:border-white/10 backdrop-blur-md shadow-xs dark:shadow-none">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-300 mb-1">
                 <Landmark className="w-4 h-4 shrink-0" />
-                <span className="text-xs font-bold text-white font-mono">Nigeria-First NGN</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">Nigeria-First NGN</span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-snug">
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
                 Denominated in Naira with direct institutional bank treasury rails.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#081c38]/60 border border-white/10 backdrop-blur-md">
-              <div className="flex items-center gap-2 text-emerald-400 mb-1">
+            <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-[#081c38]/60 border border-slate-200/80 dark:border-white/10 backdrop-blur-md shadow-xs dark:shadow-none">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 mb-1">
                 <ShieldCheck className="w-4 h-4 shrink-0" />
-                <span className="text-xs font-bold text-white font-mono">Contractual SLAs</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">Contractual SLAs</span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-snug">
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
                 99.9% to 99.99% high-availability guarantees with dedicated SRE pods.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#081c38]/60 border border-white/10 backdrop-blur-md">
-              <div className="flex items-center gap-2 text-purple-400 mb-1">
+            <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-[#081c38]/60 border border-slate-200/80 dark:border-white/10 backdrop-blur-md shadow-xs dark:shadow-none">
+              <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-1">
                 <Lock className="w-4 h-4 shrink-0" />
-                <span className="text-xs font-bold text-white font-mono">Sovereignty & VPC</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">Sovereignty & VPC</span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-snug">
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
                 Air-gapped on-premise, sovereign GovCloud, or isolated private cloud.
               </p>
             </div>

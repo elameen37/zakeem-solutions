@@ -53,7 +53,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       type="button"
       onClick={toggleTheme}
       className={cn(
-        "relative p-2 rounded-lg border transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-[#e57804]",
+        "relative min-w-[44px] min-h-[44px] p-2.5 flex items-center justify-center rounded-lg border transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-[#e57804]",
         isDark
           ? "text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
           : "text-slate-600 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 border-slate-200 shadow-sm",

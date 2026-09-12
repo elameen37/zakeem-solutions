@@ -243,6 +243,22 @@ export const TheZakeemStandard: React.FC = () => {
     }
   };
 
+  // Dynamically respect system preference for reduced motion
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mediaQuery.matches) {
+      setIsAutoPlaying(false);
+    }
+    const handleMotionChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        setIsAutoPlaying(false);
+      }
+    };
+    mediaQuery.addEventListener("change", handleMotionChange);
+    return () => mediaQuery.removeEventListener("change", handleMotionChange);
+  }, []);
+
   // Auto-play timer (pauses on user interaction, respects reduced motion)
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -276,6 +292,11 @@ export const TheZakeemStandard: React.FC = () => {
       tabIndex={0}
       aria-label="The Zakeem Standard: Enterprise Delivery Workflow"
     >
+      {/* Non-noisy Screen Reader Stage Announcement */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {`Step ${activeStage.stepNumber} of ${WORKFLOW_STAGES.length}: ${activeStage.title} — ${activeStage.tagline}`}
+      </div>
+
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-[#e57804]/10 via-[#06152b]/5 to-transparent rounded-full blur-[140px] pointer-events-none" />
 

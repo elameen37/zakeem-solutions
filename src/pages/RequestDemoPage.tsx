@@ -5,6 +5,8 @@ import {
   ArrowRight,
   AlertCircle,
   RefreshCw,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -20,6 +22,11 @@ import {
   validateEmail,
   validateCompany,
   validatePhone,
+  validatePreferredDate,
+  validatePreferredTime,
+  validateSchedulingPair,
+  getTodayDateString,
+  formatDisplayDate,
   ValidationErrors,
 } from "@/lib/leadValidation";
 import { submitLead, generateLeadReferenceId } from "@/lib/leadSubmission";
@@ -56,6 +63,8 @@ export const RequestDemoPage: React.FC = () => {
   const [deploymentType, setDeploymentType] = useState<
     "cloud" | "private-vpc" | "on-premise"
   >(getInitialDeployment());
+  const [preferredDate, setPreferredDate] = useState("");
+  const [preferredTime, setPreferredTime] = useState("");
   const [notes, setNotes] = useState("");
   const [honeypot, setHoneypot] = useState(""); // Anti-spam trap
 
@@ -70,6 +79,9 @@ export const RequestDemoPage: React.FC = () => {
     jobTitle?: string;
     interest: string;
     deploymentType: string;
+    preferredDate?: string;
+    preferredTime?: string;
+    preferredTimezone?: string;
     contextSummary: string | null;
   } | null>(null);
 
@@ -90,6 +102,8 @@ export const RequestDemoPage: React.FC = () => {
     if (field === "workEmail") err = validateEmail(workEmail);
     if (field === "company") err = validateCompany(company);
     if (field === "phone") err = validatePhone(phone);
+    if (field === "preferredDate") err = validatePreferredDate(preferredDate);
+    if (field === "preferredTime") err = validatePreferredTime(preferredTime);
 
     setErrors((prev) => ({ ...prev, [field]: err || undefined }));
   };
@@ -101,21 +115,37 @@ export const RequestDemoPage: React.FC = () => {
     const emailErr = validateEmail(workEmail);
     const companyErr = validateCompany(company);
     const phoneErr = validatePhone(phone);
+    const dateErr = validatePreferredDate(preferredDate);
+    const timeErr = validatePreferredTime(preferredTime);
+    const pairErr = validateSchedulingPair(preferredDate, preferredTime);
 
     const newErrors: ValidationErrors = {
       fullName: nameErr || undefined,
       workEmail: emailErr || undefined,
       company: companyErr || undefined,
       phone: phoneErr || undefined,
+      preferredDate: dateErr || pairErr.dateError || undefined,
+      preferredTime: timeErr || pairErr.timeError || undefined,
     };
 
-    if (nameErr || emailErr || companyErr || phoneErr) {
+    if (
+      nameErr ||
+      emailErr ||
+      companyErr ||
+      phoneErr ||
+      dateErr ||
+      timeErr ||
+      pairErr.dateError ||
+      pairErr.timeError
+    ) {
       setErrors(newErrors);
       setTouched({
         fullName: true,
         workEmail: true,
         company: true,
         phone: true,
+        preferredDate: true,
+        preferredTime: true,
       });
       return;
     }
@@ -125,6 +155,9 @@ export const RequestDemoPage: React.FC = () => {
 
     const referenceId = generateLeadReferenceId();
     const attribution = getAttributionContext(searchParams);
+
+    const hasScheduling = Boolean(preferredDate.trim() && preferredTime.trim());
+    const timezone = hasScheduling ? "Africa/Lagos" : undefined;
 
     const payload: LeadSubmissionPayload = {
       id: referenceId,
@@ -147,6 +180,16 @@ export const RequestDemoPage: React.FC = () => {
         selectedModules:
           commercialParams.modules.length > 0 ? commercialParams.modules : undefined,
       },
+      scheduling: hasScheduling
+        ? {
+            preferredDate: preferredDate.trim(),
+            preferredTime: preferredTime.trim(),
+            preferredTimezone: timezone,
+          }
+        : undefined,
+      preferredDate: hasScheduling ? preferredDate.trim() : undefined,
+      preferredTime: hasScheduling ? preferredTime.trim() : undefined,
+      preferredTimezone: timezone,
       attribution,
       notes: notes.trim() || undefined,
       consent: true,
@@ -164,6 +207,9 @@ export const RequestDemoPage: React.FC = () => {
         jobTitle: jobTitle.trim() || undefined,
         interest,
         deploymentType,
+        preferredDate: hasScheduling ? preferredDate.trim() : undefined,
+        preferredTime: hasScheduling ? preferredTime.trim() : undefined,
+        preferredTimezone: timezone,
         contextSummary,
       });
       setSubmissionResult(result);
@@ -182,6 +228,8 @@ export const RequestDemoPage: React.FC = () => {
     setCompany("");
     setPhone("");
     setJobTitle("");
+    setPreferredDate("");
+    setPreferredTime("");
     setNotes("");
     setHoneypot("");
     setErrors({});
@@ -257,8 +305,8 @@ export const RequestDemoPage: React.FC = () => {
 
                   <div className="space-y-2">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-400">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Session Reserved
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      Session Preference Logged
                     </div>
                     <h3 className="text-2xl font-bold text-white">Demo Request Received</h3>
                     <p className="text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
@@ -292,6 +340,25 @@ export const RequestDemoPage: React.FC = () => {
                       <span className="text-slate-400">Deployment:</span>
                       <span className="text-slate-300">{getDeploymentLabel(submittedData.deploymentType)}</span>
                     </div>
+
+                    {/* Conditionally display Preferred Session Time */}
+                    {submittedData.preferredDate && submittedData.preferredTime && (
+                      <div className="flex items-start justify-between text-xs pt-1 border-t border-white/5">
+                        <div>
+                          <span className="text-slate-400 block">Preferred Session:</span>
+                          <span className="text-[10px] font-mono text-amber-400/90">Requested time (pending confirmation)</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-white font-medium block">
+                            {formatDisplayDate(submittedData.preferredDate)}
+                          </span>
+                          <span className="text-slate-300 font-mono text-[11px]">
+                            {submittedData.preferredTime} WAT
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     {submittedData.contextSummary && (
                       <div className="flex items-center justify-between text-xs pt-1 border-t border-white/5">
                         <span className="text-slate-400">Configuration:</span>
@@ -328,9 +395,9 @@ export const RequestDemoPage: React.FC = () => {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-xl font-bold text-white">Schedule Session</h3>
-                    <span className="text-xs font-mono text-emerald-400/90 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Live Slots Open
+                    <span className="text-xs font-mono text-slate-300 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#e57804]" />
+                      Schedule Preference
                     </span>
                   </div>
 
@@ -539,6 +606,90 @@ export const RequestDemoPage: React.FC = () => {
                         <option value="private-vpc">Dedicated Private VPC</option>
                         <option value="on-premise">On-Premise Appliance</option>
                       </select>
+                    </div>
+                  </div>
+
+                  {/* Phase 16: Preferred Date & Time Scheduling Section */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="demo-preferred-date" className="block text-xs font-mono uppercase text-slate-400 mb-1.5 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-[#e57804]" />
+                          Preferred Date
+                        </span>
+                        <span className="text-slate-500 normal-case font-sans">(Optional)</span>
+                      </label>
+                      <input
+                        id="demo-preferred-date"
+                        type="date"
+                        min={getTodayDateString()}
+                        value={preferredDate}
+                        onChange={(e) => {
+                          setPreferredDate(e.target.value);
+                          if (touched.preferredDate) handleBlur("preferredDate");
+                        }}
+                        onBlur={() => handleBlur("preferredDate")}
+                        aria-invalid={touched.preferredDate && !!errors.preferredDate}
+                        aria-describedby={touched.preferredDate && errors.preferredDate ? "error-demo-date" : undefined}
+                        data-analytics-id="request-demo-date-selected"
+                        className={cn(
+                          "w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border text-sm text-white focus:outline-none transition-colors [color-scheme:dark]",
+                          touched.preferredDate && errors.preferredDate
+                            ? "border-rose-500/70 focus:border-rose-500"
+                            : "border-white/10 focus:border-[#e57804]"
+                        )}
+                      />
+                      {touched.preferredDate && errors.preferredDate && (
+                        <p id="error-demo-date" role="alert" className="text-xs text-rose-400 mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          {errors.preferredDate}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="demo-preferred-time" className="block text-xs font-mono uppercase text-slate-400 mb-1.5 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-[#e57804]" />
+                          Preferred Time
+                        </span>
+                        <span className="text-slate-500 normal-case font-sans">(WAT • Optional)</span>
+                      </label>
+                      <select
+                        id="demo-preferred-time"
+                        value={preferredTime}
+                        onChange={(e) => {
+                          setPreferredTime(e.target.value);
+                          if (touched.preferredTime) handleBlur("preferredTime");
+                        }}
+                        onBlur={() => handleBlur("preferredTime")}
+                        aria-invalid={touched.preferredTime && !!errors.preferredTime}
+                        aria-describedby={touched.preferredTime && errors.preferredTime ? "error-demo-time" : undefined}
+                        data-analytics-id="request-demo-time-selected"
+                        className={cn(
+                          "w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border text-sm text-white focus:outline-none transition-colors",
+                          touched.preferredTime && errors.preferredTime
+                            ? "border-rose-500/70 focus:border-rose-500"
+                            : "border-white/10 focus:border-[#e57804]"
+                        )}
+                      >
+                        <option value="">Select preferred time...</option>
+                        <option value="09:00 AM">09:00 AM WAT</option>
+                        <option value="10:00 AM">10:00 AM WAT</option>
+                        <option value="11:00 AM">11:00 AM WAT</option>
+                        <option value="12:00 PM">12:00 PM WAT</option>
+                        <option value="01:00 PM">01:00 PM WAT</option>
+                        <option value="02:00 PM">02:00 PM WAT</option>
+                        <option value="03:00 PM">03:00 PM WAT</option>
+                        <option value="04:00 PM">04:00 PM WAT</option>
+                        <option value="05:00 PM">05:00 PM WAT</option>
+                      </select>
+                      {touched.preferredTime && errors.preferredTime && (
+                        <p id="error-demo-time" role="alert" className="text-xs text-rose-400 mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          {errors.preferredTime}
+                        </p>
+                      )}
                     </div>
                   </div>
 

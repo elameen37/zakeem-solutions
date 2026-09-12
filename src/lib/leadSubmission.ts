@@ -1,6 +1,6 @@
 /**
  * Zakeem Solutions — Lead Submission & CRM Infrastructure
- * Phase 15: Lead Capture, CRM Readiness & Conversion Infrastructure
+ * Phase 15 & 16: Lead Capture, CRM Readiness & Conversion Infrastructure
  */
 
 import {
@@ -51,6 +51,14 @@ export function mapToCRMRecord(payload: LeadSubmissionPayload): CRMLeadRecord {
     zakeem_service_engagement: payload.commercial.service,
     zakeem_inquiry_category: payload.commercial.inquiryCategory,
     zakeem_stack_modules: payload.commercial.selectedModules?.join(", "),
+
+    // Scheduling preferences (non-binding requested time)
+    zakeem_preferred_date:
+      payload.scheduling?.preferredDate || payload.preferredDate || undefined,
+    zakeem_preferred_time:
+      payload.scheduling?.preferredTime || payload.preferredTime || undefined,
+    zakeem_preferred_timezone:
+      payload.scheduling?.preferredTimezone || payload.preferredTimezone || undefined,
 
     // Attribution properties
     hs_analytics_source: payload.attribution.utmSource ? "PAID_OR_CAMPAIGN" : "DIRECT_OR_ORGANIC",
@@ -127,6 +135,12 @@ export async function submitLead(
         deployment: payload.commercial.deployment,
         service: payload.commercial.service,
         company: payload.identity.company,
+        preferredDate:
+          payload.scheduling?.preferredDate || payload.preferredDate || undefined,
+        preferredTime:
+          payload.scheduling?.preferredTime || payload.preferredTime || undefined,
+        preferredTimezone:
+          payload.scheduling?.preferredTimezone || payload.preferredTimezone || undefined,
         utmSource: payload.attribution.utmSource,
         utmMedium: payload.attribution.utmMedium,
         utmCampaign: payload.attribution.utmCampaign,

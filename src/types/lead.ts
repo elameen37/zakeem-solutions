@@ -1,6 +1,6 @@
 /**
  * Zakeem Solutions — Lead Capture & CRM Integration Contract
- * Phase 15: Lead Capture, CRM Readiness & Conversion Infrastructure
+ * Phase 15 & 16: Lead Capture, CRM Readiness & Conversion Infrastructure
  */
 
 export interface LeadIdentity {
@@ -35,12 +35,22 @@ export interface LeadAttribution {
   referrer?: string;
 }
 
+export interface LeadSchedulingPreference {
+  preferredDate?: string; // Format: YYYY-MM-DD
+  preferredTime?: string; // Format: "HH:MM AM/PM"
+  preferredTimezone?: string; // Standard timezone identifier e.g., "Africa/Lagos" (WAT)
+}
+
 export interface LeadSubmissionPayload {
   id: string; // Unique reference e.g., ZK-202609-XXXX
   submittedAt: string; // ISO 8601
   identity: LeadIdentity;
   commercial: CommercialIntent;
   attribution: LeadAttribution;
+  scheduling?: LeadSchedulingPreference;
+  preferredDate?: string;
+  preferredTime?: string;
+  preferredTimezone?: string;
   message?: string;
   notes?: string;
   consent: boolean;
@@ -77,6 +87,11 @@ export interface CRMLeadRecord {
   zakeem_service_engagement?: string;
   zakeem_inquiry_category?: string;
   zakeem_stack_modules?: string;
+
+  // Scheduling Preferences (Requested, Non-Binding)
+  zakeem_preferred_date?: string;
+  zakeem_preferred_time?: string;
+  zakeem_preferred_timezone?: string;
 
   // Attribution Properties
   hs_analytics_source?: string;

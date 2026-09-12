@@ -116,6 +116,7 @@ export const ZakeemRealtyERPHighlight: React.FC = () => {
               leftIcon={<KeyRound className="w-4 h-4 text-[#e57804]" />}
               rightIcon={<ExternalLink className="w-3.5 h-3.5 text-slate-300" />}
               className="text-white border-white/20 hover:border-[#e57804] hover:bg-white/10"
+              data-analytics-id="realty-highlight-portal-cta"
             >
               Access ERP Portal
             </Button>
@@ -124,6 +125,7 @@ export const ZakeemRealtyERPHighlight: React.FC = () => {
               size="md"
               href="/products/zakeem-realty-erp"
               rightIcon={<ArrowRight className="w-4 h-4" />}
+              data-analytics-id="realty-highlight-experience-cta"
             >
               Full Product Experience
             </Button>

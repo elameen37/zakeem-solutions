@@ -10,7 +10,7 @@ export const ProductsIndexPage: React.FC = () => {
     <>
       <SEO
         title="Product Ecosystem — Zakeem Solutions"
-        description="Explore the Zakeem suite of digital products and enterprise platforms, led by Zakeem Realty ERP, Cortex AI, Flow, and Vault."
+        description="Explore the Zakeem suite of digital products and enterprise platforms, including Zakeem Realty ERP, Cortex AI, e-Legal & Justice Systems, Flow, and Vault."
         canonical="https://www.zakeemsolutions.com/products"
       />
 

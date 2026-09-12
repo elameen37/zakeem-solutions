@@ -83,6 +83,7 @@ export const HomePage: React.FC = () => {
                 href="/request-demo"
                 rightIcon={<ArrowRight className="w-4 h-4" />}
                 className="w-full sm:w-auto"
+                data-analytics-id="hero-request-demo-cta"
               >
                 Request a Demo
               </Button>
@@ -91,6 +92,7 @@ export const HomePage: React.FC = () => {
                 size="lg"
                 href="/solutions"
                 className="w-full sm:w-auto"
+                data-analytics-id="hero-explore-solutions-cta"
               >
                 Explore Solutions
               </Button>
@@ -224,6 +226,7 @@ export const HomePage: React.FC = () => {
                 href="/services"
                 rightIcon={<ArrowRight className="w-4 h-4" />}
                 className="w-full sm:w-auto text-white border-white/20 hover:border-[#e57804] hover:bg-white/10"
+                data-analytics-id="home-pillar-services-cta"
               >
                 Explore Services Practice
               </Button>
@@ -266,6 +269,7 @@ export const HomePage: React.FC = () => {
                 href="/products"
                 rightIcon={<ArrowRight className="w-4 h-4" />}
                 className="w-full sm:w-auto"
+                data-analytics-id="home-pillar-products-cta"
               >
                 Explore Product Platforms
               </Button>
@@ -307,7 +311,14 @@ export const HomePage: React.FC = () => {
               className="mb-0"
               inverted={true}
             />
-            <Button variant="outline" size="md" href="/solutions" rightIcon={<ArrowRight className="w-4 h-4" />} className="text-white border-white/20 hover:border-[#e57804] hover:bg-white/10">
+            <Button
+              variant="outline"
+              size="md"
+              href="/solutions"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+              className="text-white border-white/20 hover:border-[#e57804] hover:bg-white/10"
+              data-analytics-id="home-solutions-matrix-cta"
+            >
               View All 11 Solutions
             </Button>
           </div>
@@ -337,7 +348,13 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="mt-12 text-center">
-            <Button variant="secondary" size="md" href="/services" rightIcon={<ArrowRight className="w-4 h-4" />}>
+            <Button
+              variant="secondary"
+              size="md"
+              href="/services"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+              data-analytics-id="home-all-services-cta"
+            >
               View All Engineering & Advisory Services
             </Button>
           </div>

@@ -1,4 +1,4 @@
-export type ProductStatus = "Available" | "Coming Soon" | "In Development";
+export type ProductStatus = "Available" | "Private Beta" | "Active Solution" | "In Development" | "Coming Soon";
 
 export interface ZakeemApplication {
   id: string;
@@ -7,7 +7,7 @@ export interface ZakeemApplication {
   tagline: string;
   description: string;
   primaryValueProp: string;
-  category: "Enterprise ERP" | "AI & Intelligence" | "Operations" | "Fintech" | "Infrastructure";
+  category: "Enterprise ERP" | "AI & Intelligence" | "Operations" | "Fintech" | "Infrastructure" | "Legal & Public Sector";
   status: ProductStatus;
   statusDetail?: string;
   featured: boolean;
@@ -38,7 +38,7 @@ export const ZAKEEM_APPLICATIONS: ZakeemApplication[] = [
     iconName: "Building2",
     route: "/products/zakeem-realty-erp",
     internalPath: "/products/zakeem-realty-erp",
-    ctaText: "Explore Platform & Demo",
+    ctaText: "Explore Flagship Platform",
     externalUrl: "https://realty.zakeemsolutions.com",
     stats: [
       { label: "Core Modules", value: "14+" },
@@ -62,13 +62,13 @@ export const ZAKEEM_APPLICATIONS: ZakeemApplication[] = [
       "An intelligent automation orchestration layer that enables enterprise organizations to deploy fine-tuned domain models, document extraction pipelines, and automated decision flows across legacy infrastructure.",
     primaryValueProp: "Automate complex document extraction and high-consequence business workflows with private VPC intelligence.",
     category: "AI & Intelligence",
-    status: "Coming Soon",
+    status: "Private Beta",
     statusDetail: "Private Beta / Early Access",
     featured: false,
     version: "1.0 Beta",
     iconName: "BrainCircuit",
-    route: "/products/cortex-ai",
-    internalPath: "/products/cortex-ai",
+    route: "/request-demo?product=cortex-ai",
+    internalPath: "/request-demo?product=cortex-ai",
     ctaText: "Request Early Access",
     stats: [
       { label: "Extraction Accuracy", value: "99.4%" },
@@ -78,6 +78,33 @@ export const ZAKEEM_APPLICATIONS: ZakeemApplication[] = [
       "Domain-adaptive multi-modal OCR",
       "Secure on-premise & private VPC deployment",
       "Autonomous exception resolution pipelines",
+    ],
+  },
+  {
+    id: "e-legal-justice",
+    name: "e-Legal & Justice Systems",
+    slug: "e-legal",
+    tagline: "Court Digitization, Case Intelligence & Legal Practice Management",
+    description:
+      "Modern digital infrastructure engineered for private law firms, corporate legal teams, and public justice ministries. Integrates case dossier tracking, automated court e-filing, cryptographic evidence vaults, and statutory research.",
+    primaryValueProp: "Unify legal case management, evidentiary custody, and trust accounting into an audit-grade sovereign platform.",
+    category: "Legal & Public Sector",
+    status: "Active Solution",
+    statusDetail: "Active Institutional Solution",
+    featured: false,
+    version: "Enterprise Solution",
+    iconName: "Scale",
+    route: "/solutions/e-legal",
+    internalPath: "/solutions/e-legal",
+    ctaText: "Explore Legal Solution",
+    stats: [
+      { label: "Dossier Lifecycle", value: "100% Digital" },
+      { label: "Filing Latency", value: "Instant" },
+    ],
+    highlights: [
+      "Comprehensive matter & case dossier lifecycle management",
+      "Automated court e-filing & judicial registry interoperability",
+      "Cryptographic evidence chain-of-custody & tamper-proof vaults",
     ],
   },
   {
@@ -94,8 +121,8 @@ export const ZAKEEM_APPLICATIONS: ZakeemApplication[] = [
     featured: false,
     version: "Coming Q4",
     iconName: "Workflow",
-    route: "/products/flow-procure",
-    internalPath: "/products/flow-procure",
+    route: "/contact?product=flow-procure&type=roadmap-briefing",
+    internalPath: "/contact?product=flow-procure&type=roadmap-briefing",
     ctaText: "Join Roadmap Briefing",
     stats: [
       { label: "Supplier Compliance", value: "100%" },
@@ -121,8 +148,8 @@ export const ZAKEEM_APPLICATIONS: ZakeemApplication[] = [
     featured: false,
     version: "Architecture Phase",
     iconName: "ShieldCheck",
-    route: "/products/vault-pay",
-    internalPath: "/products/vault-pay",
+    route: "/contact?product=vault-pay&type=strategic-brief",
+    internalPath: "/contact?product=vault-pay&type=strategic-brief",
     ctaText: "Request Strategic Brief",
     stats: [
       { label: "Settlement Time", value: "Instant" },

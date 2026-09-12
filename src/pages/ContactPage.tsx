@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Mail, Phone, MapPin, Clock, CheckCircle2, ArrowRight, Linkedin, Facebook, Instagram, Youtube, Globe } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -34,10 +35,55 @@ const getSocialIcon = (iconName: string) => {
 };
 
 export const ContactPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const typeParam = searchParams.get("type");
+  const productParam = searchParams.get("product");
+  const solutionParam = searchParams.get("solution");
+  const modulesParam = searchParams.get("modules");
+  const billingParam = searchParams.get("billing");
+
+  const getInitialCategory = () => {
+    if (typeParam === "custom-stack") return "custom-stack";
+    if (typeParam === "commercial-advisory") return "commercial-advisory";
+    if (typeParam?.includes("roadmap") || typeParam?.includes("brief")) return "product-briefing";
+    if (solutionParam || typeParam?.includes("consulting")) return "strategic-consulting";
+    return "general-inquiry";
+  };
+
+  const getContextSummary = () => {
+    const parts: string[] = [];
+    if (typeParam === "custom-stack") {
+      const count = modulesParam ? modulesParam.split(",").filter(Boolean).length : 0;
+      parts.push(`Custom Stack Architecture (${count > 0 ? `${count} Modules Selected` : "Configured"})`);
+    } else if (productParam) {
+      if (productParam.includes("flow")) parts.push("Zakeem Flow (Procurement Hub Briefing)");
+      else if (productParam.includes("vault")) parts.push("Zakeem Vault (Settlement & Treasury Briefing)");
+      else if (productParam.includes("cortex")) parts.push("Zakeem Cortex AI Roadmap");
+      else parts.push(`Product: ${productParam}`);
+    } else if (typeParam === "commercial-advisory") {
+      parts.push("Strategic Commercial & Licensing Advisory");
+    } else if (solutionParam) {
+      if (solutionParam.includes("legal")) parts.push("e-Legal & Justice Platform");
+      else parts.push(`Solution: ${solutionParam}`);
+    }
+
+    if (billingParam) {
+      parts.push(`${billingParam.charAt(0).toUpperCase() + billingParam.slice(1)} Commitment`);
+    }
+    return parts.length > 0 ? parts.join(" • ") : null;
+  };
+
+  const contextSummary = getContextSummary();
+
   const [submitted, setSubmitted] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [category, setCategory] = useState(getInitialCategory());
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setCategory(getInitialCategory());
+  }, [typeParam, productParam, solutionParam]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,36 +195,73 @@ export const ContactPage: React.FC = () => {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <h3 className="text-xl font-bold text-white mb-2">Send Message</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xl font-bold text-white">Send Message</h3>
+                    <span className="text-xs font-mono text-[#e57804] flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#e57804] animate-pulse" />
+                      Executive Desk
+                    </span>
+                  </div>
 
-                  <div>
-                    <label htmlFor="contact-name" className="block text-xs font-mono uppercase text-slate-400 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      id="contact-name"
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Engr. Farouk Bello"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
-                    />
+                  {contextSummary && (
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5">
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#e57804] text-white font-bold shrink-0">
+                        Context
+                      </span>
+                      <p className="text-xs text-slate-300">
+                        Inquiry tailored to: <span className="text-white font-medium">{contextSummary}</span>
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="contact-name" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                        Full Name *
+                      </label>
+                      <input
+                        id="contact-name"
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Engr. Farouk Bello"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="contact-email" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                        Email Address *
+                      </label>
+                      <input
+                        id="contact-email"
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="farouk@institution.org"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label htmlFor="contact-email" className="block text-xs font-mono uppercase text-slate-400 mb-1">
-                      Email Address *
+                    <label htmlFor="contact-category" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                      Inquiry Category *
                     </label>
-                    <input
-                      id="contact-email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="farouk@institution.org"
+                    <select
+                      id="contact-category"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
-                    />
+                    >
+                      <option value="commercial-advisory">Commercial Advisory & Licensing</option>
+                      <option value="custom-stack">Custom Stack Proposal</option>
+                      <option value="product-briefing">Roadmap & Product Briefing</option>
+                      <option value="strategic-consulting">Strategic Technology Consulting / Custom Software</option>
+                      <option value="general-inquiry">General Executive Inquiry</option>
+                    </select>
                   </div>
 
                   <div>
@@ -191,12 +274,18 @@ export const ContactPage: React.FC = () => {
                       required
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Describe your inquiry..."
+                      placeholder="Describe your enterprise requirements, scope, or timeline..."
                       className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
                     />
                   </div>
 
-                  <Button variant="primary" size="md" type="submit" className="w-full">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    type="submit"
+                    className="w-full"
+                    data-analytics-id="contact-submit-cta"
+                  >
                     Submit Message
                   </Button>
                 </form>

@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowUpRight, CheckCircle2, Building2, BrainCircuit, Workflow, ShieldCheck, Layers, ExternalLink } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Building2, BrainCircuit, Workflow, ShieldCheck, Layers, Scale, ExternalLink } from "lucide-react";
 import { ZakeemApplication } from "@/data/ecosystem";
 import { Badge } from "./Badge";
 import { Button } from "./Button";
@@ -18,6 +18,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
         return <Building2 className="w-6 h-6 text-[#e57804]" />;
       case "BrainCircuit":
         return <BrainCircuit className="w-6 h-6 text-amber-300" />;
+      case "Scale":
+        return <Scale className="w-6 h-6 text-amber-300" />;
       case "Workflow":
         return <Workflow className="w-6 h-6 text-[#e57804]" />;
       case "ShieldCheck":
@@ -31,6 +33,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
     switch (status) {
       case "Available":
         return <Badge variant="neon">Available</Badge>;
+      case "Private Beta":
+        return <Badge variant="blue">Private Beta</Badge>;
+      case "Active Solution":
+        return <Badge variant="blue">Active Solution</Badge>;
       case "Coming Soon":
         return <Badge variant="blue">Coming Soon</Badge>;
       case "In Development":
@@ -109,6 +115,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
           variant={featured ? "primary" : "secondary"}
           size="md"
           href={targetPath}
+          data-analytics-id={`product-${product.slug}-cta`}
           className={cn("flex-1", !featured && "bg-white/10 hover:bg-white/15 text-white border-white/15")}
           rightIcon={<ArrowUpRight className="w-4 h-4" />}
         >
@@ -120,6 +127,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
             size="md"
             href={product.externalUrl}
             isExternal={true}
+            data-analytics-id={`product-${product.slug}-launch`}
             rightIcon={<ExternalLink className="w-4 h-4" />}
             title="Launch live web application"
             className="text-white border-white/20 hover:border-[#e57804] hover:bg-white/10"

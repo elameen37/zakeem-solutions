@@ -1,20 +1,71 @@
-import React, { useState } from "react";
-import { CheckCircle2, ShieldCheck, ArrowRight, Building2, Calendar } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { CheckCircle2, ShieldCheck, ArrowRight, Building2, Calendar, Sparkles } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 
 export const RequestDemoPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const productParam = searchParams.get("product") || searchParams.get("interest");
+  const tierParam = searchParams.get("tier");
+  const suiteParam = searchParams.get("suite");
+  const billingParam = searchParams.get("billing");
+
+  const getInitialInterest = () => {
+    if (suiteParam) return "zakeem-realty-erp";
+    if (!productParam && !tierParam) return "zakeem-realty-erp";
+    const p = (productParam || "").toLowerCase();
+    const t = (tierParam || "").toLowerCase();
+    if (p.includes("cortex")) return "cortex-ai";
+    if (p.includes("legal")) return "e-legal";
+    if (p.includes("flow")) return "flow-procure";
+    if (p.includes("vault")) return "vault-pay";
+    if (p.includes("realty") || t.includes("realty")) return "zakeem-realty-erp";
+    return "zakeem-realty-erp";
+  };
+
+  const getContextSummary = () => {
+    const parts: string[] = [];
+    if (suiteParam) {
+      if (suiteParam.includes("growth")) parts.push("Growth Business Suite");
+      else if (suiteParam.includes("scale") || suiteParam.includes("enterprise")) parts.push("Enterprise Business Suite");
+      else parts.push(`Suite: ${suiteParam}`);
+    } else if (tierParam) {
+      if (tierParam.includes("starter")) parts.push("Realty ERP Starter Tier");
+      else if (tierParam.includes("growth")) parts.push("Realty ERP Growth Tier");
+      else if (tierParam.includes("enterprise")) parts.push("Realty ERP Enterprise Tier");
+      else parts.push(`Tier: ${tierParam}`);
+    } else if (productParam) {
+      if (productParam.includes("cortex")) parts.push("Zakeem Cortex AI Early Access");
+      else if (productParam.includes("legal")) parts.push("e-Legal & Justice Platform");
+      else if (productParam.includes("flow")) parts.push("Zakeem Flow Briefing");
+      else if (productParam.includes("vault")) parts.push("Zakeem Vault Briefing");
+      else if (productParam.includes("realty")) parts.push("Zakeem Realty ERP Platform");
+    }
+    if (billingParam) {
+      parts.push(`${billingParam.charAt(0).toUpperCase() + billingParam.slice(1)} Commitment`);
+    }
+    return parts.length > 0 ? parts.join(" • ") : null;
+  };
+
+  const contextSummary = getContextSummary();
+
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     workEmail: "",
     company: "",
-    interest: "zakeem-realty-erp",
+    interest: getInitialInterest(),
     deploymentType: "cloud",
     notes: ""
   });
+
+  useEffect(() => {
+    const matched = getInitialInterest();
+    setFormData((prev) => ({ ...prev, interest: matched }));
+  }, [productParam, tierParam]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +123,24 @@ export const RequestDemoPage: React.FC = () => {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <h3 className="text-xl font-bold text-white mb-2">Schedule Session</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xl font-bold text-white">Schedule Session</h3>
+                    <span className="text-xs font-mono text-emerald-400/90 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live Slots Open
+                    </span>
+                  </div>
+
+                  {contextSummary && (
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5">
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#e57804] text-white font-bold shrink-0">
+                        Selection
+                      </span>
+                      <p className="text-xs text-slate-300">
+                        Pre-configured for: <span className="text-white font-medium">{contextSummary}</span>
+                      </p>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -131,11 +199,14 @@ export const RequestDemoPage: React.FC = () => {
                         onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
                       >
-                        <option value="zakeem-realty-erp">Zakeem Realty ERP</option>
-                        <option value="cortex-ai">Zakeem Cortex AI</option>
+                        <option value="zakeem-realty-erp">Zakeem Realty ERP (Available v2.4)</option>
+                        <option value="cortex-ai">Zakeem Cortex AI (Private Beta)</option>
+                        <option value="e-legal">e-Legal & Justice Systems (Active Solution)</option>
+                        <option value="flow-procure">Zakeem Flow (Procurement Hub)</option>
+                        <option value="vault-pay">Zakeem Vault (Treasury & Settlement)</option>
                         <option value="custom-software">Custom Software Engineering</option>
-                        <option value="cloud-infrastructure">Cloud & Cybersecurity</option>
-                        <option value="enterprise-consulting">Technology Consulting</option>
+                        <option value="cloud-infrastructure">Cloud Infrastructure & Security</option>
+                        <option value="enterprise-consulting">Strategic Technology Consulting</option>
                       </select>
                     </div>
 
@@ -170,7 +241,13 @@ export const RequestDemoPage: React.FC = () => {
                     />
                   </div>
 
-                  <Button variant="primary" size="lg" type="submit" className="w-full">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    type="submit"
+                    className="w-full"
+                    data-analytics-id="demo-submit-cta"
+                  >
                     Confirm & Schedule Briefing
                   </Button>
                 </form>

@@ -53,6 +53,7 @@ export const CTASection: React.FC<CTASectionProps> = ({
                 href={primaryCtaLink}
                 rightIcon={<ArrowRight className="w-4 h-4" />}
                 className="w-full sm:w-auto"
+                data-analytics-id="global-cta-primary"
               >
                 {primaryCtaText}
               </Button>
@@ -61,6 +62,7 @@ export const CTASection: React.FC<CTASectionProps> = ({
                 size="lg"
                 href={secondaryCtaLink}
                 className="w-full sm:w-auto text-white border-white/20 hover:border-[#e57804] hover:bg-white/10"
+                data-analytics-id="global-cta-secondary"
               >
                 {secondaryCtaText}
               </Button>

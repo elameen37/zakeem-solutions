@@ -170,20 +170,30 @@ export const ZakeemRealtyERPPage: React.FC = () => {
               Zakeem Realty ERP unifies property sales, GIS land registry, multi-tenant leasing, construction procurement, and financial accounting into an audit-grade, AI-accelerated platform.
             </p>
 
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3.5">
               <Button
                 variant="primary"
                 size="lg"
-                href="/request-demo"
+                href="/request-demo?product=zakeem-realty-erp"
+                data-analytics-id="realty-hero-demo-cta"
                 rightIcon={<ArrowRight className="w-4 h-4" />}
               >
                 Schedule Private Enterprise Demo
+              </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                href="/pricing"
+                data-analytics-id="realty-hero-pricing-cta"
+              >
+                View Subscription Pricing
               </Button>
               <Button
                 variant="outline"
                 size="lg"
                 href="https://realty.zakeemsolutions.com"
                 isExternal
+                data-analytics-id="realty-hero-portal-cta"
                 leftIcon={<KeyRound className="w-4 h-4 text-[#e57804]" />}
                 rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
               >
@@ -391,6 +401,29 @@ export const ZakeemRealtyERPPage: React.FC = () => {
               </Button>
             </div>
           </div>
+
+          {/* Contextual Pricing Bridge Banner */}
+          <div className="mt-12 p-6 rounded-2xl bg-[#081c38]/90 border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-mono font-bold text-[#e57804] uppercase">Transparent Commercial Plans</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">From ₦2,500,000 / mo</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-300">
+                Explore verified subscription tiers: Starter, Growth, and Institutional custom licensing in Nigerian Naira.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="md"
+              href="/pricing"
+              data-analytics-id="realty-licensing-view-pricing"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+              className="shrink-0 border-[#e57804]/50 text-[#e57804] hover:bg-[#e57804]/10 hover:text-white"
+            >
+              View Subscription Pricing
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -400,9 +433,9 @@ export const ZakeemRealtyERPPage: React.FC = () => {
         title="Transform Your Real Estate Operations."
         description="Schedule a technical architecture presentation with our product specialists and witness how Zakeem Realty ERP scales property sales and land management."
         primaryCtaText="Request a Private Demo"
-        primaryCtaLink="/request-demo"
-        secondaryCtaText="Access Client Portal"
-        secondaryCtaLink="https://realty.zakeemsolutions.com"
+        primaryCtaLink="/request-demo?product=zakeem-realty-erp"
+        secondaryCtaText="Review Subscription Pricing"
+        secondaryCtaLink="/pricing"
       />
     </>
   );

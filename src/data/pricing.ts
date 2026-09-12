@@ -119,10 +119,10 @@ export const PRODUCT_PRICING_TIERS: ProductPricingTier[] = [
     tierCode: "STARTER",
     tagline: "For mid-market operators establishing digital core automation",
     priceModel: "Starting from",
-    baseMonthlyPrice: 2500000,
-    priceAmount: "₦2,500,000",
+    baseMonthlyPrice: 150000,
+    priceAmount: "₦150,000",
     billingPeriod: "per month (billed annually in NGN)",
-    targetScale: "Up to 50 active users • Single Business Entity",
+    targetScale: "Up to 10 active users • Single Business Entity",
     featured: false,
     description: "Full-suite access to core Zakeem ERP workflows, property/inventory management, automated accounting, and customer portal.",
     deliverables: [
@@ -144,10 +144,10 @@ export const PRODUCT_PRICING_TIERS: ProductPricingTier[] = [
     tierCode: "BUSINESS",
     tagline: "For high-volume multi-branch enterprises and developers",
     priceModel: "Starting from",
-    baseMonthlyPrice: 6000000,
-    priceAmount: "₦6,000,000",
+    baseMonthlyPrice: 350000,
+    priceAmount: "₦350,000",
     billingPeriod: "per month (billed annually in NGN)",
-    targetScale: "Up to 250 active users • Multi-Entity / Subsidiary Support",
+    targetScale: "Up to 25 active users • Multi-Entity / Subsidiary Support",
     featured: true,
     badge: "Most Selected for ERP",
     description: "Engineered for high-throughput real estate developers, asset aggregators, and commercial distributors requiring customized workflows and multi-branch consolidation.",
@@ -200,7 +200,7 @@ export const SERVICE_ENGAGEMENT_MODELS: ServiceEngagementModel[] = [
     name: "Architectural Forensic Audit",
     category: "Architectural Advisory",
     duration: "2 – 4 Weeks",
-    investmentTier: "Starting from ₦18,500,000",
+    investmentTier: "Starting from ₦2,000,000",
     idealFor: "Organizations facing systemic performance bottlenecks, security vulnerabilities, or planning major platform modernization.",
     deliverables: [
       "Forensic source code & microservice telemetry inspection",
@@ -222,7 +222,7 @@ export const SERVICE_ENGAGEMENT_MODELS: ServiceEngagementModel[] = [
     name: "Dedicated Engineering Pod",
     category: "Dedicated Engineering Pods",
     duration: "Quarterly / Annual Retainers",
-    investmentTier: "Starting from ₦28,000,000 / mo",
+    investmentTier: "Starting from ₦3,000,000 / mo",
     idealFor: "Enterprises needing an elite, autonomous software engineering pod (Architect, Senior Distributed Engineers, QA, DevOps) to accelerate core software development.",
     deliverables: [
       "Complete dedicated pod: 1 Lead Architect, 2-4 Senior Engineers, 1 DevOps/SRE",
@@ -435,10 +435,10 @@ export const STANDALONE_PRODUCTS: StandaloneProductItem[] = [
     lifecycleBadge: "v2.4 Live in Production",
     version: "2.4 Enterprise",
     hasPublicPricing: true,
-    baseMonthlyPrice: 2500000,
-    startingPriceDisplay: "From ₦2,500,000 / mo",
+    baseMonthlyPrice: 150000,
+    startingPriceDisplay: "From ₦150,000 / mo",
     billingFrequencyLabel: "Monthly or Annual billing in NGN",
-    targetScale: "Mid-market to high-concurrency enterprise developers",
+    targetScale: "10 to 25+ users (Starter & Business) • Unlimited for Enterprise",
     deliverables: [
       "Turnkey Property Sales, Direct Payments & Tenant Portals",
       "Dynamic GIS Land Subdivision & Plot Allocation Registry",
@@ -466,7 +466,7 @@ export const STANDALONE_PRODUCTS: StandaloneProductItem[] = [
     baseMonthlyPrice: null,
     startingPriceDisplay: "Private Beta Access",
     billingFrequencyLabel: "Custom pilot agreement during beta",
-    targetScale: "Enterprises processing high-volume documentation",
+    targetScale: "Pilot cohorts (5 to 25+ operators) • Private VPC & GPU clusters",
     deliverables: [
       "Domain-Adaptive Multi-Modal OCR for deeds, contracts & invoices",
       "Private VPC & Sovereign On-Premise GPU Execution",
@@ -493,7 +493,7 @@ export const STANDALONE_PRODUCTS: StandaloneProductItem[] = [
     baseMonthlyPrice: null,
     startingPriceDisplay: "Custom Institutional Scoping",
     billingFrequencyLabel: "Tailored institutional deployment (NGN)",
-    targetScale: "Private Law Firms, Corporate Legal, Justice Ministries",
+    targetScale: "Private law firms (5 to 50+ practitioners) & Justice Ministries",
     deliverables: [
       "Comprehensive Matter & Case Dossier Lifecycle Management",
       "Automated Court e-Filing & Judicial Registry Interoperability",
@@ -520,7 +520,7 @@ export const STANDALONE_PRODUCTS: StandaloneProductItem[] = [
     baseMonthlyPrice: null,
     startingPriceDisplay: "Roadmap Briefing",
     billingFrequencyLabel: "Pre-release enterprise pilot scoping",
-    targetScale: "Industrial manufacturers, developers & general contractors",
+    targetScale: "Procurement & operations teams (10 to 100+ vendor contractors)",
     deliverables: [
       "Automated 3-Way Purchase Order, Receipt & Invoice Matching",
       "Smart Milestone Escrow & Supplier Delivery Confirmation",
@@ -547,7 +547,7 @@ export const STANDALONE_PRODUCTS: StandaloneProductItem[] = [
     baseMonthlyPrice: null,
     startingPriceDisplay: "Architecture Briefing",
     billingFrequencyLabel: "Strategic enterprise advisory",
-    targetScale: "Institutional conglomerates, fintechs & financial institutions",
+    targetScale: "Institutional treasury teams & multi-currency controllers",
     deliverables: [
       "Direct Central Bank & Payment Switch Interoperability",
       "Automated Multi-Currency FX Hedging & Liquidity Pooling",
@@ -589,8 +589,8 @@ export const SUITE_TIERS: SuiteTier[] = [
     name: "Growth Business Suite",
     tierCode: "GROWTH",
     tagline: "For scaling operators combining core ERP with AI document automation",
-    targetScale: "Up to 75 active users • 1 Commercial Entity",
-    baseMonthlyPrice: 3800000,
+    targetScale: "Up to 20 active users • 1 Commercial Entity",
+    baseMonthlyPrice: 500000,
     featured: false,
     includedSolutions: [
       "Zakeem Realty ERP (Core Suite)",
@@ -614,8 +614,8 @@ export const SUITE_TIERS: SuiteTier[] = [
     name: "Enterprise Business Suite",
     tierCode: "BUSINESS",
     tagline: "For high-volume multi-branch enterprises, property groups and developers",
-    targetScale: "Up to 300 active users • Multi-Entity & Branch Governance",
-    baseMonthlyPrice: 8500000,
+    targetScale: "Up to 50 active users • Multi-Entity & Branch Governance",
+    baseMonthlyPrice: 800000,
     featured: true,
     badge: "MOST POPULAR SUITE",
     includedSolutions: [
@@ -764,7 +764,7 @@ export const ZAKEEM_COMPLETE_CONFIG: ZakeemCompleteConfig = {
 // BUILD YOUR ZAKEEM STACK (STACK BUILDER)
 // ==========================================
 
-export const BUNDLE_DISCOUNT_PERCENT = 15; // 15% discount for bundling 2 or more priced modules
+export const BUNDLE_DISCOUNT_PERCENT = 20; // 20% discount for bundling 2 or more priced modules
 export const ANNUAL_DISCOUNT_PERCENT = 20; // 20% discount for annual billing
 
 export interface StackModule {
@@ -786,7 +786,7 @@ export const STACK_MODULES: StackModule[] = [
     category: "Real Estate & ERP",
     tagline: "Property sales, tenant management, automated billing & payments",
     hasPrice: true,
-    monthlyPrice: 2500000,
+    monthlyPrice: 150000,
     statusBadge: "Live Production",
     statusType: "approved",
     description: "Foundational real estate operations, customer portal & payment switch."
@@ -797,7 +797,7 @@ export const STACK_MODULES: StackModule[] = [
     category: "Real Estate & ERP",
     tagline: "Multi-branch intercompany ledger, dynamic GIS plot allocation",
     hasPrice: true,
-    monthlyPrice: 3500000,
+    monthlyPrice: 200000,
     statusBadge: "Live Production",
     statusType: "approved",
     description: "Advanced consolidation, land subdivision & milestone contractor tracking."

@@ -2,7 +2,7 @@ import { ZAKEEM_APPLICATIONS } from "../data/ecosystem";
 import { SOLUTIONS } from "../data/solutions";
 import { SERVICES } from "../data/services";
 import { JOB_POSTINGS } from "../data/careers";
-import { PRODUCT_PRICING_TIERS } from "../data/pricing";
+import { PRODUCT_PRICING_TIERS, SUITE_TIERS } from "../data/pricing";
 
 export type SearchCategory = "Product" | "Solution" | "Service" | "Career" | "Pricing" | "Page";
 
@@ -138,6 +138,19 @@ export function getAllSearchItems(): SearchItem[] {
       href: `/pricing`,
       tags: [tier.tierCode, tier.targetScale, tier.priceModel, ...tier.deliverables],
       badge: tier.badge || undefined,
+    });
+  }
+
+  // Business Suite Pricing
+  for (const suite of SUITE_TIERS) {
+    items.push({
+      id: `pricing-${suite.id}`,
+      title: `${suite.name} (Multi-Product Bundle)`,
+      category: "Pricing",
+      description: `${suite.tagline} (${suite.targetScale})`,
+      href: `/pricing`,
+      tags: ["suite", "bundle", "multi-product", suite.tierCode, suite.targetScale, ...suite.includedSolutions],
+      badge: suite.badge || "Suite",
     });
   }
 

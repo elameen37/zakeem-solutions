@@ -35,6 +35,7 @@ export const RequestDemoPage: React.FC = () => {
     } else if (tierParam) {
       if (tierParam.includes("starter")) parts.push("Realty ERP Starter Tier");
       else if (tierParam.includes("growth")) parts.push("Realty ERP Growth Tier");
+      else if (tierParam.includes("business")) parts.push("Realty ERP Business Tier");
       else if (tierParam.includes("enterprise")) parts.push("Realty ERP Enterprise Tier");
       else parts.push(`Tier: ${tierParam}`);
     } else if (productParam) {

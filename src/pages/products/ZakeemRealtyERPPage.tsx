@@ -140,7 +140,7 @@ export const ZakeemRealtyERPPage: React.FC = () => {
             "@type": "AggregateOffer",
             priceCurrency: "NGN",
             highPrice: "80000000",
-            lowPrice: "2500000",
+            lowPrice: "150000",
             offerCount: "3"
           }
         }}
@@ -407,7 +407,7 @@ export const ZakeemRealtyERPPage: React.FC = () => {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-mono font-bold text-[#e57804] uppercase">Transparent Commercial Plans</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">From ₦2,500,000 / mo</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">From ₦150,000 / mo</span>
               </div>
               <p className="text-xs sm:text-sm text-slate-300">
                 Explore verified subscription tiers: Starter, Growth, and Institutional custom licensing in Nigerian Naira.

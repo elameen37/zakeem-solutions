@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { 
   X, Send, RotateCcw, ArrowRight, Minimize2, 
-  MessageSquare, ExternalLink, Bot, ShieldCheck
+  MessageSquare, ExternalLink, Bot, ShieldCheck,
+  Mic, Volume2, VolumeX
 } from "lucide-react";
 import { zakkyService } from "../../lib/zakky/zakkyService";
 import { ZakkyMessage } from "../../lib/zakky/types";
+import { useZakkyVoice } from "../../lib/zakky/useZakkyVoice";
 import { cn } from "../../lib/utils";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -31,6 +33,68 @@ export const ZakkyAIChatWidget: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Auto-hide on mobile view when scrolling down
+  const [isMobileHidden, setIsMobileHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Only apply auto-hide on mobile screens (< 768px) and when chat dialog is closed
+      if (typeof window === "undefined" || window.innerWidth >= 768 || isOpen) {
+        setIsMobileHidden(false);
+        return;
+      }
+
+      const currentScrollY = window.scrollY;
+      const delta = currentScrollY - lastScrollY.current;
+
+      // Always visible near the top of the page (< 80px)
+      if (currentScrollY < 80) {
+        setIsMobileHidden(false);
+      } else if (
+        window.innerHeight + currentScrollY >=
+        document.documentElement.scrollHeight - 80
+      ) {
+        // Near bottom of page -> show so user can engage
+        setIsMobileHidden(false);
+      } else if (delta > 8 && currentScrollY > 120) {
+        // Scrolling DOWN -> Auto-hide on mobile
+        setIsMobileHidden(true);
+      } else if (delta < -8) {
+        // Scrolling UP -> Reveal on mobile
+        setIsMobileHidden(false);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isOpen]);
+
+  const {
+    isListening,
+    isSpeaking,
+    speakingMessageId,
+    hasRecognitionSupport,
+    isVoiceOutputEnabled,
+    voiceError,
+    startListening,
+    stopListening,
+    speak,
+    stopSpeaking,
+    toggleVoiceOutput,
+  } = useZakkyVoice({
+    onTranscript: (transcript) => {
+      setInput(transcript);
+    },
+    onAutoSend: (finalTranscript) => {
+      if (finalTranscript.trim()) {
+        handleSend(finalTranscript.trim());
+      }
+    },
+  });
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -49,12 +113,19 @@ export const ZakkyAIChatWidget: React.FC = () => {
       };
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
+    } else {
+      stopListening();
+      stopSpeaking();
     }
-  }, [isOpen, messages, streamingContent]);
+  }, [isOpen, messages, streamingContent, stopListening, stopSpeaking]);
 
   const handleSend = async (textToSend?: string) => {
     const query = (textToSend || input).trim();
     if (!query || isLoading) return;
+
+    // Stop listening or prior speech if active
+    if (isListening) stopListening();
+    if (isSpeaking) stopSpeaking();
 
     const userMessage: ZakkyMessage = {
       id: `user-${Date.now()}`,
@@ -87,6 +158,11 @@ export const ZakkyAIChatWidget: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Speak response if voice output is active
+      if (isVoiceOutputEnabled) {
+        speak(response.reply, assistantMessage.id);
+      }
     } catch {
       const errorMessage: ZakkyMessage = {
         id: `assistant-error-${Date.now()}`,
@@ -104,13 +180,22 @@ export const ZakkyAIChatWidget: React.FC = () => {
   };
 
   const handleReset = () => {
+    stopListening();
+    stopSpeaking();
     setMessages([zakkyService.getInitialGreeting()]);
     setStreamingContent(null);
     setIsLoading(false);
   };
 
   return (
-    <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-40">
+    <div
+      className={cn(
+        "fixed bottom-6 right-6 md:bottom-8 md:right-8 z-40 transition-all duration-300",
+        !isOpen && isMobileHidden
+          ? "max-md:translate-y-28 max-md:opacity-0 max-md:pointer-events-none"
+          : "max-md:translate-y-0 max-md:opacity-100 max-md:pointer-events-auto"
+      )}
+    >
       {/* 1. FLOATING LAUNCHER BUTTON */}
       {!isOpen && (
         <button
@@ -209,6 +294,26 @@ export const ZakkyAIChatWidget: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={toggleVoiceOutput}
+                title={isVoiceOutputEnabled ? "Voice Output Active (Click to Mute)" : "Voice Output Muted (Click to Enable)"}
+                className={cn(
+                  "p-1.5 rounded-lg transition-colors cursor-pointer",
+                  isVoiceOutputEnabled
+                    ? "text-[#e57804] bg-[#e57804]/15 hover:bg-[#e57804]/25"
+                    : isDark
+                    ? "text-slate-400 hover:text-white hover:bg-white/10"
+                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-200"
+                )}
+                aria-label={isVoiceOutputEnabled ? "Mute Voice Output" : "Enable Voice Output"}
+              >
+                {isVoiceOutputEnabled ? (
+                  <Volume2 className="w-4 h-4" />
+                ) : (
+                  <VolumeX className="w-4 h-4" />
+                )}
+              </button>
               <button
                 type="button"
                 onClick={handleReset}
@@ -314,12 +419,46 @@ export const ZakkyAIChatWidget: React.FC = () => {
                     </div>
                   )}
 
-                  <span className="text-[10px] font-mono text-slate-500 mt-1 px-1">
-                    {new Date(msg.timestamp).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
+                  <div className="flex items-center gap-2 mt-1 px-1">
+                    <span className="text-[10px] font-mono text-slate-500">
+                      {new Date(msg.timestamp).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    {!isUser && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isSpeaking && speakingMessageId === msg.id) {
+                            stopSpeaking();
+                          } else {
+                            speak(msg.content, msg.id);
+                          }
+                        }}
+                        title={isSpeaking && speakingMessageId === msg.id ? "Stop reading aloud" : "Listen to answer"}
+                        className={cn(
+                          "inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors cursor-pointer",
+                          isSpeaking && speakingMessageId === msg.id
+                            ? "text-[#e57804] bg-[#e57804]/10 font-semibold"
+                            : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                        )}
+                        aria-label={isSpeaking && speakingMessageId === msg.id ? "Stop voice playback" : "Play voice response"}
+                      >
+                        {isSpeaking && speakingMessageId === msg.id ? (
+                          <>
+                            <VolumeX className="w-3 h-3 text-[#e57804] animate-pulse" />
+                            <span>Stop</span>
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 className="w-3 h-3 text-slate-400 hover:text-[#e57804]" />
+                            <span>Listen</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -406,24 +545,63 @@ export const ZakkyAIChatWidget: React.FC = () => {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about Realty ERP, NGN pricing, careers..."
+                placeholder={isListening ? "Listening... Speak now into microphone..." : "Ask about Realty ERP, NGN pricing, careers..."}
                 disabled={isLoading}
                 className={cn(
                   "flex-1 border rounded-xl px-3.5 py-2.5 text-xs sm:text-sm transition-colors disabled:opacity-50 focus:outline-none focus:border-[#e57804]",
+                  isListening && "border-[#e57804] ring-2 ring-[#e57804]/40 animate-pulse",
                   isDark
                     ? "bg-black/40 border-white/10 text-white placeholder-slate-400"
                     : "bg-white border-slate-200 text-slate-900 placeholder-slate-400"
                 )}
               />
+
+              {/* Voice Input Microphone Button */}
+              {hasRecognitionSupport && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isListening) {
+                      stopListening();
+                    } else {
+                      startListening();
+                    }
+                  }}
+                  disabled={isLoading}
+                  title={isListening ? "Listening... Click to stop" : "Speak to ZakkyAI (Microphone)"}
+                  className={cn(
+                    "p-2.5 rounded-xl transition-all shrink-0 cursor-pointer border",
+                    isListening
+                      ? "bg-[#e57804] text-white border-[#e57804] shadow-lg shadow-[#e57804]/40 animate-pulse ring-2 ring-[#e57804]/60"
+                      : isDark
+                      ? "bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white"
+                      : "bg-white hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-950 shadow-2xs"
+                  )}
+                  aria-label={isListening ? "Stop voice listening" : "Start voice listening"}
+                >
+                  {isListening ? (
+                    <Mic className="w-4 h-4 text-white" />
+                  ) : (
+                    <Mic className="w-4 h-4 text-[#e57804]" />
+                  )}
+                </button>
+              )}
+
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading}
-                className="p-2.5 rounded-xl bg-[#e57804] hover:bg-[#ff890a] disabled:opacity-40 disabled:hover:bg-[#e57804] text-white transition-colors shrink-0 shadow-lg shadow-[#e57804]/20 btn-keep-white"
+                className="p-2.5 rounded-xl bg-[#e57804] hover:bg-[#ff890a] disabled:opacity-40 disabled:hover:bg-[#e57804] text-white transition-colors shrink-0 shadow-lg shadow-[#e57804]/20 btn-keep-white cursor-pointer"
                 aria-label="Send Message"
               >
                 <Send className="w-4 h-4" />
               </button>
             </form>
+
+            {voiceError && (
+              <p className="text-[10px] font-mono text-amber-400 mt-1.5 px-1">
+                {voiceError}
+              </p>
+            )}
 
             <div
               className={cn(

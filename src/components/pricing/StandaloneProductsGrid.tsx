@@ -239,6 +239,10 @@ export const StandaloneProductsGrid: React.FC<StandaloneProductsGridProps> = ({
                     <span className="text-[11px] text-slate-400 font-mono block mt-1">
                       {prod.billingFrequencyLabel}
                     </span>
+                    <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-400">Target Scale:</span>
+                      <span className="text-amber-300/90 font-medium text-right">{prod.targetScale}</span>
+                    </div>
                   </div>
 
                   {/* Included capabilities */}

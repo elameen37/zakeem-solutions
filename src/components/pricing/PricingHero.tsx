@@ -36,6 +36,7 @@ export const PricingHero: React.FC<PricingHeroProps> = ({ onExplorePlans }) => {
               variant="primary"
               size="lg"
               onClick={onExplorePlans}
+              data-analytics-id="pricing-hero-explore-plans"
               rightIcon={<ArrowDown className="w-4 h-4" />}
             >
               Explore Plans
@@ -44,6 +45,7 @@ export const PricingHero: React.FC<PricingHeroProps> = ({ onExplorePlans }) => {
               variant="outline"
               size="lg"
               href="/contact?type=commercial-advisory"
+              data-analytics-id="pricing-hero-talk-to-sales"
               rightIcon={<PhoneCall className="w-4 h-4" />}
             >
               Talk to Sales

@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { CheckCircle2, ArrowRight, ShieldCheck, Cpu } from "lucide-react";
 import { SERVICE_ENGAGEMENT_MODELS } from "@/data/pricing";
 import { Badge } from "@/components/ui/Badge";
@@ -83,6 +83,7 @@ export const ServicesMatrix: React.FC = () => {
               variant="primary"
               size="md"
               href={model.ctaHref}
+              data-analytics-id={`pricing-service-${model.id}-cta`}
               className="w-full"
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >

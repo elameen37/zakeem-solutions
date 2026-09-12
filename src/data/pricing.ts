@@ -530,7 +530,7 @@ export const STANDALONE_PRODUCTS: StandaloneProductItem[] = [
     ],
     sla: "Enterprise Pilot SLA",
     ctaLabel: "Join Roadmap Briefing",
-    ctaHref: "/contact?product=flow-procure",
+    ctaHref: "/contact?product=flow-procure&type=roadmap-briefing",
     internalRoute: "/products/flow-procure",
   },
   {
@@ -557,7 +557,7 @@ export const STANDALONE_PRODUCTS: StandaloneProductItem[] = [
     ],
     sla: "Financial-Grade 99.99% Architecture Target",
     ctaLabel: "Request Strategic Brief",
-    ctaHref: "/contact?product=vault-pay",
+    ctaHref: "/contact?product=vault-pay&type=strategic-brief",
     internalRoute: "/products/vault-pay",
   }
 ];

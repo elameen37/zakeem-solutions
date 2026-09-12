@@ -32,15 +32,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
   const getStatusBadge = (status: ZakeemApplication["status"]) => {
     switch (status) {
       case "Available":
-        return <Badge variant="neon">Available</Badge>;
+        return (
+          <Badge variant="neon" className="inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Available</span>
+          </Badge>
+        );
       case "Private Beta":
-        return <Badge variant="blue">Private Beta</Badge>;
+        return (
+          <Badge variant="blue" className="inline-flex items-center gap-1.5 border-amber-500/30 text-amber-300 bg-amber-500/10">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span>Private Beta</span>
+          </Badge>
+        );
       case "Active Solution":
-        return <Badge variant="blue">Active Solution</Badge>;
+        return (
+          <Badge variant="blue" className="inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#e57804]" />
+            <span>Active Solution</span>
+          </Badge>
+        );
       case "Coming Soon":
-        return <Badge variant="blue">Coming Soon</Badge>;
       case "In Development":
-        return <Badge variant="neutral">In Development</Badge>;
+        return (
+          <Badge variant="neutral" className="inline-flex items-center gap-1.5 text-slate-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            <span>In Development</span>
+          </Badge>
+        );
       default:
         return <Badge variant="neutral">{status}</Badge>;
     }
@@ -50,9 +69,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
 
   return (
     <div
+      id={product.slug}
+      data-product-id={product.id}
       data-surface="dark"
       className={cn(
-        "group relative flex flex-col justify-between rounded-2xl border transition-all duration-300 p-6 md:p-8",
+        "group relative flex flex-col justify-between rounded-2xl border transition-all duration-300 p-6 md:p-8 scroll-mt-24",
         featured
           ? "bg-gradient-to-b from-[#0a2347] to-[#06152b] border-[#e57804]/50 shadow-xl shadow-[#e57804]/10 hover:border-[#e57804]"
           : "bg-[#081c38] border-white/10 hover:border-white/20 hover:bg-[#0c254c]"
@@ -88,7 +109,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
         )}
 
         {product.stats && product.stats.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 py-4 px-3 mb-6 rounded-xl bg-black/40 border border-white/5">
+          <div
+            className={cn(
+              "grid gap-2 py-4 px-3 mb-6 rounded-xl bg-black/40 border border-white/5",
+              product.stats.length === 2 ? "grid-cols-2" : "grid-cols-3"
+            )}
+          >
             {product.stats.map((stat, i) => (
               <div key={i} className="text-center">
                 <div className="text-base font-bold font-mono text-white">

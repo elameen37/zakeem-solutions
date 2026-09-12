@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { 
   Sparkles, CheckCircle2, ArrowRight, ShieldCheck, 
   Server, Lock, Cpu, Landmark, Clock 
@@ -142,6 +142,7 @@ export const ZakeemCompleteSection: React.FC = () => {
               variant="primary"
               size="lg"
               href={config.ctaHref}
+              data-analytics-id="pricing-complete-cta"
               className="w-full mt-4"
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >

@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { CheckCircle2, ArrowRight, ShieldCheck, Layers, Sparkles } from "lucide-react";
 import { BillingPeriod, calculateSuitePricing, SUITE_TIERS } from "@/data/pricing";
 import { PricingBillingToggle } from "@/components/ui/PricingBillingToggle";
@@ -151,6 +151,7 @@ export const SuitePricingGrid: React.FC<SuitePricingGridProps> = ({
                 variant={tier.featured ? "primary" : "outline"}
                 size="lg"
                 href={dynamicCtaHref}
+                data-analytics-id={`pricing-suite-${tier.id}-cta`}
                 className={cn("w-full", !tier.featured && "border-white/20 text-white hover:bg-white/10 hover:text-white")}
                 rightIcon={<ArrowRight className="w-4 h-4" />}
               >

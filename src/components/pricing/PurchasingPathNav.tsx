@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Package, Layers, Sparkles, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +57,7 @@ export const PurchasingPathNav: React.FC<PurchasingPathNavProps> = ({
               role="tab"
               aria-selected={isActive}
               onClick={() => onChange(p.id)}
+              data-analytics-id={`pricing-tab-${p.id}`}
               className={cn(
                 "p-3 rounded-xl transition-all duration-200 cursor-pointer flex flex-col items-center text-center gap-1 focus:outline-none focus:ring-2 focus:ring-[#e57804]",
                 isActive

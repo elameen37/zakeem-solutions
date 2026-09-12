@@ -29,6 +29,7 @@ export const HomePage: React.FC = () => {
       <SEO
         title="Zakeem Solutions — Technology • Intelligence • Delivery"
         description="Premium African technology and digital transformation company delivering enterprise software engineering, AI-powered automation, Zakeem Realty ERP, and mission-critical cloud infrastructure."
+        canonical="https://www.zakeemsolutions.com"
       />
 
       {/* 1. HERO SECTION */}
@@ -156,21 +157,21 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 2B. TRUSTED BY LEADING REAL ESTATE COMPANIES */}
+      {/* 2B. TRUSTED ARCHITECTURE FOR LEADING REAL ESTATE COMPANIES */}
       <section
         data-surface="dark"
         className="py-5 bg-[#06152b] border-y border-white/10 relative z-20"
-        aria-label="Trusted by Africa's Leading Real Estate Companies"
+        aria-label="Engineered for Africa's Leading Real Estate & Enterprise Developers"
       >
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
             <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
-              Trusted by Africa's Leading Real Estate Companies
+              Engineered for Africa's Leading Real Estate & Enterprise Developers
             </p>
             <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8">
               <span className="text-sm font-bold font-mono tracking-tight text-white flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-[#e57804]" />
-                Quantum Construct
+                Institutional Property Groups & Land Aggregators
               </span>
             </div>
           </div>

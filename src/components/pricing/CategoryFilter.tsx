@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { CommercialProductCategory, PRODUCT_CATEGORIES } from "@/data/pricing";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +21,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
             key={cat.id}
             type="button"
             onClick={() => onChange(cat.id)}
+            data-analytics-id={`pricing-filter-${cat.id}`}
             className={cn(
               "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-[#e57804]",
               isActive

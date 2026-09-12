@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { 
   CheckSquare, Square, Calculator, Sparkles, 
   ArrowRight, ShieldCheck, HelpCircle, CheckCircle2 
@@ -235,6 +235,7 @@ export const StackBuilder: React.FC = () => {
               variant="primary"
               size="lg"
               href={dynamicCtaHref}
+              data-analytics-id="pricing-stack-proposal-cta"
               className="w-full"
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >

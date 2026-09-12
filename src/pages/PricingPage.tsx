@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { 
   ShieldCheck, Server, Lock, Cpu, 
   ChevronDown, ChevronUp, PhoneCall, ArrowUpRight 
@@ -228,6 +228,7 @@ export const PricingPage: React.FC = () => {
               variant="primary"
               size="lg"
               href="/contact?type=rfp-consultation"
+              data-analytics-id="pricing-bottom-rfp-cta"
               rightIcon={<PhoneCall className="w-4 h-4" />}
             >
               Schedule Commercial Briefing
@@ -236,6 +237,7 @@ export const PricingPage: React.FC = () => {
               variant="outline"
               size="lg"
               href="/request-demo"
+              data-analytics-id="pricing-bottom-demo-cta"
               className="border-white/20 text-white hover:bg-white/10 hover:text-white"
               rightIcon={<ArrowUpRight className="w-4 h-4" />}
             >

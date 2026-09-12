@@ -71,7 +71,7 @@ export const CTASection: React.FC<CTASectionProps> = ({
             <div className="mt-12 pt-8 border-t border-white/10 flex flex-wrap items-center justify-center gap-8 text-xs font-mono text-slate-300">
               <span className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#e57804]" />
-                ISO 27001 & NDPR Certified Standards
+                Engineered to ISO 27001 & NDPR Standards
               </span>
               <span className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-[#e57804]" />

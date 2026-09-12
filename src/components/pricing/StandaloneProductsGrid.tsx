@@ -168,6 +168,7 @@ export const StandaloneProductsGrid: React.FC<StandaloneProductsGridProps> = ({
                     variant={tier.featured ? "primary" : "outline"}
                     size="lg"
                     href={dynamicCtaHref}
+                    data-analytics-id={`pricing-tier-${tier.id}-cta`}
                     className={cn("w-full", !tier.featured && "border-white/20 text-white hover:bg-white/10 hover:text-white")}
                     rightIcon={<ArrowRight className="w-4 h-4" />}
                   >
@@ -268,6 +269,7 @@ export const StandaloneProductsGrid: React.FC<StandaloneProductsGridProps> = ({
                   variant="primary"
                   size="md"
                   href={prod.ctaHref}
+                  data-analytics-id={`pricing-standalone-${prod.id}-cta`}
                   className="w-full"
                   rightIcon={<ArrowRight className="w-4 h-4" />}
                 >

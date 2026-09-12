@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useParams, useLocation, Navigate } from "react-router-dom";
 import { SEO } from "@/components/seo/SEO";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ProductCard } from "@/components/ui/ProductCard";
@@ -6,6 +7,23 @@ import { CTASection } from "@/components/ui/CTASection";
 import { ZAKEEM_APPLICATIONS } from "@/data/ecosystem";
 
 export const ProductsIndexPage: React.FC = () => {
+  const { slug } = useParams<{ slug?: string }>();
+  const location = useLocation();
+
+  useEffect(() => {
+    const targetId = slug || (location.hash ? location.hash.replace("#", "") : null);
+    if (targetId && targetId !== "zakeem-realty-erp") {
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [slug, location.hash]);
+
+  if (slug === "zakeem-realty-erp") {
+    return <Navigate to="/products/zakeem-realty-erp" replace />;
+  }
+
   return (
     <>
       <SEO

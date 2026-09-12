@@ -355,7 +355,13 @@ export const ZakeemRealtyERPPage: React.FC = () => {
                   <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#e57804]" /> 24/7 Monitoring & uptime guarantee</li>
                 </ul>
               </div>
-              <Button variant="outline" size="md" href="/request-demo" className="w-full border-white/20 text-white hover:bg-white/10 hover:text-white">
+              <Button
+                variant="outline"
+                size="md"
+                href="/request-demo?product=zakeem-realty-erp&deployment=cloud"
+                data-analytics-id="realty-deploy-cloud-cta"
+                className="w-full border-white/20 text-white hover:bg-white/10 hover:text-white"
+              >
                 Select Cloud Deployment
               </Button>
             </div>
@@ -377,7 +383,13 @@ export const ZakeemRealtyERPPage: React.FC = () => {
                   <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#e57804]" /> Zakky AI on private secure tenant weights</li>
                 </ul>
               </div>
-              <Button variant="primary" size="md" href="/request-demo" className="w-full">
+              <Button
+                variant="primary"
+                size="md"
+                href="/request-demo?product=zakeem-realty-erp&deployment=private-vpc"
+                data-analytics-id="realty-deploy-vpc-cta"
+                className="w-full"
+              >
                 Request Private VPC Demo
               </Button>
             </div>
@@ -396,7 +408,13 @@ export const ZakeemRealtyERPPage: React.FC = () => {
                   <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#e57804]" /> Onsite engineering enablement team</li>
                 </ul>
               </div>
-              <Button variant="outline" size="md" href="/contact" className="w-full border-white/20 text-white hover:bg-white/10 hover:text-white">
+              <Button
+                variant="outline"
+                size="md"
+                href="/contact?product=zakeem-realty-erp&type=commercial-advisory"
+                data-analytics-id="realty-deploy-institutional-cta"
+                className="w-full border-white/20 text-white hover:bg-white/10 hover:text-white"
+              >
                 Talk to Enterprise Sales
               </Button>
             </div>

@@ -16,7 +16,7 @@ export const ZAKKY_KNOWLEDGE_BASE: KnowledgeFact[] = [
       "Key modules include:\n- Property Sales & Direct Payment Workflows\n- Dynamic Land Subdivision & Plot Allocation\n- Enterprise Tenant & Lease Accounting\n- Zakky AI Predictive Valuation Engine\n- Vendor Procurement & Milestone Billing\n- Multi-organization Audit-Proof Ledger\n\nIt delivers 99.9% sales record accuracy and accelerates inventory velocity by 3.4x.",
     actions: [
       { label: "Explore Realty ERP Platform", href: "/products/zakeem-realty-erp" },
-      { label: "Request Live ERP Demo", href: "/request-demo" },
+      { label: "Request Live ERP Demo", href: "/request-demo?product=zakeem-realty-erp" },
     ],
   },
   {
@@ -87,8 +87,32 @@ export const ZAKKY_KNOWLEDGE_BASE: KnowledgeFact[] = [
     details:
       "Key features:\n- Natural language document reconciliation for land title deeds and bank statements\n- Automated anomaly detection for revenue collections and procurement\n- Zakky AI valuation models trained on localized demographic and cadastral trends.",
     actions: [
-      { label: "Explore AI Solutions", href: "/solutions/enterprise" },
-      { label: "Test ZakkyAI Assistant", href: "#" },
+      { label: "Request Cortex AI Early Access", href: "/request-demo?product=cortex-ai" },
+      { label: "Explore Enterprise AI Solutions", href: "/solutions/enterprise" },
+    ],
+  },
+  {
+    topic: "e-Legal & Justice Systems",
+    keywords: ["legal", "court", "justice", "law firm", "case management", "dossier", "e-filing", "evidence vault", "statutory"],
+    summary:
+      "e-Legal & Justice Systems is an Active Solution engineered for private law firms, corporate legal teams, and public justice ministries.",
+    details:
+      "Key capabilities:\n- Matter & case dossier lifecycle tracking\n- Automated court e-filing & judicial registry interoperability\n- Cryptographic evidence chain-of-custody vaults\n- Trust accounting and statutory research assistants.",
+    actions: [
+      { label: "Explore Legal Solution", href: "/solutions/e-legal" },
+      { label: "Consult Legal Architect", href: "/contact?solution=e-legal" },
+    ],
+  },
+  {
+    topic: "Zakeem Flow & Zakeem Vault",
+    keywords: ["flow", "vault", "procurement", "supply chain", "treasury", "settlement", "fx hedging", "invoice matching"],
+    summary:
+      "Zakeem Flow (B2B Procurement) and Zakeem Vault (Enterprise Treasury & Settlement) are currently In Development on our institutional product roadmap.",
+    details:
+      "Zakeem Flow automates 3-way invoice matching and transparent supplier compliance.\nZakeem Vault provides high-throughput multi-currency treasury and automated settlement rails with bank-grade HSM encryption.\nBoth are available for roadmap briefings and architecture scoping.",
+    actions: [
+      { label: "Join Flow Roadmap Briefing", href: "/contact?product=flow-procure&type=roadmap-briefing" },
+      { label: "Request Vault Strategic Brief", href: "/contact?product=vault-pay&type=strategic-brief" },
     ],
   },
 ];

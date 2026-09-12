@@ -1,12 +1,40 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Mail, Phone, MapPin, Clock, CheckCircle2, ArrowRight, Linkedin, Facebook, Instagram, Youtube, Globe } from "lucide-react";
+import { useSearchParams, Link } from "react-router-dom";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  ArrowRight,
+  Linkedin,
+  Facebook,
+  Instagram,
+  Youtube,
+  Globe,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { COMPANY_CONTACT, SOCIAL_LINKS } from "@/data/social";
 import { cn } from "@/lib/utils";
+import {
+  normalizeCommercialParams,
+  getCommercialContextSummary,
+  getAttributionContext,
+} from "@/lib/leadContext";
+import {
+  validateFullName,
+  validateEmail,
+  validateCompany,
+  validatePhone,
+  validateMessage,
+  ValidationErrors,
+} from "@/lib/leadValidation";
+import { submitLead, generateLeadReferenceId } from "@/lib/leadSubmission";
+import { LeadSubmissionPayload, SubmissionResult } from "@/types/lead";
 
 const XIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg viewBox="0 0 24 24" className={cn("fill-current", className)} aria-hidden="true">
@@ -16,7 +44,7 @@ const XIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg viewBox="0 0 24 24" className={cn("fill-current", className)} aria-hidden="true">
-    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .58.04.86.12V9.33a6.33 6.33 0 0 0-.86-.06 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.71a8.18 8.18 0 0 0 4.78 1.52v-3.4a4.85 4.85 0 0 1-1-.14z" />
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .58.04.86.12V9.33a6.33 6.33 0 0 0-.86-.06 6.34 6.34 0 0 0-6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 0 0 0 6.33-6.34V8.71a8.18 8.18 0 0 0 4.78 1.52v-3.4a4.85 4.85 0 0 1-1-.14z" />
   </svg>
 );
 
@@ -36,58 +64,168 @@ const getSocialIcon = (iconName: string) => {
 
 export const ContactPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const typeParam = searchParams.get("type");
-  const productParam = searchParams.get("product");
-  const solutionParam = searchParams.get("solution");
-  const modulesParam = searchParams.get("modules");
-  const billingParam = searchParams.get("billing");
+  const commercialParams = normalizeCommercialParams(searchParams);
+  const contextSummary = getCommercialContextSummary(commercialParams);
 
   const getInitialCategory = () => {
-    if (typeParam === "custom-stack") return "custom-stack";
-    if (typeParam === "commercial-advisory") return "commercial-advisory";
-    if (typeParam?.includes("roadmap") || typeParam?.includes("brief")) return "product-briefing";
-    if (solutionParam || typeParam?.includes("consulting")) return "strategic-consulting";
+    if (commercialParams.type === "custom-stack") return "custom-stack";
+    if (
+      commercialParams.type === "commercial-advisory" ||
+      commercialParams.type === "zakeem-complete" ||
+      commercialParams.type === "institutional-suite"
+    ) {
+      return "commercial-advisory";
+    }
+    if (
+      commercialParams.type?.includes("roadmap") ||
+      commercialParams.type?.includes("brief")
+    ) {
+      return "product-briefing";
+    }
+    if (
+      commercialParams.solution ||
+      commercialParams.service ||
+      commercialParams.type?.includes("consulting") ||
+      commercialParams.type?.includes("rfp")
+    ) {
+      return "strategic-consulting";
+    }
     return "general-inquiry";
   };
 
-  const getContextSummary = () => {
-    const parts: string[] = [];
-    if (typeParam === "custom-stack") {
-      const count = modulesParam ? modulesParam.split(",").filter(Boolean).length : 0;
-      parts.push(`Custom Stack Architecture (${count > 0 ? `${count} Modules Selected` : "Configured"})`);
-    } else if (productParam) {
-      if (productParam.includes("flow")) parts.push("Zakeem Flow (Procurement Hub Briefing)");
-      else if (productParam.includes("vault")) parts.push("Zakeem Vault (Settlement & Treasury Briefing)");
-      else if (productParam.includes("cortex")) parts.push("Zakeem Cortex AI Roadmap");
-      else parts.push(`Product: ${productParam}`);
-    } else if (typeParam === "commercial-advisory") {
-      parts.push("Strategic Commercial & Licensing Advisory");
-    } else if (solutionParam) {
-      if (solutionParam.includes("legal")) parts.push("e-Legal & Justice Platform");
-      else parts.push(`Solution: ${solutionParam}`);
-    }
-
-    if (billingParam) {
-      parts.push(`${billingParam.charAt(0).toUpperCase() + billingParam.slice(1)} Commitment`);
-    }
-    return parts.length > 0 ? parts.join(" • ") : null;
-  };
-
-  const contextSummary = getContextSummary();
-
-  const [submitted, setSubmitted] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [workEmail, setWorkEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [phone, setPhone] = useState("");
   const [category, setCategory] = useState(getInitialCategory());
   const [message, setMessage] = useState("");
+  const [honeypot, setHoneypot] = useState(""); // Anti-bot trap
+
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
+  const [submittedData, setSubmittedData] = useState<{
+    fullName: string;
+    workEmail: string;
+    company: string;
+    category: string;
+    contextSummary: string | null;
+  } | null>(null);
 
   useEffect(() => {
     setCategory(getInitialCategory());
-  }, [typeParam, productParam, solutionParam]);
+  }, [
+    commercialParams.type,
+    commercialParams.product,
+    commercialParams.solution,
+    commercialParams.service,
+  ]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleBlur = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    let err: string | null = null;
+    if (field === "fullName") err = validateFullName(fullName);
+    if (field === "workEmail") err = validateEmail(workEmail);
+    if (field === "company") err = validateCompany(company);
+    if (field === "phone") err = validatePhone(phone);
+    if (field === "message") err = validateMessage(message);
+
+    setErrors((prev) => ({ ...prev, [field]: err || undefined }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+
+    const nameErr = validateFullName(fullName);
+    const emailErr = validateEmail(workEmail);
+    const companyErr = validateCompany(company);
+    const phoneErr = validatePhone(phone);
+    const msgErr = validateMessage(message);
+
+    const newErrors: ValidationErrors = {
+      fullName: nameErr || undefined,
+      workEmail: emailErr || undefined,
+      company: companyErr || undefined,
+      phone: phoneErr || undefined,
+      message: msgErr || undefined,
+    };
+
+    if (nameErr || emailErr || companyErr || phoneErr || msgErr) {
+      setErrors(newErrors);
+      setTouched({
+        fullName: true,
+        workEmail: true,
+        company: true,
+        phone: true,
+        message: true,
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrors({});
+
+    const referenceId = generateLeadReferenceId();
+    const attribution = getAttributionContext(searchParams);
+
+    const payload: LeadSubmissionPayload = {
+      id: referenceId,
+      submittedAt: new Date().toISOString(),
+      identity: {
+        fullName: fullName.trim(),
+        workEmail: workEmail.trim(),
+        company: company.trim(),
+        phone: phone.trim() || undefined,
+      },
+      commercial: {
+        formType: "contact",
+        product: commercialParams.product || undefined,
+        tier: commercialParams.tier || undefined,
+        suite: commercialParams.suite || undefined,
+        billing: commercialParams.billing || undefined,
+        deployment: commercialParams.deployment || undefined,
+        service: commercialParams.service || undefined,
+        inquiryCategory: category,
+        selectedModules:
+          commercialParams.modules.length > 0 ? commercialParams.modules : undefined,
+      },
+      attribution,
+      message: message.trim(),
+      consent: true,
+      honeypot: honeypot.trim() || undefined,
+    };
+
+    const result = await submitLead(payload);
+    setIsSubmitting(false);
+
+    if (result.success) {
+      setSubmittedData({
+        fullName: fullName.trim(),
+        workEmail: workEmail.trim(),
+        company: company.trim(),
+        category,
+        contextSummary,
+      });
+      setSubmissionResult(result);
+    } else {
+      setErrors({
+        general: result.error || "Failed to transmit message. Please try again.",
+      });
+    }
+  };
+
+  const handleReset = () => {
+    setSubmissionResult(null);
+    setSubmittedData(null);
+    setFullName("");
+    setWorkEmail("");
+    setCompany("");
+    setPhone("");
+    setMessage("");
+    setHoneypot("");
+    setErrors({});
+    setTouched({});
   };
 
   return (
@@ -183,18 +321,79 @@ export const ContactPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Form */}
+            {/* Form Container */}
             <div data-surface="dark" className="lg:col-span-7 p-8 rounded-3xl bg-[#081c38] border border-white/15">
-              {submitted ? (
-                <div className="text-center py-10 space-y-4">
-                  <CheckCircle2 className="w-12 h-12 text-[#e57804] mx-auto" />
-                  <h3 className="text-2xl font-bold text-white">Message Transmitted</h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    Thank you. Your enquiry has been routed directly to our Executive Technology Desk.
-                  </p>
+              {submissionResult && submittedData ? (
+                <div className="text-center py-6 space-y-6">
+                  <div className="w-14 h-14 rounded-full bg-[#e57804]/20 border border-[#e57804]/40 flex items-center justify-center mx-auto text-[#e57804]">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Transmission Confirmed
+                    </div>
+                    <h3 className="text-2xl font-bold text-white">Inquiry Securely Received</h3>
+                    <p className="text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+                      Thank you, <span className="text-white font-semibold">{submittedData.fullName}</span>. Your enquiry has been routed directly to our Executive Technology Desk.
+                    </p>
+                  </div>
+
+                  {/* Submission Summary Card */}
+                  <div className="p-4 rounded-2xl bg-[#06152b] border border-white/10 text-left space-y-3 max-w-lg mx-auto">
+                    <div className="flex items-center justify-between text-xs pb-2 border-b border-white/10">
+                      <span className="text-slate-400">Reference ID:</span>
+                      <span className="font-mono text-[#e57804] font-semibold tracking-wider">
+                        {submissionResult.leadId}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400">Organization:</span>
+                      <span className="text-white font-medium">{submittedData.company}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400">Corporate Email:</span>
+                      <span className="text-slate-300 font-mono">{submittedData.workEmail}</span>
+                    </div>
+                    {submittedData.contextSummary && (
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-white/5">
+                        <span className="text-slate-400">Context:</span>
+                        <span className="text-amber-400 font-medium text-right truncate max-w-[240px]">
+                          {submittedData.contextSummary}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-white/5">
+                      <span className="text-slate-400">Response Target:</span>
+                      <span className="text-slate-300">Within 4 Business Hours</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleReset}
+                      className="w-full sm:w-auto"
+                    >
+                      Submit Another Inquiry
+                    </Button>
+                    <Link to="/products" className="w-full sm:w-auto">
+                      <Button variant="primary" size="sm" className="w-full">
+                        Explore Products <ArrowRight className="w-4 h-4 ml-1" />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form
+                  id="contact-form"
+                  data-analytics-id="contact-form"
+                  onSubmit={handleSubmit}
+                  noValidate
+                  className="space-y-4"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-xl font-bold text-white">Send Message</h3>
                     <span className="text-xs font-mono text-[#e57804] flex items-center gap-1.5">
@@ -214,6 +413,30 @@ export const ContactPage: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Honeypot Field for Spam / Bot Mitigation (Hidden) */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "-9999px",
+                      opacity: 0,
+                      pointerEvents: "none",
+                      height: 0,
+                      overflow: "hidden",
+                    }}
+                    aria-hidden="true"
+                  >
+                    <label htmlFor="contact-website-url">Do not fill this field</label>
+                    <input
+                      id="contact-website-url"
+                      type="text"
+                      name="website_url"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="contact-name" className="block text-xs font-mono uppercase text-slate-400 mb-1">
@@ -223,26 +446,125 @@ export const ContactPage: React.FC = () => {
                         id="contact-name"
                         type="text"
                         required
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        value={fullName}
+                        onChange={(e) => {
+                          setFullName(e.target.value);
+                          if (touched.fullName) handleBlur("fullName");
+                        }}
+                        onBlur={() => handleBlur("fullName")}
                         placeholder="Engr. Farouk Bello"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
+                        aria-invalid={touched.fullName && !!errors.fullName}
+                        aria-describedby={touched.fullName && errors.fullName ? "error-contact-name" : undefined}
+                        className={cn(
+                          "w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border text-sm text-white focus:outline-none transition-colors",
+                          touched.fullName && errors.fullName
+                            ? "border-rose-500/70 focus:border-rose-500"
+                            : "border-white/10 focus:border-[#e57804]"
+                        )}
                       />
+                      {touched.fullName && errors.fullName && (
+                        <p id="error-contact-name" role="alert" className="text-xs text-rose-400 mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          {errors.fullName}
+                        </p>
+                      )}
                     </div>
 
                     <div>
                       <label htmlFor="contact-email" className="block text-xs font-mono uppercase text-slate-400 mb-1">
-                        Email Address *
+                        Work Email *
                       </label>
                       <input
                         id="contact-email"
                         type="email"
                         required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={workEmail}
+                        onChange={(e) => {
+                          setWorkEmail(e.target.value);
+                          if (touched.workEmail) handleBlur("workEmail");
+                        }}
+                        onBlur={() => handleBlur("workEmail")}
                         placeholder="farouk@institution.org"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
+                        aria-invalid={touched.workEmail && !!errors.workEmail}
+                        aria-describedby={touched.workEmail && errors.workEmail ? "error-contact-email" : undefined}
+                        className={cn(
+                          "w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border text-sm text-white focus:outline-none transition-colors",
+                          touched.workEmail && errors.workEmail
+                            ? "border-rose-500/70 focus:border-rose-500"
+                            : "border-white/10 focus:border-[#e57804]"
+                        )}
                       />
+                      {touched.workEmail && errors.workEmail && (
+                        <p id="error-contact-email" role="alert" className="text-xs text-rose-400 mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          {errors.workEmail}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="contact-company" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                        Organization / Company *
+                      </label>
+                      <input
+                        id="contact-company"
+                        type="text"
+                        required
+                        value={company}
+                        onChange={(e) => {
+                          setCompany(e.target.value);
+                          if (touched.company) handleBlur("company");
+                        }}
+                        onBlur={() => handleBlur("company")}
+                        placeholder="Apex Holdings Ltd"
+                        aria-invalid={touched.company && !!errors.company}
+                        aria-describedby={touched.company && errors.company ? "error-contact-company" : undefined}
+                        className={cn(
+                          "w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border text-sm text-white focus:outline-none transition-colors",
+                          touched.company && errors.company
+                            ? "border-rose-500/70 focus:border-rose-500"
+                            : "border-white/10 focus:border-[#e57804]"
+                        )}
+                      />
+                      {touched.company && errors.company && (
+                        <p id="error-contact-company" role="alert" className="text-xs text-rose-400 mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          {errors.company}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="contact-phone" className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                        Direct Phone <span className="text-slate-500 normal-case">(Optional)</span>
+                      </label>
+                      <input
+                        id="contact-phone"
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => {
+                          setPhone(e.target.value);
+                          if (touched.phone) handleBlur("phone");
+                        }}
+                        onBlur={() => handleBlur("phone")}
+                        placeholder="+234 800 000 0000"
+                        aria-invalid={touched.phone && !!errors.phone}
+                        aria-describedby={touched.phone && errors.phone ? "error-contact-phone" : undefined}
+                        className={cn(
+                          "w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border text-sm text-white focus:outline-none transition-colors",
+                          touched.phone && errors.phone
+                            ? "border-rose-500/70 focus:border-rose-500"
+                            : "border-white/10 focus:border-[#e57804]"
+                        )}
+                      />
+                      {touched.phone && errors.phone && (
+                        <p id="error-contact-phone" role="alert" className="text-xs text-rose-400 mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          {errors.phone}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -273,20 +595,65 @@ export const ContactPage: React.FC = () => {
                       rows={4}
                       required
                       value={message}
-                      onChange={(e) => setMessage(e.target.value)}
+                      onChange={(e) => {
+                        setMessage(e.target.value);
+                        if (touched.message) handleBlur("message");
+                      }}
+                      onBlur={() => handleBlur("message")}
                       placeholder="Describe your enterprise requirements, scope, or timeline..."
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
+                      aria-invalid={touched.message && !!errors.message}
+                      aria-describedby={touched.message && errors.message ? "error-contact-message" : undefined}
+                      className={cn(
+                        "w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border text-sm text-white focus:outline-none transition-colors",
+                        touched.message && errors.message
+                          ? "border-rose-500/70 focus:border-rose-500"
+                          : "border-white/10 focus:border-[#e57804]"
+                      )}
                     />
+                    {touched.message && errors.message && (
+                      <p id="error-contact-message" role="alert" className="text-xs text-rose-400 mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        {errors.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {errors.general && (
+                    <div
+                      role="alert"
+                      className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2"
+                    >
+                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>{errors.general}</span>
+                    </div>
+                  )}
+
+                  {/* Privacy & Confidentiality Consent */}
+                  <div className="pt-2 text-xs text-slate-400 leading-relaxed border-t border-white/10">
+                    <p>
+                      By submitting this message, you consent to Zakeem Solutions contacting you regarding your enterprise inquiry. We adhere to enterprise confidentiality and data privacy practices. View our{" "}
+                      <Link to="/privacy" className="text-[#e57804] hover:underline">
+                        Privacy Policy
+                      </Link>.
+                    </p>
                   </div>
 
                   <Button
                     variant="primary"
                     size="md"
                     type="submit"
+                    disabled={isSubmitting}
                     className="w-full"
                     data-analytics-id="contact-submit-cta"
                   >
-                    Submit Message
+                    {isSubmitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Transmitting Inquiry...
+                      </span>
+                    ) : (
+                      "Submit Message"
+                    )}
                   </Button>
                 </form>
               )}

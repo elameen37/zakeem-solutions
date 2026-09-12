@@ -184,7 +184,8 @@ export const ZakeemRealtyERPHighlight: React.FC = () => {
                 <Button
                   variant="primary"
                   size="md"
-                  href="/request-demo"
+                  href="/request-demo?product=zakeem-realty-erp"
+                  data-analytics-id="realty-highlight-walkthrough-cta"
                   rightIcon={<ArrowRight className="w-4 h-4" />}
                 >
                   Schedule ERP Walkthrough

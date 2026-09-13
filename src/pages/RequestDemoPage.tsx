@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import {
   CheckCircle2,
@@ -7,6 +7,8 @@ import {
   RefreshCw,
   Calendar,
   Clock,
+  ShieldCheck,
+  Building2,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -22,15 +24,20 @@ import {
   validateEmail,
   validateCompany,
   validatePhone,
-  validatePreferredDate,
-  validatePreferredTime,
-  validateSchedulingPair,
-  getTodayDateString,
   formatDisplayDate,
   ValidationErrors,
 } from "@/lib/leadValidation";
 import { submitLead, generateLeadReferenceId } from "@/lib/leadSubmission";
-import { LeadSubmissionPayload, SubmissionResult } from "@/types/lead";
+import { LeadSubmissionPayload } from "@/types/lead";
+import { Booking, TimeSlot } from "@/types/scheduling";
+import {
+  createBookingReservation,
+  getPublicAvailableSlots,
+} from "@/lib/schedulingService";
+import {
+  getLagosTodayDateString,
+  generateBookingReferenceId,
+} from "@/lib/schedulingEngine";
 
 export const RequestDemoPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -54,6 +61,7 @@ export const RequestDemoPage: React.FC = () => {
     return "cloud";
   };
 
+  // Form identity and commercial fields
   const [fullName, setFullName] = useState("");
   const [workEmail, setWorkEmail] = useState("");
   const [company, setCompany] = useState("");
@@ -63,27 +71,22 @@ export const RequestDemoPage: React.FC = () => {
   const [deploymentType, setDeploymentType] = useState<
     "cloud" | "private-vpc" | "on-premise"
   >(getInitialDeployment());
-  const [preferredDate, setPreferredDate] = useState("");
-  const [preferredTime, setPreferredTime] = useState("");
   const [notes, setNotes] = useState("");
   const [honeypot, setHoneypot] = useState(""); // Anti-spam trap
 
+  // Self-managed scheduling state
+  const lagosToday = getLagosTodayDateString();
+  const [selectedDate, setSelectedDate] = useState(lagosToday);
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+
+  // Submission and error state
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
-  const [submittedData, setSubmittedData] = useState<{
-    fullName: string;
-    workEmail: string;
-    company: string;
-    jobTitle?: string;
-    interest: string;
-    deploymentType: string;
-    preferredDate?: string;
-    preferredTime?: string;
-    preferredTimezone?: string;
-    contextSummary: string | null;
-  } | null>(null);
+  const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
     setInterest(getInitialInterest());
@@ -95,6 +98,31 @@ export const RequestDemoPage: React.FC = () => {
     commercialParams.deployment,
   ]);
 
+  // Load actual available slots when date changes
+  const loadSlotsForDate = useCallback(async (date: string) => {
+    if (!date) return;
+    setIsLoadingSlots(true);
+    setSlotsError(null);
+    setSelectedSlot(null);
+
+    try {
+      const slots = await getPublicAvailableSlots(date);
+      setAvailableSlots(slots);
+      if (slots.length === 0) {
+        setSlotsError("No available slots on this date. Please select another business day (Mon–Fri, 09:00–17:00 WAT).");
+      }
+    } catch {
+      setSlotsError("Unable to calculate availability. Please choose another date.");
+    } finally {
+      setIsLoadingSlots(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSlotsForDate(selectedDate);
+  }, [selectedDate, loadSlotsForDate]);
+
+  // Field blur validation
   const handleBlur = (field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
     let err: string | null = null;
@@ -102,8 +130,6 @@ export const RequestDemoPage: React.FC = () => {
     if (field === "workEmail") err = validateEmail(workEmail);
     if (field === "company") err = validateCompany(company);
     if (field === "phone") err = validatePhone(phone);
-    if (field === "preferredDate") err = validatePreferredDate(preferredDate);
-    if (field === "preferredTime") err = validatePreferredTime(preferredTime);
 
     setErrors((prev) => ({ ...prev, [field]: err || undefined }));
   };
@@ -115,29 +141,27 @@ export const RequestDemoPage: React.FC = () => {
     const emailErr = validateEmail(workEmail);
     const companyErr = validateCompany(company);
     const phoneErr = validatePhone(phone);
-    const dateErr = validatePreferredDate(preferredDate);
-    const timeErr = validatePreferredTime(preferredTime);
-    const pairErr = validateSchedulingPair(preferredDate, preferredTime);
+
+    let dateErr: string | undefined;
+    let slotErr: string | undefined;
+
+    if (!selectedDate) {
+      dateErr = "Please select a preferred date for your walkthrough.";
+    }
+    if (!selectedSlot) {
+      slotErr = "Please select an available appointment time slot.";
+    }
 
     const newErrors: ValidationErrors = {
       fullName: nameErr || undefined,
       workEmail: emailErr || undefined,
       company: companyErr || undefined,
       phone: phoneErr || undefined,
-      preferredDate: dateErr || pairErr.dateError || undefined,
-      preferredTime: timeErr || pairErr.timeError || undefined,
+      preferredDate: dateErr,
+      preferredTime: slotErr,
     };
 
-    if (
-      nameErr ||
-      emailErr ||
-      companyErr ||
-      phoneErr ||
-      dateErr ||
-      timeErr ||
-      pairErr.dateError ||
-      pairErr.timeError
-    ) {
+    if (nameErr || emailErr || companyErr || phoneErr || dateErr || slotErr) {
       setErrors(newErrors);
       setTouched({
         fullName: true,
@@ -153,14 +177,48 @@ export const RequestDemoPage: React.FC = () => {
     setIsSubmitting(true);
     setErrors({});
 
-    const referenceId = generateLeadReferenceId();
+    const referenceId = generateBookingReferenceId(selectedDate);
+    const leadReferenceId = generateLeadReferenceId();
     const attribution = getAttributionContext(searchParams);
 
-    const hasScheduling = Boolean(preferredDate.trim() && preferredTime.trim());
-    const timezone = hasScheduling ? "Africa/Lagos" : undefined;
+    // 1. Double-booking protected atomic reservation
+    const bookingResult = await createBookingReservation({
+      referenceId,
+      leadId: leadReferenceId,
+      fullName: fullName.trim(),
+      email: workEmail.trim(),
+      organization: company.trim(),
+      phone: phone.trim() || undefined,
+      jobTitle: jobTitle.trim() || undefined,
+      product: interest,
+      tier: commercialParams.tier || undefined,
+      suite: commercialParams.suite || undefined,
+      deployment: deploymentType,
+      bookingDate: selectedDate,
+      startTime: selectedSlot!.startTime,
+      endTime: selectedSlot!.endTime,
+      notes: notes.trim() || undefined,
+    });
 
-    const payload: LeadSubmissionPayload = {
-      id: referenceId,
+    if (!bookingResult.success) {
+      setIsSubmitting(false);
+      if (bookingResult.isRaceCollision) {
+        setErrors({
+          general: "This time was just taken. Please select another available time.",
+        });
+        // Immediately reload slots to reflect collision
+        loadSlotsForDate(selectedDate);
+      } else {
+        setErrors({
+          general: bookingResult.error || "Failed to schedule session. Please try again.",
+        });
+      }
+      return;
+    }
+
+    // 2. Lead Infrastructure Integration (Phase 15 Lead Contract + Phase 16)
+    const leadPayload: LeadSubmissionPayload = {
+      id: leadReferenceId,
       submittedAt: new Date().toISOString(),
       identity: {
         fullName: fullName.trim(),
@@ -180,60 +238,40 @@ export const RequestDemoPage: React.FC = () => {
         selectedModules:
           commercialParams.modules.length > 0 ? commercialParams.modules : undefined,
       },
-      scheduling: hasScheduling
-        ? {
-            preferredDate: preferredDate.trim(),
-            preferredTime: preferredTime.trim(),
-            preferredTimezone: timezone,
-          }
-        : undefined,
-      preferredDate: hasScheduling ? preferredDate.trim() : undefined,
-      preferredTime: hasScheduling ? preferredTime.trim() : undefined,
-      preferredTimezone: timezone,
+      scheduling: {
+        preferredDate: selectedDate,
+        preferredTime: `${selectedSlot!.displayTime} WAT`,
+        preferredTimezone: "Africa/Lagos",
+      },
+      preferredDate: selectedDate,
+      preferredTime: `${selectedSlot!.displayTime} WAT`,
+      preferredTimezone: "Africa/Lagos",
       attribution,
       notes: notes.trim() || undefined,
       consent: true,
       honeypot: honeypot.trim() || undefined,
     };
 
-    const result = await submitLead(payload);
-    setIsSubmitting(false);
+    // Submits lead and emits zakeem:lead_capture DOM analytics event
+    await submitLead(leadPayload);
 
-    if (result.success) {
-      setSubmittedData({
-        fullName: fullName.trim(),
-        workEmail: workEmail.trim(),
-        company: company.trim(),
-        jobTitle: jobTitle.trim() || undefined,
-        interest,
-        deploymentType,
-        preferredDate: hasScheduling ? preferredDate.trim() : undefined,
-        preferredTime: hasScheduling ? preferredTime.trim() : undefined,
-        preferredTimezone: timezone,
-        contextSummary,
-      });
-      setSubmissionResult(result);
-    } else {
-      setErrors({
-        general: result.error || "Failed to schedule session. Please try again.",
-      });
-    }
+    setIsSubmitting(false);
+    setConfirmedBooking(bookingResult.booking || null);
   };
 
   const handleReset = () => {
-    setSubmissionResult(null);
-    setSubmittedData(null);
+    setConfirmedBooking(null);
     setFullName("");
     setWorkEmail("");
     setCompany("");
     setPhone("");
     setJobTitle("");
-    setPreferredDate("");
-    setPreferredTime("");
+    setSelectedSlot(null);
     setNotes("");
     setHoneypot("");
     setErrors({});
     setTouched({});
+    loadSlotsForDate(lagosToday);
   };
 
   const getInterestLabel = (val: string) => {
@@ -258,11 +296,18 @@ export const RequestDemoPage: React.FC = () => {
     }
   };
 
+  // Compute maximum booking horizon date (30 days from today)
+  const maxHorizonDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" });
+  })();
+
   return (
     <>
       <SEO
-        title="Request a Confidential Enterprise Demo — Zakeem Solutions"
-        description="Schedule a technical architecture walkthrough of Zakeem Realty ERP or our enterprise software and AI solutions."
+        title="Schedule a Confidential Technical Walkthrough — Zakeem Solutions"
+        description="Book a dedicated executive walkthrough of Zakeem Realty ERP or our enterprise software platforms with a Lead Solutions Architect."
         canonical="https://www.zakeemsolutions.com/request-demo"
       />
 
@@ -271,15 +316,23 @@ export const RequestDemoPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             {/* Left Context Panel */}
             <div className="lg:col-span-5 space-y-6">
-              <Badge variant="neon">Enterprise Briefing</Badge>
+              <Badge variant="neon">Executive Architecture Desk</Badge>
               <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-tight">
-                Request a Confidential Technical Walkthrough.
+                Schedule a Confidential Technical Walkthrough.
               </h1>
               <p className="text-sm md:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                Connect directly with a Lead Solutions Architect. We will tailor the session around your organization’s specific workflows, data schemas, and security requirements.
+                Connect directly with a Lead Solutions Architect in West Africa Time (WAT). Choose your operational window to secure an atomic reservation tailored to your organization’s schemas and security requirements.
               </p>
 
               <div className="space-y-3.5 pt-4">
+                <div className="flex items-start gap-3 text-xs md:text-sm text-slate-600 dark:text-slate-300">
+                  <CheckCircle2 className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
+                  <span>Real-time availability directly managed by Zakeem systems</span>
+                </div>
+                <div className="flex items-start gap-3 text-xs md:text-sm text-slate-600 dark:text-slate-300">
+                  <CheckCircle2 className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
+                  <span>Double-booking protected atomic reservation</span>
+                </div>
                 <div className="flex items-start gap-3 text-xs md:text-sm text-slate-600 dark:text-slate-300">
                   <CheckCircle2 className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
                   <span>Live demonstration of Zakeem Realty ERP or AI models</span>
@@ -288,85 +341,71 @@ export const RequestDemoPage: React.FC = () => {
                   <CheckCircle2 className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
                   <span>Architecture, cloud VPC, and security review</span>
                 </div>
-                <div className="flex items-start gap-3 text-xs md:text-sm text-slate-600 dark:text-slate-300">
-                  <CheckCircle2 className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
-                  <span>Custom migration and pricing roadmap</span>
-                </div>
               </div>
             </div>
 
             {/* Right Form Card */}
             <div data-surface="dark" className="lg:col-span-7 p-8 md:p-10 rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl">
-              {submissionResult && submittedData ? (
+              {confirmedBooking ? (
                 <div className="text-center py-6 space-y-6">
-                  <div className="w-14 h-14 rounded-full bg-[#e57804]/20 border border-[#e57804]/40 flex items-center justify-center mx-auto text-[#e57804]">
+                  <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-400">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
 
                   <div className="space-y-2">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-400">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      Session Preference Logged
+                      Booking Confirmed
                     </div>
-                    <h3 className="text-2xl font-bold text-white">Demo Request Received</h3>
+                    <h3 className="text-2xl font-bold text-white">Technical Briefing Reserved</h3>
                     <p className="text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
-                      Thank you, <span className="text-white font-semibold">{submittedData.fullName}</span>. A Senior Solutions Architect will reach out to <span className="text-[#e57804] font-mono">{submittedData.workEmail}</span> within 4 business hours to confirm your private session.
+                      Thank you, <span className="text-white font-semibold">{confirmedBooking.fullName}</span>. Your private technical walkthrough has been confirmed and scheduled with our Lead Solutions Architect.
                     </p>
                   </div>
 
-                  {/* Submission Summary Card */}
-                  <div className="p-4 rounded-2xl bg-[#06152b] border border-white/10 text-left space-y-3 max-w-lg mx-auto">
+                  {/* Confirmed Booking Summary Card */}
+                  <div className="p-5 rounded-2xl bg-[#06152b] border border-white/10 text-left space-y-3.5 max-w-lg mx-auto">
                     <div className="flex items-center justify-between text-xs pb-2 border-b border-white/10">
-                      <span className="text-slate-400">Reference ID:</span>
-                      <span className="font-mono text-[#e57804] font-semibold tracking-wider">
-                        {submissionResult.leadId}
+                      <span className="text-slate-400">Booking Reference:</span>
+                      <span className="font-mono text-[#e57804] font-semibold tracking-wider text-sm">
+                        {confirmedBooking.referenceId}
                       </span>
                     </div>
+
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-400">Organization:</span>
-                      <span className="text-white font-medium">{submittedData.company}</span>
-                    </div>
-                    {submittedData.jobTitle && (
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400">Role:</span>
-                        <span className="text-slate-300">{submittedData.jobTitle}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400">Solution Scope:</span>
-                      <span className="text-slate-200 font-medium">{getInterestLabel(submittedData.interest)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400">Deployment:</span>
-                      <span className="text-slate-300">{getDeploymentLabel(submittedData.deploymentType)}</span>
+                      <span className="text-white font-medium">{confirmedBooking.organization}</span>
                     </div>
 
-                    {/* Conditionally display Preferred Session Time */}
-                    {submittedData.preferredDate && submittedData.preferredTime && (
-                      <div className="flex items-start justify-between text-xs pt-1 border-t border-white/5">
-                        <div>
-                          <span className="text-slate-400 block">Preferred Session:</span>
-                          <span className="text-[10px] font-mono text-amber-400/90">Requested time (pending confirmation)</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-white font-medium block">
-                            {formatDisplayDate(submittedData.preferredDate)}
-                          </span>
-                          <span className="text-slate-300 font-mono text-[11px]">
-                            {submittedData.preferredTime} WAT
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400">Lead Contact:</span>
+                      <span className="text-slate-300 font-mono">{confirmedBooking.email}</span>
+                    </div>
 
-                    {submittedData.contextSummary && (
-                      <div className="flex items-center justify-between text-xs pt-1 border-t border-white/5">
-                        <span className="text-slate-400">Configuration:</span>
-                        <span className="text-amber-400 font-medium text-right truncate max-w-[240px]">
-                          {submittedData.contextSummary}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400">Product Scope:</span>
+                      <span className="text-slate-200 font-medium">{getInterestLabel(confirmedBooking.product)}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400">Deployment Model:</span>
+                      <span className="text-slate-300">{getDeploymentLabel(confirmedBooking.deployment || "cloud")}</span>
+                    </div>
+
+                    <div className="flex items-start justify-between text-xs pt-2 border-t border-white/10">
+                      <div>
+                        <span className="text-slate-400 block">Confirmed Appointment:</span>
+                        <span className="text-[11px] font-mono text-emerald-400">Reserved (West Africa Time)</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-white font-medium block text-sm">
+                          {formatDisplayDate(confirmedBooking.bookingDate)}
+                        </span>
+                        <span className="text-[#e57804] font-mono text-xs font-semibold">
+                          {confirmedBooking.startTime} – {confirmedBooking.endTime} WAT
                         </span>
                       </div>
-                    )}
+                    </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -395,9 +434,9 @@ export const RequestDemoPage: React.FC = () => {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-xl font-bold text-white">Schedule Session</h3>
-                    <span className="text-xs font-mono text-slate-300 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#e57804]" />
-                      Schedule Preference
+                    <span className="text-xs font-mono text-emerald-400 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Available Times — WAT
                     </span>
                   </div>
 
@@ -436,6 +475,7 @@ export const RequestDemoPage: React.FC = () => {
                     />
                   </div>
 
+                  {/* 1. Identity Fields */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="demo-full-name" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
@@ -468,6 +508,7 @@ export const RequestDemoPage: React.FC = () => {
                         </p>
                       )}
                     </div>
+
                     <div>
                       <label htmlFor="demo-work-email" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
                         Corporate Work Email *
@@ -566,6 +607,7 @@ export const RequestDemoPage: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* 2. Commercial Context Fields */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="demo-interest" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
@@ -609,90 +651,109 @@ export const RequestDemoPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Phase 16: Preferred Date & Time Scheduling Section */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="demo-preferred-date" className="block text-xs font-mono uppercase text-slate-400 mb-1.5 flex items-center justify-between">
-                        <span className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-[#e57804]" />
-                          Preferred Date
-                        </span>
-                        <span className="text-slate-500 normal-case font-sans">(Optional)</span>
-                      </label>
-                      <input
-                        id="demo-preferred-date"
-                        type="date"
-                        min={getTodayDateString()}
-                        value={preferredDate}
-                        onChange={(e) => {
-                          setPreferredDate(e.target.value);
-                          if (touched.preferredDate) handleBlur("preferredDate");
-                        }}
-                        onBlur={() => handleBlur("preferredDate")}
-                        aria-invalid={touched.preferredDate && !!errors.preferredDate}
-                        aria-describedby={touched.preferredDate && errors.preferredDate ? "error-demo-date" : undefined}
-                        data-analytics-id="request-demo-date-selected"
-                        className={cn(
-                          "w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border text-sm text-white focus:outline-none transition-colors [color-scheme:dark]",
-                          touched.preferredDate && errors.preferredDate
-                            ? "border-rose-500/70 focus:border-rose-500"
-                            : "border-white/10 focus:border-[#e57804]"
-                        )}
-                      />
-                      {touched.preferredDate && errors.preferredDate && (
-                        <p id="error-demo-date" role="alert" className="text-xs text-rose-400 mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          {errors.preferredDate}
-                        </p>
+                  {/* 3. Date Selection (Constrained by Minimum Notice & 30-Day Horizon) */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="demo-preferred-date" className="block text-xs font-mono uppercase text-slate-400 mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-[#e57804]" />
+                        Select Date *
+                      </span>
+                      <span className="text-slate-500 normal-case font-sans">(Mon–Fri, within 30 days)</span>
+                    </label>
+                    <input
+                      id="demo-preferred-date"
+                      type="date"
+                      required
+                      min={lagosToday}
+                      max={maxHorizonDate}
+                      value={selectedDate}
+                      onChange={(e) => {
+                        setSelectedDate(e.target.value);
+                        if (touched.preferredDate) handleBlur("preferredDate");
+                      }}
+                      onBlur={() => handleBlur("preferredDate")}
+                      aria-invalid={touched.preferredDate && !!errors.preferredDate}
+                      aria-describedby={touched.preferredDate && errors.preferredDate ? "error-demo-date" : undefined}
+                      data-analytics-id="request-demo-date-selected"
+                      className={cn(
+                        "w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border text-sm text-white focus:outline-none transition-colors [color-scheme:dark]",
+                        touched.preferredDate && errors.preferredDate
+                          ? "border-rose-500/70 focus:border-rose-500"
+                          : "border-white/10 focus:border-[#e57804]"
                       )}
-                    </div>
-
-                    <div>
-                      <label htmlFor="demo-preferred-time" className="block text-xs font-mono uppercase text-slate-400 mb-1.5 flex items-center justify-between">
-                        <span className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-[#e57804]" />
-                          Preferred Time
-                        </span>
-                        <span className="text-slate-500 normal-case font-sans">(WAT • Optional)</span>
-                      </label>
-                      <select
-                        id="demo-preferred-time"
-                        value={preferredTime}
-                        onChange={(e) => {
-                          setPreferredTime(e.target.value);
-                          if (touched.preferredTime) handleBlur("preferredTime");
-                        }}
-                        onBlur={() => handleBlur("preferredTime")}
-                        aria-invalid={touched.preferredTime && !!errors.preferredTime}
-                        aria-describedby={touched.preferredTime && errors.preferredTime ? "error-demo-time" : undefined}
-                        data-analytics-id="request-demo-time-selected"
-                        className={cn(
-                          "w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border text-sm text-white focus:outline-none transition-colors",
-                          touched.preferredTime && errors.preferredTime
-                            ? "border-rose-500/70 focus:border-rose-500"
-                            : "border-white/10 focus:border-[#e57804]"
-                        )}
-                      >
-                        <option value="">Select preferred time...</option>
-                        <option value="09:00 AM">09:00 AM WAT</option>
-                        <option value="10:00 AM">10:00 AM WAT</option>
-                        <option value="11:00 AM">11:00 AM WAT</option>
-                        <option value="12:00 PM">12:00 PM WAT</option>
-                        <option value="01:00 PM">01:00 PM WAT</option>
-                        <option value="02:00 PM">02:00 PM WAT</option>
-                        <option value="03:00 PM">03:00 PM WAT</option>
-                        <option value="04:00 PM">04:00 PM WAT</option>
-                        <option value="05:00 PM">05:00 PM WAT</option>
-                      </select>
-                      {touched.preferredTime && errors.preferredTime && (
-                        <p id="error-demo-time" role="alert" className="text-xs text-rose-400 mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          {errors.preferredTime}
-                        </p>
-                      )}
-                    </div>
+                    />
+                    {touched.preferredDate && errors.preferredDate && (
+                      <p id="error-demo-date" role="alert" className="text-xs text-rose-400 mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        {errors.preferredDate}
+                      </p>
+                    )}
                   </div>
 
+                  {/* 4. Real-Time Available Time Slots (Calculated by Scheduling Engine) */}
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-mono uppercase text-slate-400 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-[#e57804]" />
+                        Available Times (WAT) *
+                      </label>
+                      {isLoadingSlots && (
+                        <span className="text-[11px] font-mono text-[#e57804] flex items-center gap-1 animate-pulse" aria-live="polite">
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                          Calculating Availability...
+                        </span>
+                      )}
+                    </div>
+
+                    {slotsError && !isLoadingSlots ? (
+                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>{slotsError}</span>
+                      </div>
+                    ) : (
+                      <div
+                        className="grid grid-cols-2 sm:grid-cols-3 gap-2"
+                        role="radiogroup"
+                        aria-label="Available appointment time slots"
+                      >
+                        {availableSlots.map((slot) => {
+                          const isSelected = selectedSlot?.startTime === slot.startTime;
+                          return (
+                            <button
+                              key={slot.startTime}
+                              type="button"
+                              role="radio"
+                              aria-checked={isSelected}
+                              onClick={() => {
+                                setSelectedSlot(slot);
+                                if (errors.preferredTime) {
+                                  setErrors((prev) => ({ ...prev, preferredTime: undefined }));
+                                }
+                              }}
+                              data-analytics-id="request-demo-slot-selected"
+                              className={cn(
+                                "min-h-[44px] px-3 py-2.5 rounded-xl text-xs font-mono font-medium transition-all flex items-center justify-center border",
+                                isSelected
+                                  ? "bg-[#e57804] text-white border-[#e57804] shadow-md shadow-[#e57804]/20 font-bold"
+                                  : "bg-[#06152b] text-slate-200 border-white/10 hover:border-[#e57804]/50 hover:bg-white/5"
+                              )}
+                            >
+                              {slot.displayTime}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {touched.preferredTime && errors.preferredTime && (
+                      <p id="error-demo-time" role="alert" className="text-xs text-rose-400 mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        {errors.preferredTime}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* 5. Role & Scope Fields */}
                   <div>
                     <label htmlFor="demo-job-title" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
                       Job Title / Role <span className="text-slate-500 normal-case">(Optional)</span>
@@ -734,11 +795,11 @@ export const RequestDemoPage: React.FC = () => {
                   {/* Privacy & Confidentiality Consent */}
                   <div className="pt-2 text-xs text-slate-400 leading-relaxed border-t border-white/10">
                     <p>
-                      By submitting this request, you agree to our{" "}
+                      By scheduling this briefing, you agree to our{" "}
                       <Link to="/privacy" className="text-[#e57804] hover:underline">
                         Privacy Policy
                       </Link>
-                      . Your contact details are kept strictly confidential and used exclusively for scheduling your technical briefing.
+                      . Your session reservation is confirmed in real time and protected against duplicate bookings.
                     </p>
                   </div>
 
@@ -746,17 +807,19 @@ export const RequestDemoPage: React.FC = () => {
                     variant="primary"
                     size="lg"
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !selectedSlot}
                     className="w-full"
                     data-analytics-id="demo-submit-cta"
                   >
                     {isSubmitting ? (
                       <span className="flex items-center justify-center gap-2">
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        Scheduling Briefing...
+                        Reserving Walkthrough...
                       </span>
+                    ) : selectedSlot ? (
+                      `Confirm & Reserve ${selectedSlot.displayTime} WAT`
                     ) : (
-                      "Confirm & Schedule Briefing"
+                      "Select a Time Slot to Reserve"
                     )}
                   </Button>
                 </form>

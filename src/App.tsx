@@ -22,6 +22,7 @@ const LoginPage = React.lazy(() => import("@/pages/LoginPage").then((m) => ({ de
 const SupportPage = React.lazy(() => import("@/pages/SupportPage").then((m) => ({ default: m.SupportPage })));
 const PrivacyPage = React.lazy(() => import("@/pages/PrivacyPage").then((m) => ({ default: m.PrivacyPage })));
 const TermsPage = React.lazy(() => import("@/pages/TermsPage").then((m) => ({ default: m.TermsPage })));
+const AdminSchedulingPage = React.lazy(() => import("@/pages/admin/AdminSchedulingPage").then((m) => ({ default: m.AdminSchedulingPage })));
 
 // Minimal on-brand loading fallback for seamless route transitions
 const RouteLoadingFallback: React.FC = () => (
@@ -73,6 +74,9 @@ export const App: React.FC = () => {
             <Route path="/support" element={<SupportPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/terms" element={<TermsPage />} />
+
+            {/* Internal Admin Operations */}
+            <Route path="/admin/scheduling" element={<AdminSchedulingPage />} />
 
             {/* Fallback 404 route */}
             <Route path="*" element={<HomePage />} />

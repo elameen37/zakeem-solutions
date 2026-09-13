@@ -288,6 +288,23 @@ footer .text-slate-400 {
   border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
+/* Secondary buttons (.bg-slate-100) inside dark surfaces must use dark translucent background */
+.surface-dark .bg-slate-100,
+[data-surface="dark"] .bg-slate-100,
+.bg-\[\#081c38\] .bg-slate-100,
+[class*="from-\[\#081c38\]"] .bg-slate-100 {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+.surface-dark .bg-slate-100:hover,
+[data-surface="dark"] .bg-slate-100:hover,
+.bg-\[\#081c38\] .bg-slate-100:hover,
+[class*="from-\[\#081c38\]"] .bg-slate-100:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+
 /* Inset wells inside dark surfaces */
 .surface-dark .bg-black\/40,
 .surface-dark .bg-black\/50,

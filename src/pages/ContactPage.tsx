@@ -372,10 +372,10 @@ export const ContactPage: React.FC = () => {
 
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <Button
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={handleReset}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto text-white border-white/20 hover:bg-white/10"
                     >
                       Submit Another Inquiry
                     </Button>

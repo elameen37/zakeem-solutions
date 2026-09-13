@@ -108,6 +108,14 @@ export const RequestDemoPage: React.FC = () => {
     try {
       const slots = await getPublicAvailableSlots(date);
       setAvailableSlots(slots);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("request-demo-availability-loaded", {
+            bubbles: true,
+            detail: { date, count: slots.length },
+          })
+        );
+      }
       if (slots.length === 0) {
         setSlotsError("No available slots on this date. Please select another business day (Mon–Fri, 09:00–17:00 WAT).");
       }
@@ -202,6 +210,19 @@ export const RequestDemoPage: React.FC = () => {
 
     if (!bookingResult.success) {
       setIsSubmitting(false);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("request-demo-booking-failed", {
+            bubbles: true,
+            detail: {
+              error: bookingResult.error,
+              isRaceCollision: Boolean(bookingResult.isRaceCollision),
+              bookingDate: selectedDate,
+              startTime: selectedSlot?.startTime,
+            },
+          })
+        );
+      }
       if (bookingResult.isRaceCollision) {
         setErrors({
           general: "This time was just taken. Please select another available time.",
@@ -254,6 +275,21 @@ export const RequestDemoPage: React.FC = () => {
 
     // Submits lead and emits zakeem:lead_capture DOM analytics event
     await submitLead(leadPayload);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("request-demo-booking-confirmed", {
+          bubbles: true,
+          detail: {
+            referenceId: bookingResult.booking?.referenceId,
+            leadId: leadReferenceId,
+            bookingDate: selectedDate,
+            startTime: selectedSlot?.startTime,
+            endTime: selectedSlot?.endTime,
+          },
+        })
+      );
+    }
 
     setIsSubmitting(false);
     setConfirmedBooking(bookingResult.booking || null);
@@ -410,10 +446,10 @@ export const RequestDemoPage: React.FC = () => {
 
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <Button
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={handleReset}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto text-white border-white/20 hover:bg-white/10"
                     >
                       Schedule Another Session
                     </Button>
@@ -728,6 +764,14 @@ export const RequestDemoPage: React.FC = () => {
                                 setSelectedSlot(slot);
                                 if (errors.preferredTime) {
                                   setErrors((prev) => ({ ...prev, preferredTime: undefined }));
+                                }
+                                if (typeof window !== "undefined") {
+                                  window.dispatchEvent(
+                                    new CustomEvent("request-demo-slot-selected", {
+                                      bubbles: true,
+                                      detail: { date: selectedDate, startTime: slot.startTime, endTime: slot.endTime },
+                                    })
+                                  );
                                 }
                               }}
                               data-analytics-id="request-demo-slot-selected"

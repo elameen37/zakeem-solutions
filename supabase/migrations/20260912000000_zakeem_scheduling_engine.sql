@@ -368,15 +368,15 @@ BEGIN
 
                         -- Check minimum notice
                         IF v_slot_datetime >= (v_now_wat + (v_settings.minimum_notice_hours || ' hours')::INTERVAL) THEN
-                            -- Check if booked
+                            -- Check if booked (table-qualify b.start_time and b.end_time to avoid ambiguity with output table columns)
                             SELECT EXISTS (
-                                SELECT 1 FROM bookings 
-                                WHERE booking_date = v_curr_date 
-                                  AND status NOT IN ('cancelled')
+                                SELECT 1 FROM bookings b
+                                WHERE b.booking_date = v_curr_date 
+                                  AND b.status NOT IN ('cancelled')
                                   AND (
-                                      booking_slot && v_slot_range OR
-                                      (start_time <= v_slot_start AND end_time > v_slot_start) OR
-                                      (start_time < v_slot_end AND end_time >= v_slot_end)
+                                      b.booking_slot && v_slot_range OR
+                                      (b.start_time <= v_slot_start AND b.end_time > v_slot_start) OR
+                                      (b.start_time < v_slot_end AND b.end_time >= v_slot_end)
                                   )
                             ) INTO v_is_blocked;
 
@@ -411,9 +411,12 @@ ALTER TABLE availability_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE availability_exceptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 
--- Revoke default public table privileges on bookings
+-- Revoke default public table privileges
 REVOKE ALL ON bookings FROM anon;
 REVOKE ALL ON bookings FROM authenticated;
+REVOKE INSERT, UPDATE, DELETE ON schedule_settings FROM anon;
+REVOKE INSERT, UPDATE, DELETE ON availability_rules FROM anon;
+REVOKE INSERT, UPDATE, DELETE ON availability_exceptions FROM anon;
 
 -- Public users can call get_public_availability and create_booking_atomic
 GRANT EXECUTE ON FUNCTION get_public_availability(DATE, DATE) TO anon, authenticated;

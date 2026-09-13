@@ -120,6 +120,9 @@ public/admin/
 dist/
 dist-ssr/
 
+# Supabase CLI cache
+supabase/.temp/
+
 # Editor / OS files
 .vscode/*
 !.vscode/extensions.json

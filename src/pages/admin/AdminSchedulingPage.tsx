@@ -40,6 +40,7 @@ import {
   updateAdminAvailabilityRule,
   updateAdminScheduleSettings,
 } from "@/lib/schedulingService";
+import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import { formatDisplayDate } from "@/lib/leadValidation";
 
 type ActiveTab = "bookings" | "settings" | "rules" | "exceptions";
@@ -47,6 +48,8 @@ type ActiveTab = "bookings" | "settings" | "rules" | "exceptions";
 export const AdminSchedulingPage: React.FC = () => {
   // Authentication gate state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
   const [passkey, setPasskey] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -69,6 +72,20 @@ export const AdminSchedulingPage: React.FC = () => {
   // Exception form state
   const [newExceptionDate, setNewExceptionDate] = useState("");
   const [newExceptionReason, setNewExceptionReason] = useState("");
+
+  // Check active Supabase session on mount
+  useEffect(() => {
+    if (isSupabaseConfigured()) {
+      const client = getSupabaseClient();
+      if (client) {
+        client.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) {
+            setIsAuthenticated(true);
+          }
+        });
+      }
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -96,15 +113,53 @@ export const AdminSchedulingPage: React.FC = () => {
     }
   }, [isAuthenticated, loadData]);
 
-  const handleAuthenticate = (e: React.FormEvent) => {
+  const handleAuthenticate = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Verify admin access (Protected operational desk)
+    setAuthError(null);
+
+    // Production mode: Authenticate against Supabase Auth for RLS compliance
+    if (isSupabaseConfigured()) {
+      const client = getSupabaseClient();
+      if (client) {
+        setIsLoading(true);
+        const { data, error } = await client.auth.signInWithPassword({
+          email: adminEmail.trim(),
+          password: adminPassword,
+        });
+        setIsLoading(false);
+
+        if (error) {
+          setAuthError(error.message || "Invalid administrative credentials. Please verify your solutions login.");
+          return;
+        }
+
+        if (data.session?.user) {
+          setIsAuthenticated(true);
+          return;
+        }
+      }
+    }
+
+    // Local development mode: Verify admin access via operational passkey
     if (passkey.trim() === "zakeem-executive" || passkey.trim().length >= 8) {
       setIsAuthenticated(true);
       setAuthError(null);
     } else {
       setAuthError("Invalid administrative credentials. Please verify your solutions passkey.");
     }
+  };
+
+  const handleSignOut = async () => {
+    if (isSupabaseConfigured()) {
+      const client = getSupabaseClient();
+      if (client) {
+        await client.auth.signOut();
+      }
+    }
+    setIsAuthenticated(false);
+    setPasskey("");
+    setAdminEmail("");
+    setAdminPassword("");
   };
 
   const handleCancelBooking = async (id: string) => {
@@ -195,25 +250,61 @@ export const AdminSchedulingPage: React.FC = () => {
                 <Badge variant="neon" className="mb-2">Restricted Access</Badge>
                 <h1 className="text-2xl font-bold text-white">Scheduling Desk Gate</h1>
                 <p className="text-xs text-slate-300 mt-1">
-                  Enter administrative passkey to access operational booking records.
+                  {isSupabaseConfigured()
+                    ? "Enter your Zakeem Solutions administrative credentials to access operational records."
+                    : "Enter administrative passkey to access operational booking records (Local Development Mode)."}
                 </p>
               </div>
 
               <form onSubmit={handleAuthenticate} className="space-y-4 text-left">
-                <div>
-                  <label htmlFor="admin-passkey" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
-                    Administrative Passkey
-                  </label>
-                  <input
-                    id="admin-passkey"
-                    type="password"
-                    required
-                    value={passkey}
-                    onChange={(e) => setPasskey(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
-                  />
-                </div>
+                {isSupabaseConfigured() ? (
+                  <>
+                    <div>
+                      <label htmlFor="admin-email" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                        Administrator Work Email
+                      </label>
+                      <input
+                        id="admin-email"
+                        type="email"
+                        required
+                        value={adminEmail}
+                        onChange={(e) => setAdminEmail(e.target.value)}
+                        placeholder="executive@zakeemsolutions.com"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="admin-password" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                        Password
+                      </label>
+                      <input
+                        id="admin-password"
+                        type="password"
+                        required
+                        value={adminPassword}
+                        onChange={(e) => setAdminPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <label htmlFor="admin-passkey" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                      Administrative Passkey
+                    </label>
+                    <input
+                      id="admin-passkey"
+                      type="password"
+                      required
+                      value={passkey}
+                      onChange={(e) => setPasskey(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
+                    />
+                  </div>
+                )}
 
                 {authError && (
                   <div role="alert" className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
@@ -222,13 +313,19 @@ export const AdminSchedulingPage: React.FC = () => {
                   </div>
                 )}
 
-                <Button variant="primary" size="md" type="submit" className="w-full">
-                  Unlock Scheduling Desk
+                <Button variant="primary" size="md" type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading
+                    ? "Authenticating..."
+                    : isSupabaseConfigured()
+                    ? "Sign In with Supabase Identity"
+                    : "Unlock Scheduling Desk"}
                 </Button>
               </form>
 
               <p className="text-[11px] text-slate-500">
-                Protected by PostgreSQL Row-Level Security (RLS) & Supabase Identity.
+                {isSupabaseConfigured()
+                  ? "Protected by PostgreSQL Row-Level Security (RLS) & Supabase Identity."
+                  : "Local development fallback mode. Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for production."}
               </p>
             </div>
           </div>
@@ -256,6 +353,15 @@ export const AdminSchedulingPage: React.FC = () => {
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   Africa/Lagos (WAT)
                 </span>
+                {isSupabaseConfigured() ? (
+                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-[10px]">
+                    Supabase Connected
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="border-amber-500/40 text-amber-400 text-[10px]">
+                    Local Storage Mode
+                  </Badge>
+                )}
               </div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-white">
                 Executive Scheduling & Walkthrough Desk
@@ -278,6 +384,14 @@ export const AdminSchedulingPage: React.FC = () => {
                   View Public Form
                 </Button>
               </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSignOut}
+                className="border-white/15 text-slate-400 hover:text-white"
+              >
+                Lock Desk
+              </Button>
             </div>
           </div>
 

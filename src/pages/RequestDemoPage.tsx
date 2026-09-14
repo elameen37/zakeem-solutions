@@ -444,6 +444,16 @@ export const RequestDemoPage: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Next Steps Advisory */}
+                  <div className="p-3.5 rounded-xl bg-[#06152b] border border-white/10 text-left text-xs text-slate-300 max-w-lg mx-auto space-y-1">
+                    <span className="text-white font-semibold flex items-center gap-1.5 text-xs">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#e57804]" /> Next Steps
+                    </span>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Our Lead Solutions Architect has been assigned to your session. Please save your reference ID (<span className="text-[#e57804] font-mono">{confirmedBooking.referenceId}</span>) for your records. The meeting briefing and technical agenda are prepared directly in advance of your reserved window.
+                    </p>
+                  </div>
+
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <Button
                       variant="outline"

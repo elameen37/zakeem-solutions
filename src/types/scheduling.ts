@@ -62,6 +62,10 @@ export interface Booking {
   timezone: string; // "Africa/Lagos"
   status: BookingStatus;
   notes?: string;
+  internalNotes?: string;
+  rescheduledFromId?: string;
+  rescheduledAt?: string;
+  rescheduleCount?: number;
   cancellationReason?: string;
   cancelledAt?: string;
   createdAt: string;
@@ -101,3 +105,63 @@ export interface BookingResponse {
   error?: string;
   isRaceCollision?: boolean;
 }
+
+export interface BookingAuditLog {
+  id: string;
+  bookingId: string;
+  referenceId: string;
+  action: string;
+  actor: string;
+  previousStatus?: string;
+  newStatus?: string;
+  details?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export type NotificationEventType =
+  | "booking_created"
+  | "booking_confirmed"
+  | "booking_cancelled"
+  | "booking_rescheduled"
+  | "booking_completed"
+  | "booking_no_show";
+
+export interface BookingNotification {
+  id: string;
+  bookingId: string;
+  referenceId: string;
+  eventType: NotificationEventType;
+  recipientEmail: string;
+  recipientName: string;
+  channel: "email" | "sms" | "whatsapp" | "webhook";
+  status: "pending" | "delivered" | "failed" | "skipped";
+  payload: Record<string, unknown>;
+  errorMessage?: string;
+  createdAt: string;
+  sentAt?: string;
+}
+
+export interface RescheduleRequest {
+  bookingId: string;
+  newDate: string;
+  newStartTime: string;
+  newEndTime: string;
+  reason?: string;
+  actor?: string;
+}
+
+export interface RescheduleResponse {
+  success: boolean;
+  booking?: Booking;
+  error?: string;
+  isRaceCollision?: boolean;
+}
+
+export const VALID_STATUS_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
+  pending: ["confirmed", "cancelled"],
+  confirmed: ["completed", "no_show", "cancelled"],
+  cancelled: [], // Terminal directly; must use reschedule
+  completed: [], // Terminal
+  no_show: [],   // Terminal
+};
+

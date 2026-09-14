@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Calendar,
   Clock,
-  ShieldAlert,
   ShieldCheck,
   CheckCircle2,
   XCircle,
@@ -18,6 +17,19 @@ import {
   Sliders,
   CalendarDays,
   Lock,
+  Search,
+  Filter,
+  FileText,
+  History,
+  Bell,
+  ArrowRight,
+  X,
+  Edit3,
+  AlertTriangle,
+  Check,
+  ExternalLink,
+  Layers,
+  ChevronRight,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -27,7 +39,12 @@ import {
   AvailabilityException,
   AvailabilityRule,
   Booking,
+  BookingAuditLog,
+  BookingNotification,
+  BookingStatus,
   ScheduleSettings,
+  TimeSlot,
+  VALID_STATUS_TRANSITIONS,
 } from "@/types/scheduling";
 import {
   addAdminException,
@@ -39,11 +56,34 @@ import {
   getAdminScheduleSettings,
   updateAdminAvailabilityRule,
   updateAdminScheduleSettings,
+  updateAdminBookingStatus,
+  rescheduleAdminBooking,
+  updateAdminBookingInternalNotes,
+  getAdminBookingAuditLogs,
+  getAdminBookingNotifications,
+  getPublicAvailableSlots,
 } from "@/lib/schedulingService";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import { formatDisplayDate } from "@/lib/leadValidation";
+import {
+  getLagosTodayDateString,
+  formatDisplayTime,
+} from "@/lib/schedulingEngine";
 
 type ActiveTab = "bookings" | "settings" | "rules" | "exceptions";
+type DrawerTab = "details" | "reschedule" | "audit" | "notifications";
+
+const PRODUCT_FILTER_OPTIONS = [
+  { value: "all", label: "All Products & Solutions" },
+  { value: "zakeem-realty-erp", label: "Zakeem Realty ERP" },
+  { value: "cortex-ai", label: "Zakeem Cortex AI" },
+  { value: "e-legal", label: "e-Legal & Justice Platform" },
+  { value: "flow-procure", label: "Zakeem Flow (Procurement)" },
+  { value: "vault-pay", label: "Zakeem Vault (Settlement)" },
+  { value: "custom-software", label: "Custom Software Engineering" },
+  { value: "cloud-infrastructure", label: "Cloud Infrastructure & Security" },
+  { value: "enterprise-consulting", label: "Strategic Consulting" },
+];
 
 export const AdminSchedulingPage: React.FC = () => {
   // Authentication gate state
@@ -61,17 +101,50 @@ export const AdminSchedulingPage: React.FC = () => {
   const [settings, setSettings] = useState<ScheduleSettings | null>(null);
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
   const [exceptions, setExceptions] = useState<AvailabilityException[]>([]);
-  const [bookingFilter, setBookingFilter] = useState<string>("all");
+
+  // Filtering & Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [productFilter, setProductFilter] = useState<string>("all");
+  const [dateScopeFilter, setDateScopeFilter] = useState<string>("all");
 
   // Loading & notification states
   const [isLoading, setIsLoading] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
-  const [cancelReason, setCancelReason] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Exception form state
   const [newExceptionDate, setNewExceptionDate] = useState("");
   const [newExceptionReason, setNewExceptionReason] = useState("");
+
+  // Drawer / Modal state for detailed booking management
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [drawerTab, setDrawerTab] = useState<DrawerTab>("details");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  // Internal notes editor state
+  const [internalNotesInput, setInternalNotesInput] = useState("");
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+
+  // Cancellation sub-flow state
+  const [showCancelPrompt, setShowCancelPrompt] = useState(false);
+  const [cancellationReasonInput, setCancellationReasonInput] = useState("");
+
+  // Rescheduling flow state
+  const lagosToday = getLagosTodayDateString();
+  const [rescheduleDate, setRescheduleDate] = useState(lagosToday);
+  const [rescheduleSlots, setRescheduleSlots] = useState<TimeSlot[]>([]);
+  const [selectedRescheduleSlot, setSelectedRescheduleSlot] = useState<TimeSlot | null>(null);
+  const [rescheduleReason, setRescheduleReason] = useState("");
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+
+  // Audit logs & Notifications state
+  const [auditLogs, setAuditLogs] = useState<BookingAuditLog[]>([]);
+  const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+  const [notifications, setNotifications] = useState<BookingNotification[]>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
 
   // Check active Supabase session on mount
   useEffect(() => {
@@ -89,6 +162,7 @@ export const AdminSchedulingPage: React.FC = () => {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
+    setActionError(null);
     try {
       const [b, s, r, e] = await Promise.all([
         getAdminBookings(),
@@ -100,18 +174,81 @@ export const AdminSchedulingPage: React.FC = () => {
       setSettings(s);
       setRules(r);
       setExceptions(e);
-    } catch {
-      // Error handling
+
+      // Keep selectedBooking refreshed if drawer is open
+      if (selectedBooking) {
+        const fresh = b.find((item) => item.id === selectedBooking.id);
+        if (fresh) {
+          setSelectedBooking(fresh);
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to load scheduling data.";
+      setActionError(msg);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedBooking]);
 
   useEffect(() => {
     if (isAuthenticated) {
       loadData();
     }
   }, [isAuthenticated, loadData]);
+
+  // Load audit logs and notifications for a selected booking
+  const loadBookingHistory = useCallback(async (bookingId: string) => {
+    setIsLoadingAudit(true);
+    setIsLoadingNotifications(true);
+    try {
+      const [logs, notifs] = await Promise.all([
+        getAdminBookingAuditLogs(bookingId),
+        getAdminBookingNotifications(bookingId),
+      ]);
+      setAuditLogs(logs);
+      setNotifications(notifs);
+    } catch {
+      // Non-blocking
+    } finally {
+      setIsLoadingAudit(false);
+      setIsLoadingNotifications(false);
+    }
+  }, []);
+
+  // When selected booking changes, populate internal notes and history
+  useEffect(() => {
+    if (selectedBooking) {
+      setInternalNotesInput(selectedBooking.internalNotes || "");
+      setShowCancelPrompt(false);
+      setCancellationReasonInput("");
+      setRescheduleError(null);
+      setSelectedRescheduleSlot(null);
+      setRescheduleDate(selectedBooking.bookingDate >= lagosToday ? selectedBooking.bookingDate : lagosToday);
+      loadBookingHistory(selectedBooking.id);
+    }
+  }, [selectedBooking, lagosToday, loadBookingHistory]);
+
+  // Load available slots when reschedule date changes
+  useEffect(() => {
+    if (drawerTab === "reschedule" && rescheduleDate) {
+      setIsLoadingSlots(true);
+      setRescheduleError(null);
+      setSelectedRescheduleSlot(null);
+      getPublicAvailableSlots(rescheduleDate)
+        .then((slots) => {
+          setRescheduleSlots(slots);
+          if (slots.length === 0) {
+            setRescheduleError("No available operational slots found on this date.");
+          }
+        })
+        .catch(() => {
+          setRescheduleError("Failed to calculate availability for selected date.");
+        })
+        .finally(() => {
+          setIsLoadingSlots(false);
+        });
+    }
+  }, [drawerTab, rescheduleDate]);
 
   const handleAuthenticate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,21 +294,146 @@ export const AdminSchedulingPage: React.FC = () => {
       }
     }
     setIsAuthenticated(false);
+    setSelectedBooking(null);
     setPasskey("");
     setAdminEmail("");
     setAdminPassword("");
   };
 
-  const handleCancelBooking = async (id: string) => {
-    const res = await cancelAdminBooking(id, cancelReason || "Cancelled by solutions administrator");
-    if (res.success) {
-      setActionSuccess("Appointment reservation cancelled successfully.");
-      setCancellingBookingId(null);
-      setCancelReason("");
-      loadData();
+  // Status transition handler
+  const handleUpdateStatus = async (booking: Booking, newStatus: BookingStatus, reason?: string) => {
+    setIsUpdatingStatus(true);
+    setActionError(null);
+    try {
+      const res = await updateAdminBookingStatus(booking.id, newStatus, reason, "solutions-admin");
+      if (res.success) {
+        setActionSuccess(`Reservation ${booking.referenceId} transitioned to ${newStatus.toUpperCase()}.`);
+        setTimeout(() => setActionSuccess(null), 4000);
+
+        // Dispatch analytics custom DOM events
+        if (typeof window !== "undefined") {
+          let eventName = "";
+          if (newStatus === "cancelled") eventName = "request-demo-booking-cancelled";
+          else if (newStatus === "completed") eventName = "request-demo-booking-completed";
+          else if (newStatus === "no_show") eventName = "request-demo-booking-no-show";
+
+          if (eventName) {
+            window.dispatchEvent(
+              new CustomEvent(eventName, {
+                bubbles: true,
+                detail: {
+                  referenceId: booking.referenceId,
+                  bookingId: booking.id,
+                  status: newStatus,
+                  reason,
+                },
+              })
+            );
+          }
+        }
+
+        await loadData();
+        loadBookingHistory(booking.id);
+        setShowCancelPrompt(false);
+      } else {
+        setActionError(res.error || "Failed to update booking status.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error executing status transition.";
+      setActionError(msg);
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
+  // Atomic reschedule handler
+  const handleRescheduleBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBooking || !selectedRescheduleSlot) return;
+
+    setIsRescheduling(true);
+    setRescheduleError(null);
+    try {
+      const res = await rescheduleAdminBooking({
+        bookingId: selectedBooking.id,
+        newDate: rescheduleDate,
+        newStartTime: selectedRescheduleSlot.startTime,
+        newEndTime: selectedRescheduleSlot.endTime,
+        reason: rescheduleReason.trim() || "Rescheduled by solutions administrator",
+        actor: "solutions-admin",
+      });
+
+      if (res.success) {
+        setActionSuccess(
+          `Reservation ${selectedBooking.referenceId} successfully rescheduled to ${formatDisplayDate(
+            rescheduleDate
+          )} (${selectedRescheduleSlot.displayTime} WAT).`
+        );
+        setTimeout(() => setActionSuccess(null), 5000);
+
+        // Dispatch analytics event
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("request-demo-booking-rescheduled", {
+              bubbles: true,
+              detail: {
+                referenceId: selectedBooking.referenceId,
+                bookingId: selectedBooking.id,
+                newDate: rescheduleDate,
+                newStartTime: selectedRescheduleSlot.startTime,
+                newEndTime: selectedRescheduleSlot.endTime,
+                reason: rescheduleReason,
+              },
+            })
+          );
+        }
+
+        await loadData();
+        loadBookingHistory(selectedBooking.id);
+        setDrawerTab("details");
+      } else {
+        setRescheduleError(
+          res.error || "Could not reschedule booking. The requested time slot may have just been reserved."
+        );
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unexpected error during rescheduling.";
+      setRescheduleError(msg);
+    } finally {
+      setIsRescheduling(false);
+    }
+  };
+
+  // Save internal notes
+  const handleSaveInternalNotes = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBooking) return;
+
+    setIsSavingNotes(true);
+    setActionError(null);
+    try {
+      const res = await updateAdminBookingInternalNotes(
+        selectedBooking.id,
+        internalNotesInput.trim(),
+        "solutions-admin"
+      );
+      if (res.success) {
+        setActionSuccess("Internal administrative note saved to database.");
+        setTimeout(() => setActionSuccess(null), 3000);
+        setSelectedBooking((prev) => (prev ? { ...prev, internalNotes: internalNotesInput.trim() } : null));
+        loadBookingHistory(selectedBooking.id);
+      } else {
+        setActionError(res.error || "Failed to update internal notes.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error saving internal notes.";
+      setActionError(msg);
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
+
+  // Schedule settings handler
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!settings) return;
@@ -180,10 +442,11 @@ export const AdminSchedulingPage: React.FC = () => {
     setTimeout(() => setActionSuccess(null), 3500);
   };
 
+  // Operating rules handlers
   const handleToggleRule = async (rule: AvailabilityRule) => {
     const updated = await updateAdminAvailabilityRule(rule.id, { isActive: !rule.isActive });
     setRules(updated);
-    setActionSuccess(`Day availability toggled.`);
+    setActionSuccess("Operating day window toggled.");
     setTimeout(() => setActionSuccess(null), 2500);
   };
 
@@ -196,6 +459,7 @@ export const AdminSchedulingPage: React.FC = () => {
     setRules(updated);
   };
 
+  // Blackout exceptions handlers
   const handleAddException = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newExceptionDate) return;
@@ -219,14 +483,91 @@ export const AdminSchedulingPage: React.FC = () => {
     setTimeout(() => setActionSuccess(null), 2500);
   };
 
-  const filteredBookings = bookings.filter((b) => {
-    if (bookingFilter === "all") return true;
-    return b.status === bookingFilter;
-  });
+  // Multi-field filtered bookings
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((b) => {
+      // Status filter
+      if (statusFilter !== "all" && b.status !== statusFilter) {
+        return false;
+      }
+
+      // Product filter
+      if (productFilter !== "all" && b.product !== productFilter) {
+        return false;
+      }
+
+      // Date scope filter
+      if (dateScopeFilter === "today" && b.bookingDate !== lagosToday) {
+        return false;
+      }
+      if (dateScopeFilter === "upcoming" && b.bookingDate < lagosToday) {
+        return false;
+      }
+      if (dateScopeFilter === "past" && b.bookingDate >= lagosToday) {
+        return false;
+      }
+
+      // Full text search across referenceId, fullName, organization, email, product
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesRef = b.referenceId.toLowerCase().includes(q);
+        const matchesName = b.fullName.toLowerCase().includes(q);
+        const matchesOrg = b.organization.toLowerCase().includes(q);
+        const matchesEmail = b.email.toLowerCase().includes(q);
+        const matchesProd = b.product.toLowerCase().includes(q);
+        if (!matchesRef && !matchesName && !matchesOrg && !matchesEmail && !matchesProd) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [bookings, statusFilter, productFilter, dateScopeFilter, searchQuery, lagosToday]);
 
   const getDayName = (dow: number) => {
     const names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     return names[dow] || `Day ${dow}`;
+  };
+
+  const renderStatusBadge = (status: BookingStatus) => {
+    switch (status) {
+      case "confirmed":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            Confirmed
+          </span>
+        );
+      case "pending":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+            Pending
+          </span>
+        );
+      case "completed":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30">
+            Completed
+          </span>
+        );
+      case "no_show":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30">
+            No Show
+          </span>
+        );
+      case "cancelled":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+            Cancelled
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-slate-500/15 text-slate-400 border border-slate-500/30">
+            {status}
+          </span>
+        );
+    }
   };
 
   // Auth Gate Render
@@ -347,7 +688,7 @@ export const AdminSchedulingPage: React.FC = () => {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
             <div>
-              <div className="flex items-center gap-2.5 mb-1.5">
+              <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
                 <Badge variant="neon">Operations Desk</Badge>
                 <span className="text-xs font-mono text-emerald-400 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -368,14 +709,14 @@ export const AdminSchedulingPage: React.FC = () => {
               </h1>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={loadData}
                 disabled={isLoading}
                 leftIcon={<RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />}
-                className="border-white/15 text-white"
+                className="border-white/15 text-white hover:bg-white/10"
               >
                 Refresh
               </Button>
@@ -388,14 +729,14 @@ export const AdminSchedulingPage: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={handleSignOut}
-                className="border-white/15 text-slate-400 hover:text-white"
+                className="border-white/15 text-slate-400 hover:text-white hover:bg-white/10"
               >
                 Lock Desk
               </Button>
             </div>
           </div>
 
-          {/* Feedback Alert */}
+          {/* Feedback Alerts */}
           {actionSuccess && (
             <div role="status" className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -405,6 +746,22 @@ export const AdminSchedulingPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActionSuccess(null)}
+                className="text-slate-400 hover:text-white text-xs"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {actionError && (
+            <div role="alert" className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                {actionError}
+              </span>
+              <button
+                type="button"
+                onClick={() => setActionError(null)}
                 className="text-slate-400 hover:text-white text-xs"
               >
                 Dismiss
@@ -425,7 +782,7 @@ export const AdminSchedulingPage: React.FC = () => {
               )}
             >
               <Calendar className="w-3.5 h-3.5" />
-              Bookings ({bookings.length})
+              Bookings Management ({bookings.length})
             </button>
             <button
               type="button"
@@ -471,37 +828,121 @@ export const AdminSchedulingPage: React.FC = () => {
           {/* Tab 1: Bookings Management */}
           {activeTab === "bookings" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-slate-400">Filter:</span>
-                  {["all", "confirmed", "cancelled"].map((filter) => (
-                    <button
-                      key={filter}
-                      type="button"
-                      onClick={() => setBookingFilter(filter)}
-                      className={cn(
-                        "px-3 py-1 rounded-lg text-xs font-mono capitalize transition-colors",
-                        bookingFilter === filter
-                          ? "bg-white/15 text-white font-bold"
-                          : "text-slate-400 hover:text-white bg-white/5"
-                      )}
+              {/* Comprehensive Search & Multi-Filter Bar */}
+              <div data-surface="dark" className="p-4 rounded-2xl bg-[#081c38] border border-white/10 space-y-3.5">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                  {/* Search Input */}
+                  <div className="md:col-span-6 relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by reference ID, customer, organization, or email..."
+                      className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#e57804]"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-white text-xs"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Product Filter Dropdown */}
+                  <div className="md:col-span-3">
+                    <select
+                      value={productFilter}
+                      onChange={(e) => setProductFilter(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
                     >
-                      {filter}
-                    </button>
-                  ))}
+                      {PRODUCT_FILTER_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value} className="bg-[#081c38] text-white">
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Date Horizon Filter Dropdown */}
+                  <div className="md:col-span-3">
+                    <select
+                      value={dateScopeFilter}
+                      onChange={(e) => setDateScopeFilter(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
+                    >
+                      <option value="all" className="bg-[#081c38] text-white">All Booking Dates</option>
+                      <option value="today" className="bg-[#081c38] text-white">Today Only</option>
+                      <option value="upcoming" className="bg-[#081c38] text-white">Upcoming Dates</option>
+                      <option value="past" className="bg-[#081c38] text-white">Past Dates</option>
+                    </select>
+                  </div>
                 </div>
-                <span className="text-xs font-mono text-slate-500">
-                  Showing {filteredBookings.length} reservations
-                </span>
+
+                {/* Status Pills and Counter */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/10">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-mono text-slate-400 mr-1 flex items-center gap-1">
+                      <Filter className="w-3 h-3" /> Status:
+                    </span>
+                    {(["all", "confirmed", "pending", "completed", "no_show", "cancelled"] as const).map((filter) => {
+                      const count =
+                        filter === "all"
+                          ? bookings.length
+                          : bookings.filter((b) => b.status === filter).length;
+                      return (
+                        <button
+                          key={filter}
+                          type="button"
+                          onClick={() => setStatusFilter(filter)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-lg text-xs font-mono transition-colors flex items-center gap-1.5",
+                            statusFilter === filter
+                              ? "bg-white/15 text-white font-bold border border-white/20"
+                              : "text-slate-400 hover:text-white bg-white/5 border border-transparent"
+                          )}
+                        >
+                          <span className="capitalize">{filter.replace("_", " ")}</span>
+                          <span className="text-[10px] opacity-70 px-1 py-0.2 rounded bg-black/30">
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <span className="text-xs font-mono text-slate-400">
+                    Showing {filteredBookings.length} of {bookings.length} reservations
+                  </span>
+                </div>
               </div>
 
+              {/* Bookings Grid */}
               {filteredBookings.length === 0 ? (
                 <div data-surface="dark" className="p-12 rounded-3xl bg-[#081c38] border border-white/10 text-center space-y-3">
                   <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
-                  <h3 className="text-lg font-bold text-white">No Bookings Found</h3>
+                  <h3 className="text-lg font-bold text-white">No Reservations Found</h3>
                   <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                    There are no customer reservations matching the active filter criteria.
+                    There are no customer reservations matching the active search or filter criteria.
                   </p>
+                  {(searchQuery || statusFilter !== "all" || productFilter !== "all" || dateScopeFilter !== "all") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setStatusFilter("all");
+                        setProductFilter("all");
+                        setDateScopeFilter("all");
+                      }}
+                      className="text-white border-white/20 hover:bg-white/10"
+                    >
+                      Reset All Filters
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -509,101 +950,84 @@ export const AdminSchedulingPage: React.FC = () => {
                     <div
                       key={b.id}
                       data-surface="dark"
-                      className="p-5 rounded-2xl bg-[#081c38] border border-white/10 space-y-3 hover:border-white/20 transition-all"
+                      className={cn(
+                        "p-5 rounded-2xl bg-[#081c38] border transition-all space-y-3.5 flex flex-col justify-between",
+                        selectedBooking?.id === b.id
+                          ? "border-[#e57804] ring-1 ring-[#e57804]/30"
+                          : "border-white/10 hover:border-white/25"
+                      )}
                     >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <span className="text-[11px] font-mono text-[#e57804] font-semibold">
-                            {b.referenceId}
-                          </span>
-                          <h4 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
-                            {b.organization}
-                          </h4>
-                        </div>
-                        <span
-                          className={cn(
-                            "px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold",
-                            b.status === "confirmed"
-                              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                              : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
-                          )}
-                        >
-                          {b.status}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs text-slate-300 pt-2 border-t border-white/10">
-                        <div className="flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span className="truncate">{b.fullName}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span className="truncate font-mono">{b.email}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-[#e57804] shrink-0" />
-                          <span>{formatDisplayDate(b.bookingDate)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-[#e57804] shrink-0" />
-                          <span className="font-mono">{b.startTime} – {b.endTime} WAT</span>
-                        </div>
-                      </div>
-
-                      <div className="text-xs text-slate-400 pt-1">
-                        <span className="text-slate-500">Product:</span>{" "}
-                        <span className="text-white">{b.product}</span>
-                        {b.deployment && <span className="text-slate-500"> • {b.deployment}</span>}
-                      </div>
-
-                      {b.notes && (
-                        <div className="p-2.5 rounded-xl bg-[#06152b] border border-white/5 text-[11px] text-slate-300 italic">
-                          "{b.notes}"
-                        </div>
-                      )}
-
-                      {b.status === "confirmed" && (
-                        <div className="pt-2 flex justify-end">
-                          {cancellingBookingId === b.id ? (
-                            <div className="space-y-2 w-full pt-2 border-t border-white/10">
-                              <input
-                                type="text"
-                                value={cancelReason}
-                                onChange={(e) => setCancelReason(e.target.value)}
-                                placeholder="Reason for cancellation..."
-                                className="w-full px-3 py-1.5 rounded-lg bg-[#06152b] border border-white/15 text-xs text-white"
-                              />
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => setCancellingBookingId(null)}
-                                >
-                                  Back
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleCancelBooking(b.id)}
-                                  className="text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
-                                >
-                                  Confirm Cancel
-                                </Button>
-                              </div>
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-mono text-[#e57804] font-semibold">
+                                {b.referenceId}
+                              </span>
+                              {b.rescheduleCount && b.rescheduleCount > 0 ? (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                  Rescheduled ({b.rescheduleCount}x)
+                                </span>
+                              ) : null}
                             </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setCancellingBookingId(b.id)}
-                              className="text-xs font-mono text-rose-400/80 hover:text-rose-400 flex items-center gap-1"
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                              Cancel Reservation
-                            </button>
-                          )}
+                            <h4 className="text-base font-bold text-white mt-0.5">
+                              {b.organization}
+                            </h4>
+                          </div>
+                          <div>{renderStatusBadge(b.status)}</div>
                         </div>
-                      )}
+
+                        <div className="grid grid-cols-2 gap-2 text-xs text-slate-300 pt-2 border-t border-white/10">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span className="truncate">{b.fullName}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 truncate">
+                            <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span className="truncate font-mono">{b.email}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-[#e57804] shrink-0" />
+                            <span className="font-medium">{formatDisplayDate(b.bookingDate)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-[#e57804] shrink-0" />
+                            <span className="font-mono">{b.startTime} – {b.endTime} WAT</span>
+                          </div>
+                        </div>
+
+                        <div className="text-xs text-slate-400">
+                          <span className="text-slate-500 font-mono uppercase text-[10px] block mb-0.5">Scope:</span>
+                          <span className="text-white font-medium">{b.product}</span>
+                          {b.deployment && <span className="text-slate-400 font-mono"> • {b.deployment}</span>}
+                        </div>
+
+                        {b.internalNotes && (
+                          <div className="p-2.5 rounded-xl bg-[#06152b] border border-amber-500/20 text-[11px] text-amber-200/90 flex items-start gap-2">
+                            <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                            <p className="line-clamp-2 italic">"{b.internalNotes}"</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-mono text-slate-500">
+                          Created {new Date(b.createdAt).toLocaleDateString("en-GB")}
+                        </span>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedBooking(b);
+                            setDrawerTab("details");
+                          }}
+                          className="text-white border-white/20 hover:bg-white/10 text-xs"
+                          rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
+                        >
+                          Manage Booking
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -849,6 +1273,683 @@ export const AdminSchedulingPage: React.FC = () => {
           )}
         </div>
       </section>
+
+      {/* Booking Management Drawer / Modal */}
+      {selectedBooking && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex justify-end">
+          <div
+            data-surface="dark"
+            className="w-full max-w-2xl min-h-screen bg-[#081c38] border-l border-white/15 shadow-2xl p-6 sm:p-8 space-y-6 flex flex-col justify-between overflow-y-auto"
+          >
+            {/* Drawer Header */}
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-sm font-bold text-[#e57804]">
+                      {selectedBooking.referenceId}
+                    </span>
+                    {renderStatusBadge(selectedBooking.status)}
+                    {selectedBooking.rescheduleCount && selectedBooking.rescheduleCount > 0 ? (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        Rescheduled ({selectedBooking.rescheduleCount}x)
+                      </span>
+                    ) : null}
+                  </div>
+                  <h2 className="text-xl font-bold text-white">{selectedBooking.organization}</h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedBooking(null)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                  aria-label="Close details"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Drawer Subtab Navigation */}
+              <div className="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setDrawerTab("details")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap",
+                    drawerTab === "details"
+                      ? "bg-white/15 text-white font-bold"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Overview & Actions
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedBooking.status === "completed" || selectedBooking.status === "no_show"}
+                  onClick={() => setDrawerTab("reschedule")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap",
+                    drawerTab === "reschedule"
+                      ? "bg-white/15 text-white font-bold"
+                      : "text-slate-400 hover:text-white hover:bg-white/5",
+                    (selectedBooking.status === "completed" || selectedBooking.status === "no_show") && "opacity-40 cursor-not-allowed"
+                  )}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  Reschedule Slot
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDrawerTab("audit")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap",
+                    drawerTab === "audit"
+                      ? "bg-white/15 text-white font-bold"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <History className="w-3.5 h-3.5" />
+                  Audit Trail ({auditLogs.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDrawerTab("notifications")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap",
+                    drawerTab === "notifications"
+                      ? "bg-white/15 text-white font-bold"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  Notification Queue ({notifications.length})
+                </button>
+              </div>
+
+              {/* Drawer Feedback Alerts */}
+              {actionSuccess && (
+                <div role="status" className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    {actionSuccess}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActionSuccess(null)}
+                    className="text-slate-400 hover:text-white text-xs"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
+              {actionError && (
+                <div role="alert" className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    {actionError}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActionError(null)}
+                    className="text-slate-400 hover:text-white text-xs"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
+              {/* Subtab 1: Overview & Status Actions */}
+              {drawerTab === "details" && (
+                <div className="space-y-6 pt-2">
+                  {/* Customer Information Card */}
+                  <div className="p-4 rounded-2xl bg-[#06152b] border border-white/10 space-y-3">
+                    <h3 className="text-xs font-mono uppercase text-slate-400 tracking-wider flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 text-[#e57804]" /> Client Profile
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Primary Contact</span>
+                        <span className="text-white font-semibold">{selectedBooking.fullName}</span>
+                        {selectedBooking.jobTitle && (
+                          <span className="text-slate-400 block text-[11px]">{selectedBooking.jobTitle}</span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Organization</span>
+                        <span className="text-white font-semibold">{selectedBooking.organization}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Email Address</span>
+                        <a
+                          href={`mailto:${selectedBooking.email}`}
+                          className="text-[#e57804] hover:underline font-mono"
+                        >
+                          {selectedBooking.email}
+                        </a>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Phone</span>
+                        {selectedBooking.phone ? (
+                          <a
+                            href={`tel:${selectedBooking.phone}`}
+                            className="text-white font-mono hover:underline"
+                          >
+                            {selectedBooking.phone}
+                          </a>
+                        ) : (
+                          <span className="text-slate-500 italic">Not provided</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Commercial Scope Card */}
+                  <div className="p-4 rounded-2xl bg-[#06152b] border border-white/10 space-y-2.5">
+                    <h3 className="text-xs font-mono uppercase text-slate-400 tracking-wider flex items-center gap-2">
+                      <Layers className="w-3.5 h-3.5 text-[#e57804]" /> Walkthrough Scope & Deployment
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Product Solution</span>
+                        <span className="text-white font-medium">{selectedBooking.product}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Deployment Target</span>
+                        <span className="text-slate-200">{selectedBooking.deployment || "Zakeem Cloud"}</span>
+                      </div>
+                      {selectedBooking.tier && (
+                        <div>
+                          <span className="text-slate-500 block text-[11px]">Commercial Tier</span>
+                          <span className="text-slate-300 font-mono">{selectedBooking.tier}</span>
+                        </div>
+                      )}
+                      {selectedBooking.leadId && (
+                        <div>
+                          <span className="text-slate-500 block text-[11px]">Lead Attribution ID</span>
+                          <span className="text-slate-400 font-mono text-[11px]">{selectedBooking.leadId}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Appointment Schedule Card */}
+                  <div className="p-4 rounded-2xl bg-[#06152b] border border-white/10 space-y-2.5">
+                    <h3 className="text-xs font-mono uppercase text-slate-400 tracking-wider flex items-center gap-2">
+                      <Clock className="w-3.5 h-3.5 text-[#e57804]" /> Scheduled Operational Window
+                    </h3>
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Reserved Date</span>
+                        <span className="text-white font-semibold text-sm">
+                          {formatDisplayDate(selectedBooking.bookingDate)}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-slate-500 block text-[11px]">Time Window (WAT)</span>
+                        <span className="text-[#e57804] font-mono font-bold text-sm">
+                          {selectedBooking.startTime} – {selectedBooking.endTime} WAT
+                        </span>
+                      </div>
+                    </div>
+
+                    {selectedBooking.rescheduledAt && (
+                      <div className="pt-2 border-t border-white/5 text-[11px] text-amber-300/80">
+                        Rescheduled on {new Date(selectedBooking.rescheduledAt).toLocaleString("en-GB")}
+                      </div>
+                    )}
+
+                    {selectedBooking.cancelledAt && (
+                      <div className="pt-2 border-t border-white/5 text-[11px] text-rose-300/90">
+                        Cancelled on {new Date(selectedBooking.cancelledAt).toLocaleString("en-GB")}
+                        {selectedBooking.cancellationReason && (
+                          <div className="italic mt-0.5">Reason: "{selectedBooking.cancellationReason}"</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Customer Public Notes (if present) */}
+                  {selectedBooking.notes && (
+                    <div className="p-4 rounded-2xl bg-[#06152b] border border-white/10 space-y-1.5">
+                      <span className="text-[11px] font-mono text-slate-400 uppercase block">Customer Inbound Note:</span>
+                      <p className="text-xs text-slate-200 italic">"{selectedBooking.notes}"</p>
+                    </div>
+                  )}
+
+                  {/* Internal Administrative Notes (Admin-Only) */}
+                  <div className="p-4 rounded-2xl bg-[#06152b] border border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-mono uppercase text-slate-400 tracking-wider flex items-center gap-2">
+                        <Edit3 className="w-3.5 h-3.5 text-[#e57804]" /> Internal Administrative Notes
+                      </h3>
+                      <span className="text-[10px] font-mono text-emerald-400">Strictly Internal / RLS Guarded</span>
+                    </div>
+
+                    <form onSubmit={handleSaveInternalNotes} className="space-y-2.5">
+                      <textarea
+                        rows={3}
+                        value={internalNotesInput}
+                        onChange={(e) => setInternalNotesInput(e.target.value)}
+                        placeholder="Add architecture qualifications, lead scoring, or briefing notes..."
+                        className="w-full p-3 rounded-xl bg-[#081c38] border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#e57804]"
+                      />
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-500">
+                          These notes are never exposed in public availability or customer emails.
+                        </span>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          type="submit"
+                          disabled={isSavingNotes}
+                        >
+                          {isSavingNotes ? "Saving..." : "Save Internal Note"}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Controlled Lifecycle Status Action Center */}
+                  <div className="p-4 rounded-2xl bg-[#06152b] border border-white/10 space-y-3">
+                    <h3 className="text-xs font-mono uppercase text-slate-400 tracking-wider flex items-center gap-2">
+                      <Sliders className="w-3.5 h-3.5 text-[#e57804]" /> Lifecycle Status Actions
+                    </h3>
+
+                    {/* Active valid transitions from current state */}
+                    <div className="space-y-3 pt-1">
+                      {selectedBooking.status === "confirmed" && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isUpdatingStatus}
+                            onClick={() => handleUpdateStatus(selectedBooking, "completed")}
+                            className="text-sky-400 border-sky-500/30 hover:bg-sky-500/10"
+                            leftIcon={<Check className="w-3.5 h-3.5" />}
+                          >
+                            Mark Completed
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isUpdatingStatus}
+                            onClick={() => handleUpdateStatus(selectedBooking, "no_show")}
+                            className="text-purple-400 border-purple-500/30 hover:bg-purple-500/10"
+                            leftIcon={<AlertTriangle className="w-3.5 h-3.5" />}
+                          >
+                            Mark No Show
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isUpdatingStatus}
+                            onClick={() => setDrawerTab("reschedule")}
+                            className="text-[#e57804] border-[#e57804]/30 hover:bg-[#e57804]/10"
+                            leftIcon={<Calendar className="w-3.5 h-3.5" />}
+                          >
+                            Reschedule Slot
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isUpdatingStatus}
+                            onClick={() => setShowCancelPrompt(true)}
+                            className="text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
+                            leftIcon={<XCircle className="w-3.5 h-3.5" />}
+                          >
+                            Cancel Reservation
+                          </Button>
+                        </div>
+                      )}
+
+                      {selectedBooking.status === "pending" && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            disabled={isUpdatingStatus}
+                            onClick={() => handleUpdateStatus(selectedBooking, "confirmed")}
+                            leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                          >
+                            Confirm Reservation
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isUpdatingStatus}
+                            onClick={() => setShowCancelPrompt(true)}
+                            className="text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
+                            leftIcon={<XCircle className="w-3.5 h-3.5" />}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      )}
+
+                      {selectedBooking.status === "no_show" && (
+                        <p className="text-xs text-slate-400 italic">
+                          This walkthrough was marked as a no-show. The session is closed.
+                        </p>
+                      )}
+
+                      {selectedBooking.status === "cancelled" && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-slate-400">
+                            This reservation is cancelled. The original slot has been freed for public availability.
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDrawerTab("reschedule")}
+                            className="text-[#e57804] border-[#e57804]/30 hover:bg-[#e57804]/10"
+                            leftIcon={<Calendar className="w-3.5 h-3.5" />}
+                          >
+                            Re-book via Reschedule
+                          </Button>
+                        </div>
+                      )}
+
+                      {selectedBooking.status === "completed" && (
+                        <p className="text-xs text-slate-400 italic">
+                          This walkthrough was conducted and marked as completed. Lifecycle is concluded.
+                        </p>
+                      )}
+
+                      {/* Cancel reason prompt modal/section */}
+                      {showCancelPrompt && (
+                        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/25 space-y-3 mt-2">
+                          <div className="text-xs text-rose-300 font-semibold flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-rose-400" />
+                            Confirm Reservation Cancellation
+                          </div>
+                          <input
+                            type="text"
+                            value={cancellationReasonInput}
+                            onChange={(e) => setCancellationReasonInput(e.target.value)}
+                            placeholder="Reason for cancellation (e.g., Client requested postponement)..."
+                            className="w-full px-3 py-1.5 rounded-lg bg-[#06152b] border border-white/10 text-xs text-white"
+                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => setShowCancelPrompt(false)}
+                            >
+                              Dismiss
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={isUpdatingStatus}
+                              onClick={() =>
+                                handleUpdateStatus(
+                                  selectedBooking,
+                                  "cancelled",
+                                  cancellationReasonInput.trim() || "Cancelled by solutions administrator"
+                                )
+                              }
+                              className="text-rose-400 border-rose-500/40 hover:bg-rose-500/20"
+                            >
+                              Execute Cancellation
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Subtab 2: Rescheduling Flow */}
+              {drawerTab === "reschedule" && (
+                <div className="space-y-5 pt-2">
+                  {selectedBooking.status === "completed" || selectedBooking.status === "no_show" ? (
+                    <div className="p-4 rounded-2xl bg-[#06152b] border border-white/10 text-xs text-slate-400 italic">
+                      Bookings marked as {selectedBooking.status === "no_show" ? "no-show" : "completed"} are terminal and cannot be rescheduled.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="p-4 rounded-2xl bg-[#06152b] border border-white/10 space-y-1.5">
+                        <h3 className="text-xs font-mono uppercase text-[#e57804] font-bold">
+                          Atomic Slot Rescheduling
+                        </h3>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          Select a new operational date and time window. The existing slot will be released and the new slot booked atomically under PostgreSQL concurrency protection.
+                        </p>
+                      </div>
+
+                      <form onSubmit={handleRescheduleBooking} className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                            Target Reschedule Date (WAT) *
+                          </label>
+                          <input
+                            type="date"
+                            min={lagosToday}
+                            required
+                            value={rescheduleDate}
+                            onChange={(e) => setRescheduleDate(e.target.value)}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white [color-scheme:dark]"
+                          />
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs font-mono uppercase text-slate-400">
+                              Available Time Windows (WAT) *
+                            </label>
+                            {isLoadingSlots && (
+                              <span className="text-[11px] font-mono text-[#e57804] flex items-center gap-1">
+                                <RefreshCw className="w-3 h-3 animate-spin" /> Fetching slots...
+                              </span>
+                            )}
+                          </div>
+
+                          {rescheduleError && (
+                            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs mb-2">
+                              {rescheduleError}
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                            {rescheduleSlots.map((slot) => {
+                              const isSelected = selectedRescheduleSlot?.startTime === slot.startTime;
+                              return (
+                                <button
+                                  key={slot.startTime}
+                                  type="button"
+                                  onClick={() => setSelectedRescheduleSlot(slot)}
+                                  className={cn(
+                                    "p-2.5 rounded-xl border text-xs font-mono text-center transition-all",
+                                    isSelected
+                                      ? "bg-[#e57804] text-white border-[#e57804] font-bold shadow-lg"
+                                      : "bg-[#06152b] text-slate-300 border-white/10 hover:border-white/30"
+                                  )}
+                                >
+                                  {slot.displayTime}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                            Operational Reason for Reschedule
+                          </label>
+                          <input
+                            type="text"
+                            value={rescheduleReason}
+                            onChange={(e) => setRescheduleReason(e.target.value)}
+                            placeholder="e.g. Architect conference conflict or client request..."
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white"
+                          />
+                        </div>
+
+                        <div className="pt-2 flex items-center justify-end gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            type="button"
+                            onClick={() => setDrawerTab("details")}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            type="submit"
+                            disabled={!selectedRescheduleSlot || isRescheduling}
+                          >
+                            {isRescheduling ? "Rescheduling Atomically..." : "Confirm Reschedule"}
+                          </Button>
+                        </div>
+                      </form>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Subtab 3: Audit Trail */}
+              {drawerTab === "audit" && (
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-slate-400">
+                      Immutable Log History ({auditLogs.length} events)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => loadBookingHistory(selectedBooking.id)}
+                      className="text-xs font-mono text-[#e57804] hover:underline flex items-center gap-1"
+                    >
+                      <RefreshCw className={cn("w-3 h-3", isLoadingAudit && "animate-spin")} /> Refresh
+                    </button>
+                  </div>
+
+                  {auditLogs.length === 0 ? (
+                    <div className="p-6 rounded-2xl bg-[#06152b] border border-white/10 text-center text-xs text-slate-400 italic">
+                      No audit log entries recorded for this booking yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
+                      {auditLogs.map((log) => (
+                        <div
+                          key={log.id}
+                          className="p-3.5 rounded-xl bg-[#06152b] border border-white/10 text-xs space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-mono text-[#e57804] font-semibold uppercase">
+                              {log.action.replace("_", " ")}
+                            </span>
+                            <span className="text-slate-500 font-mono">
+                              {new Date(log.createdAt).toLocaleString("en-GB")}
+                            </span>
+                          </div>
+                          <div className="text-slate-300">
+                            Actor: <span className="text-white font-mono">{log.actor}</span>
+                            {log.previousStatus && log.newStatus && (
+                              <span className="ml-2 text-slate-400">
+                                ({log.previousStatus} → <span className="text-emerald-300 font-semibold">{log.newStatus}</span>)
+                              </span>
+                            )}
+                          </div>
+                          {log.details && Object.keys(log.details).length > 0 && (
+                            <pre className="p-2 rounded bg-black/40 text-[10px] text-slate-400 overflow-x-auto font-mono">
+                              {JSON.stringify(log.details, null, 2)}
+                            </pre>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Subtab 4: Notification Queue */}
+              {drawerTab === "notifications" && (
+                <div className="space-y-4 pt-2">
+                  <div className="p-3.5 rounded-xl bg-[#06152b] border border-emerald-500/20 text-xs text-slate-300 space-y-1">
+                    <span className="text-emerald-400 font-mono font-semibold flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Provider-Neutral Queue
+                    </span>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Zakeem Solutions records all customer transactional dispatches in this PostgreSQL queue. Workers can deliver via SMTP, SendGrid, Postmark, or AWS SES without code modifications.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-slate-400">
+                      Dispatches ({notifications.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => loadBookingHistory(selectedBooking.id)}
+                      className="text-xs font-mono text-[#e57804] hover:underline flex items-center gap-1"
+                    >
+                      <RefreshCw className={cn("w-3 h-3", isLoadingNotifications && "animate-spin")} /> Refresh
+                    </button>
+                  </div>
+
+                  {notifications.length === 0 ? (
+                    <div className="p-6 rounded-2xl bg-[#06152b] border border-white/10 text-center text-xs text-slate-400 italic">
+                      No transactional notifications queued for this booking yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
+                      {notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          className="p-3.5 rounded-xl bg-[#06152b] border border-white/10 text-xs space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-mono text-sky-400 font-semibold">
+                              {n.eventType}
+                            </span>
+                            <span
+                              className={cn(
+                                "px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold",
+                                n.status === "pending"
+                                  ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                                  : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                              )}
+                            >
+                              {n.status}
+                            </span>
+                          </div>
+                          <div className="text-slate-300 text-[11px]">
+                            To: <span className="text-white font-mono">{n.recipientEmail}</span> ({n.recipientName}) • via {n.channel}
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-mono">
+                            Queued: {new Date(n.createdAt).toLocaleString("en-GB")}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-500 font-mono">
+              <span>PostgreSQL RLS Active</span>
+              <button
+                type="button"
+                onClick={() => setSelectedBooking(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                Close Panel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

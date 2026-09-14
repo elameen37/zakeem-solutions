@@ -7,10 +7,16 @@ import {
   AvailabilityException,
   AvailabilityRule,
   Booking,
+  BookingAuditLog,
+  BookingNotification,
   BookingRequest,
   BookingResponse,
+  BookingStatus,
+  RescheduleRequest,
+  RescheduleResponse,
   ScheduleSettings,
   TimeSlot,
+  VALID_STATUS_TRANSITIONS,
 } from "@/types/scheduling";
 import {
   computeAvailableSlots,
@@ -27,6 +33,8 @@ const STORAGE_KEYS = {
   RULES: "zakeem_availability_rules",
   EXCEPTIONS: "zakeem_availability_exceptions",
   BOOKINGS: "zakeem_bookings",
+  AUDIT_LOGS: "zakeem_booking_audit_logs",
+  NOTIFICATIONS: "zakeem_booking_notifications",
 };
 
 // -----------------------------------------------------------------------------
@@ -90,6 +98,49 @@ function saveStoredBookings(bookings: Booking[]): void {
     localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
   }
 }
+
+function getStoredAuditLogs(): BookingAuditLog[] {
+  if (typeof window === "undefined") return [];
+  const saved = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      // Fallback
+    }
+  }
+  return [];
+}
+
+function recordStoredAuditLog(log: BookingAuditLog): void {
+  if (typeof window !== "undefined") {
+    const current = getStoredAuditLogs();
+    current.unshift(log);
+    localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(current));
+  }
+}
+
+function getStoredNotifications(): BookingNotification[] {
+  if (typeof window === "undefined") return [];
+  const saved = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      // Fallback
+    }
+  }
+  return [];
+}
+
+function recordStoredNotification(notification: BookingNotification): void {
+  if (typeof window !== "undefined") {
+    const current = getStoredNotifications();
+    current.unshift(notification);
+    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(current));
+  }
+}
+
 
 // -----------------------------------------------------------------------------
 // PUBLIC AVAILABILITY API
@@ -330,6 +381,10 @@ export async function getAdminBookings(): Promise<Booking[]> {
           timezone: b.timezone,
           status: b.status,
           notes: b.notes,
+          internalNotes: b.internal_notes || undefined,
+          rescheduledFromId: b.rescheduled_from_id || undefined,
+          rescheduledAt: b.rescheduled_at || undefined,
+          rescheduleCount: b.reschedule_count || 0,
           cancellationReason: b.cancellation_reason,
           cancelledAt: b.cancelled_at,
           createdAt: b.created_at,
@@ -345,27 +400,246 @@ export async function getAdminBookings(): Promise<Booking[]> {
   });
 }
 
-export async function cancelAdminBooking(
+/**
+ * Updates booking lifecycle status atomically with audit logging and notification queueing.
+ */
+export async function updateAdminBookingStatus(
   bookingId: string,
-  cancellationReason?: string
+  newStatus: BookingStatus,
+  reason?: string,
+  actor: string = "admin"
 ): Promise<{ success: boolean; error?: string }> {
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
     if (client) {
-      const { error } = await client
-        .from("bookings")
-        .update({
-          status: "cancelled",
-          cancellation_reason: cancellationReason || "Cancelled by solutions administrator",
-          cancelled_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", bookingId);
+      const { error } = await client.rpc("update_booking_status_atomic", {
+        p_booking_id: bookingId,
+        p_new_status: newStatus,
+        p_reason: reason || null,
+        p_actor: actor,
+      });
 
       if (error) {
         // eslint-disable-next-line no-console
-        console.error("[Scheduling Service] Admin cancel booking error:", error.message);
-        return { success: false, error: error.message };
+        console.error("[Scheduling Service] Admin update booking status error:", error.message);
+        const isAuthError =
+          error.code === "42501" ||
+          error.message?.toLowerCase().includes("access denied") ||
+          error.message?.toLowerCase().includes("administrative authorization");
+        return {
+          success: false,
+          error: isAuthError
+            ? "Access denied. Administrative authorization required."
+            : error.message,
+        };
+      }
+
+      return { success: true };
+    }
+  }
+
+  // Local storage fallback simulation
+  const bookings = getStoredBookings();
+  const target = bookings.find((b) => b.id === bookingId);
+  if (!target) {
+    return { success: false, error: "Booking record not found." };
+  }
+
+  const allowed = VALID_STATUS_TRANSITIONS[target.status] || [];
+  if (!allowed.includes(newStatus)) {
+    return {
+      success: false,
+      error: `Invalid status transition from ${target.status} to ${newStatus}.`,
+    };
+  }
+
+  const previousStatus = target.status;
+  target.status = newStatus;
+  target.updatedAt = new Date().toISOString();
+  if (newStatus === "cancelled") {
+    target.cancellationReason = reason || "Cancelled by solutions administrator";
+    target.cancelledAt = new Date().toISOString();
+  }
+
+  saveStoredBookings(bookings);
+
+  recordStoredAuditLog({
+    id: `audit-${Date.now()}`,
+    bookingId,
+    referenceId: target.referenceId,
+    action: "status_updated",
+    actor,
+    previousStatus,
+    newStatus,
+    details: { reason },
+    createdAt: new Date().toISOString(),
+  });
+
+  return { success: true };
+}
+
+/**
+ * Cancels a booking reservation via controlled admin lifecycle action.
+ */
+export async function cancelAdminBooking(
+  bookingId: string,
+  cancellationReason?: string
+): Promise<{ success: boolean; error?: string }> {
+  return updateAdminBookingStatus(
+    bookingId,
+    "cancelled",
+    cancellationReason || "Cancelled by solutions administrator"
+  );
+}
+
+/**
+ * Reschedules a confirmed reservation to a new time slot atomically.
+ */
+export async function rescheduleAdminBooking(
+  request: RescheduleRequest
+): Promise<RescheduleResponse> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (client) {
+      const { error } = await client.rpc("reschedule_booking_atomic", {
+        p_booking_id: request.bookingId,
+        p_new_date: request.newDate,
+        p_new_start_time: request.newStartTime,
+        p_new_end_time: request.newEndTime,
+        p_reason: request.reason || null,
+        p_actor: request.actor || "admin",
+      });
+
+      if (error) {
+        const message = error.message || "";
+        const isAuthError =
+          error.code === "42501" ||
+          message.toLowerCase().includes("access denied") ||
+          message.toLowerCase().includes("administrative authorization");
+        if (isAuthError) {
+          return {
+            success: false,
+            error: "Access denied. Administrative authorization required.",
+          };
+        }
+        const isRace =
+          message.toLowerCase().includes("no longer available") ||
+          message.toLowerCase().includes("conflict") ||
+          message.toLowerCase().includes("overlap");
+
+        return {
+          success: false,
+          isRaceCollision: isRace,
+          error: isRace
+            ? "Selected time slot is no longer available. Please choose another slot."
+            : message,
+        };
+      }
+
+      return { success: true };
+    }
+  }
+
+  // Local storage fallback simulation
+  const bookings = getStoredBookings();
+  const target = bookings.find((b) => b.id === request.bookingId);
+  if (!target) {
+    return { success: false, error: "Booking record not found." };
+  }
+
+  if (!["confirmed", "pending", "cancelled"].includes(target.status)) {
+    return {
+      success: false,
+      error: `Bookings with status "${target.status}" cannot be rescheduled.`,
+    };
+  }
+
+  // Check collision with any existing active booking on new date & slot
+  const hasConflict = bookings.some(
+    (b) =>
+      b.id !== request.bookingId &&
+      b.bookingDate === request.newDate &&
+      b.status !== "cancelled" &&
+      b.startTime === request.newStartTime
+  );
+
+  if (hasConflict) {
+    return {
+      success: false,
+      isRaceCollision: true,
+      error: "Selected time slot is no longer available. Please choose another slot.",
+    };
+  }
+
+  const oldDate = target.bookingDate;
+  const oldStart = target.startTime;
+  const oldEnd = target.endTime;
+
+  target.bookingDate = request.newDate;
+  target.startTime = request.newStartTime;
+  target.endTime = request.newEndTime;
+  target.status = "confirmed";
+  target.rescheduledAt = new Date().toISOString();
+  target.rescheduleCount = (target.rescheduleCount || 0) + 1;
+  target.cancellationReason = undefined;
+  target.cancelledAt = undefined;
+  target.updatedAt = new Date().toISOString();
+
+  saveStoredBookings(bookings);
+
+  recordStoredAuditLog({
+    id: `audit-${Date.now()}`,
+    bookingId: request.bookingId,
+    referenceId: target.referenceId,
+    action: "booking_rescheduled",
+    actor: request.actor || "admin",
+    previousStatus: "confirmed",
+    newStatus: "confirmed",
+    details: {
+      previousDate: oldDate,
+      previousStartTime: oldStart,
+      previousEndTime: oldEnd,
+      newDate: request.newDate,
+      newStartTime: request.newStartTime,
+      newEndTime: request.newEndTime,
+      reason: request.reason,
+    },
+    createdAt: new Date().toISOString(),
+  });
+
+  return { success: true, booking: target };
+}
+
+/**
+ * Updates internal administrative notes for a booking.
+ */
+export async function updateAdminBookingInternalNotes(
+  bookingId: string,
+  internalNotes: string,
+  actor: string = "admin"
+): Promise<{ success: boolean; error?: string }> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (client) {
+      const { error } = await client.rpc("update_booking_notes_atomic", {
+        p_booking_id: bookingId,
+        p_internal_notes: internalNotes,
+        p_actor: actor,
+      });
+
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error("[Scheduling Service] Admin update notes error:", error.message);
+        const isAuthError =
+          error.code === "42501" ||
+          error.message?.toLowerCase().includes("access denied") ||
+          error.message?.toLowerCase().includes("administrative authorization");
+        return {
+          success: false,
+          error: isAuthError
+            ? "Access denied. Administrative authorization required."
+            : error.message,
+        };
       }
 
       return { success: true };
@@ -378,14 +652,114 @@ export async function cancelAdminBooking(
     return { success: false, error: "Booking record not found." };
   }
 
-  target.status = "cancelled";
-  target.cancellationReason = cancellationReason || "Cancelled by solutions administrator";
-  target.cancelledAt = new Date().toISOString();
+  target.internalNotes = internalNotes;
   target.updatedAt = new Date().toISOString();
-
   saveStoredBookings(bookings);
+
+  recordStoredAuditLog({
+    id: `audit-${Date.now()}`,
+    bookingId,
+    referenceId: target.referenceId,
+    action: "note_updated",
+    actor,
+    details: { noteLength: internalNotes.length },
+    createdAt: new Date().toISOString(),
+  });
+
   return { success: true };
 }
+
+/**
+ * Fetches audit log records for administrative review.
+ */
+export async function getAdminBookingAuditLogs(
+  bookingId?: string
+): Promise<BookingAuditLog[]> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (client) {
+      let query = client
+        .from("booking_audit_logs")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (bookingId) {
+        query = query.eq("booking_id", bookingId);
+      }
+
+      const { data, error } = await query;
+      if (!error && data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return data.map((d: any) => ({
+          id: d.id,
+          bookingId: d.booking_id,
+          referenceId: d.reference_id,
+          action: d.action,
+          actor: d.actor,
+          previousStatus: d.previous_status,
+          newStatus: d.new_status,
+          details: d.details,
+          createdAt: d.created_at,
+        }));
+      }
+      return [];
+    }
+  }
+
+  const logs = getStoredAuditLogs();
+  if (bookingId) {
+    return logs.filter((l) => l.bookingId === bookingId);
+  }
+  return logs;
+}
+
+/**
+ * Fetches notification records for administrative review.
+ */
+export async function getAdminBookingNotifications(
+  bookingId?: string
+): Promise<BookingNotification[]> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (client) {
+      let query = client
+        .from("booking_notifications")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (bookingId) {
+        query = query.eq("booking_id", bookingId);
+      }
+
+      const { data, error } = await query;
+      if (!error && data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return data.map((d: any) => ({
+          id: d.id,
+          bookingId: d.booking_id,
+          referenceId: d.reference_id,
+          eventType: d.event_type,
+          recipientEmail: d.recipient_email,
+          recipientName: d.recipient_name,
+          channel: d.channel,
+          status: d.status,
+          payload: d.payload,
+          errorMessage: d.error_message,
+          createdAt: d.created_at,
+          sentAt: d.sent_at,
+        }));
+      }
+      return [];
+    }
+  }
+
+  const notifs = getStoredNotifications();
+  if (bookingId) {
+    return notifs.filter((n) => n.bookingId === bookingId);
+  }
+  return notifs;
+}
+
 
 export async function getAdminScheduleSettings(): Promise<ScheduleSettings> {
   if (isSupabaseConfigured()) {

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   ChevronDown, Menu, X, ArrowRight, Building2, BrainCircuit, Workflow, ShieldCheck,
-  Building, Landmark, Home, Coins, Activity, Zap, Code2, Bot, Layers, Cloud, Shield, Compass, Search, Scale,
+  Building, Landmark, Home, Coins, Activity, Zap, Code2, Bot, Layers, Cloud, Shield, Compass, Search, Scale, BookOpen,
   Linkedin, Facebook, Instagram, Youtube, Globe
 } from "lucide-react";
 import { MAIN_NAVIGATION } from "@/data/navigation";
@@ -165,6 +165,7 @@ export const Navbar: React.FC = () => {
       case "Shield": return <Shield className={iconClass} />;
       case "Compass": return <Compass className={iconClass} />;
       case "Scale": return <Scale className={iconClass} />;
+      case "BookOpen": return <BookOpen className={iconClass} />;
       default: return <Layers className={iconClass} />;
     }
   };

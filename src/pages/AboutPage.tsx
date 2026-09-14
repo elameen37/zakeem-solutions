@@ -1,13 +1,25 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { ShieldCheck, Cpu, Globe, Target, Award, Users, CheckCircle2 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { CTASection } from "@/components/ui/CTASection";
+import { HomeValueComparison } from "@/components/ui/HomeValueComparison";
 
 export const AboutPage: React.FC = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const targetId = location.hash.replace("#", "");
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [location.hash]);
   return (
     <>
       <SEO
@@ -76,6 +88,9 @@ export const AboutPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Strategic Value Assessment (Full Dimension Comparison) */}
+      <HomeValueComparison />
 
       <CTASection />
     </>

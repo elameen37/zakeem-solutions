@@ -1,11 +1,24 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { SEO } from "@/components/seo/SEO";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ServiceCard } from "@/components/ui/ServiceCard";
+import { TheZakeemStandard } from "@/components/ui/TheZakeemStandard";
 import { CTASection } from "@/components/ui/CTASection";
 import { SERVICES } from "@/data/services";
 
 export const ServicesIndexPage: React.FC = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const targetId = location.hash.replace("#", "");
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [location.hash]);
   return (
     <>
       <SEO
@@ -30,6 +43,9 @@ export const ServicesIndexPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Advanced Engineering Delivery Methodology */}
+      <TheZakeemStandard />
 
       <CTASection
         badge="Engineering Pod Engagement"

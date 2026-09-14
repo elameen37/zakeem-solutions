@@ -14,7 +14,7 @@ import { SolutionCard } from "@/components/ui/SolutionCard";
 import { ServiceCard } from "@/components/ui/ServiceCard";
 import { ZakeemRealtyERPHighlight } from "@/components/ui/ZakeemRealtyERPHighlight";
 import { TheZakeemStandard } from "@/components/ui/TheZakeemStandard";
-import { HomeValueComparison } from "@/components/ui/HomeValueComparison";
+import { HomeValueSummary } from "@/components/ui/HomeValueSummary";
 import { CTASection } from "@/components/ui/CTASection";
 import { ShinyText } from "@/components/ui/ShinyText";
 import { HeroFloatingIcons } from "@/components/ui/HeroFloatingIcons";
@@ -22,6 +22,18 @@ import { HeroSocialTimelineRail, HeroSocialMobileRow } from "@/components/ui/Her
 import { ZAKEEM_APPLICATIONS } from "@/data/ecosystem";
 import { SOLUTIONS } from "@/data/solutions";
 import { SERVICES } from "@/data/services";
+
+const HOMEPAGE_PRODUCTS = ZAKEEM_APPLICATIONS.filter(
+  (app) => app.id === "zakeem-realty-erp" || app.id === "zakeem-cortex-ai"
+);
+
+const HOMEPAGE_SOLUTIONS = [
+  "real-estate",
+  "enterprise",
+  "government",
+]
+  .map((id) => SOLUTIONS.find((sol) => sol.id === id))
+  .filter((sol): sol is (typeof SOLUTIONS)[number] => Boolean(sol));
 
 export const HomePage: React.FC = () => {
   return (
@@ -285,15 +297,28 @@ export const HomePage: React.FC = () => {
       {/* 5. PRODUCT ECOSYSTEM GRID */}
       <section className="py-20 lg:py-28 relative">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
-          <SectionHeader
-            badge="Product Ecosystem"
-            title="Engineered for Autonomy."
-            highlightedWord="Built for Scale."
-            description="Our software products are built on a shared enterprise foundation: multi-tenant architecture, bank-grade encryption, and granular permission boundaries."
-          />
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-12 gap-6">
+            <SectionHeader
+              badge="Product Ecosystem"
+              title="Engineered for Autonomy."
+              highlightedWord="Built for Scale."
+              description="Our software products are built on a shared enterprise foundation: multi-tenant architecture, bank-grade encryption, and granular permission boundaries."
+              className="mb-0"
+            />
+            <Button
+              variant="outline"
+              size="md"
+              href="/products"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+              className="text-slate-900 dark:text-white border-slate-300 dark:border-white/20 hover:border-[#e57804] hover:bg-white/10 shrink-0 self-start lg:self-auto"
+              data-analytics-id="home-products-matrix-cta"
+            >
+              View All Products & Modules
+            </Button>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {ZAKEEM_APPLICATIONS.map((app) => (
+            {HOMEPAGE_PRODUCTS.map((app) => (
               <ProductCard key={app.id} product={app} featured={app.featured} />
             ))}
           </div>
@@ -325,7 +350,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {SOLUTIONS.slice(0, 6).map((sol) => (
+            {HOMEPAGE_SOLUTIONS.map((sol) => (
               <SolutionCard key={sol.id} solution={sol} />
             ))}
           </div>
@@ -366,7 +391,7 @@ export const HomePage: React.FC = () => {
       <TheZakeemStandard />
 
       {/* 9. STRATEGIC VALUE & COMPARISON (WHY ZAKEEM) */}
-      <HomeValueComparison />
+      <HomeValueSummary />
 
       {/* 10. HIGH-CONVERSION ENTERPRISE CTA */}
       <CTASection />

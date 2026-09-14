@@ -145,16 +145,27 @@ export const MAIN_NAVIGATION: NavItem[] = [
     href: "/pricing"
   },
   {
-    label: "Industries",
-    href: "/industries"
-  },
-  {
-    label: "Insights",
-    href: "/insights"
-  },
-  {
     label: "Company",
     href: "/about"
+  },
+  {
+    label: "More",
+    href: "/industries",
+    description: "Explore industry verticals, technical insights, and architectural research.",
+    children: [
+      {
+        label: "Industries",
+        href: "/industries",
+        description: "Specialized digital transformation across 11 core market sectors.",
+        icon: "Building"
+      },
+      {
+        label: "Insights",
+        href: "/insights",
+        description: "Architecture whitepapers, engineering perspectives, and technical briefs.",
+        icon: "BookOpen"
+      }
+    ]
   }
 ];
 

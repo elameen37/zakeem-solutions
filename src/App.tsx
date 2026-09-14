@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { HomePage } from "@/pages/HomePage";
 
+import { AuthProvider } from "@/context/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+
 // Lazy-loaded non-critical route pages for optimized initial payload
 const AboutPage = React.lazy(() => import("@/pages/AboutPage").then((m) => ({ default: m.AboutPage })));
 const ProductsIndexPage = React.lazy(() => import("@/pages/products/ProductsIndexPage").then((m) => ({ default: m.ProductsIndexPage })));
@@ -19,6 +22,7 @@ const PricingPage = React.lazy(() => import("@/pages/PricingPage").then((m) => (
 const ContactPage = React.lazy(() => import("@/pages/ContactPage").then((m) => ({ default: m.ContactPage })));
 const RequestDemoPage = React.lazy(() => import("@/pages/RequestDemoPage").then((m) => ({ default: m.RequestDemoPage })));
 const LoginPage = React.lazy(() => import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage })));
+const ClientPortalPage = React.lazy(() => import("@/pages/portal/ClientPortalPage").then((m) => ({ default: m.ClientPortalPage })));
 const SupportPage = React.lazy(() => import("@/pages/SupportPage").then((m) => ({ default: m.SupportPage })));
 const PrivacyPage = React.lazy(() => import("@/pages/PrivacyPage").then((m) => ({ default: m.PrivacyPage })));
 const TermsPage = React.lazy(() => import("@/pages/TermsPage").then((m) => ({ default: m.TermsPage })));
@@ -39,50 +43,67 @@ const RouteLoadingFallback: React.FC = () => (
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <Layout>
-        <Suspense fallback={<RouteLoadingFallback />}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/about" element={<AboutPage />} />
+      <AuthProvider>
+        <Layout>
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/about" element={<AboutPage />} />
 
-            {/* Products */}
-            <Route path="/products" element={<ProductsIndexPage />} />
-            <Route path="/products/zakeem-realty-erp" element={<ZakeemRealtyERPPage />} />
-            <Route path="/products/:slug" element={<ProductsIndexPage />} />
+              {/* Products */}
+              <Route path="/products" element={<ProductsIndexPage />} />
+              <Route path="/products/zakeem-realty-erp" element={<ZakeemRealtyERPPage />} />
+              <Route path="/products/:slug" element={<ProductsIndexPage />} />
 
-            {/* Solutions */}
-            <Route path="/solutions" element={<SolutionsIndexPage />} />
-            <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
+              {/* Solutions */}
+              <Route path="/solutions" element={<SolutionsIndexPage />} />
+              <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
 
-            {/* Services */}
-            <Route path="/services" element={<ServicesIndexPage />} />
-            <Route path="/services/:slug" element={<ServiceDetailPage />} />
+              {/* Services */}
+              <Route path="/services" element={<ServicesIndexPage />} />
+              <Route path="/services/:slug" element={<ServiceDetailPage />} />
 
-            {/* Additional core routes */}
-            <Route path="/industries" element={<IndustriesPage />} />
-            <Route path="/insights" element={<InsightsPage />} />
-            <Route path="/case-studies" element={<CaseStudiesPage />} />
-            
-            {/* Careers */}
-            <Route path="/careers" element={<CareersPage />} />
-            <Route path="/careers/:slug" element={<CareersPage />} />
+              {/* Additional core routes */}
+              <Route path="/industries" element={<IndustriesPage />} />
+              <Route path="/insights" element={<InsightsPage />} />
+              <Route path="/case-studies" element={<CaseStudiesPage />} />
+              
+              {/* Careers */}
+              <Route path="/careers" element={<CareersPage />} />
+              <Route path="/careers/:slug" element={<CareersPage />} />
 
-            <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/request-demo" element={<RequestDemoPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/support" element={<SupportPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/terms" element={<TermsPage />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/request-demo" element={<RequestDemoPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route
+                path="/portal"
+                element={
+                  <ProtectedRoute requiredRole="client">
+                    <ClientPortalPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/support" element={<SupportPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
 
-            {/* Internal Admin Operations */}
-            <Route path="/admin/scheduling" element={<AdminSchedulingPage />} />
+              {/* Internal Admin Operations */}
+              <Route
+                path="/admin/scheduling"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminSchedulingPage />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Fallback 404 route */}
-            <Route path="*" element={<HomePage />} />
-          </Routes>
-        </Suspense>
-      </Layout>
+              {/* Fallback 404 route */}
+              <Route path="*" element={<HomePage />} />
+            </Routes>
+          </Suspense>
+        </Layout>
+      </AuthProvider>
     </BrowserRouter>
   );
 };

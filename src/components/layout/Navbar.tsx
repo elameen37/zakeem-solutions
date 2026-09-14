@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { 
   ChevronDown, Menu, X, ArrowRight, Building2, BrainCircuit, Workflow, ShieldCheck,
   Building, Landmark, Home, Coins, Activity, Zap, Code2, Bot, Layers, Cloud, Shield, Compass, Search, Scale, BookOpen,
-  Linkedin, Facebook, Instagram, Youtube, Globe
+  Linkedin, Facebook, Instagram, Youtube, Globe, LogOut
 } from "lucide-react";
 import { MAIN_NAVIGATION } from "@/data/navigation";
 import { SOCIAL_LINKS } from "@/data/social";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { openGlobalSearch } from "@/components/search/GlobalSearchModal";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useAuth } from "@/context/AuthContext";
 
 const XIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg viewBox="0 0 24 24" className={cn("fill-current", className)} aria-hidden="true">
@@ -43,6 +44,7 @@ const renderSocialIcon = (iconName: string) => {
 export const Navbar: React.FC = () => {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const { isAuthenticated, isAdmin, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -358,17 +360,49 @@ export const Navbar: React.FC = () => {
               </kbd>
             </button>
             <ThemeToggle />
-            <Link
-              to="/login"
-              className={cn(
-                "text-xs font-mono font-medium px-3 py-2 rounded-lg transition-colors",
-                isDark
-                  ? "text-slate-200 hover:text-white hover:bg-white/5"
-                  : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
-              )}
-            >
-              Client Login
-            </Link>
+            {isAuthenticated ? (
+              <div className="flex items-center gap-1.5">
+                <Link
+                  to={isAdmin ? "/admin/scheduling" : "/portal"}
+                  className={cn(
+                    "text-xs font-mono font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border",
+                    isDark
+                      ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20"
+                      : "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
+                  )}
+                  title={isAdmin ? "Open Admin Desk" : "Open Client Portal"}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{isAdmin ? "Admin Desk" : "Client Portal"}</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  title="Sign Out"
+                  aria-label="Sign Out"
+                  className={cn(
+                    "p-1.5 rounded-lg transition-colors border",
+                    isDark
+                      ? "text-slate-400 hover:text-rose-400 bg-white/5 border-white/10 hover:bg-white/10"
+                      : "text-slate-600 hover:text-rose-600 bg-slate-100 border-slate-200 hover:bg-slate-200"
+                  )}
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className={cn(
+                  "text-xs font-mono font-medium px-3 py-2 rounded-lg transition-colors",
+                  isDark
+                    ? "text-slate-200 hover:text-white hover:bg-white/5"
+                    : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
+                )}
+              >
+                Client Login
+              </Link>
+            )}
             <Button variant="primary" size="sm" href="/request-demo">
               Request a Demo
             </Button>
@@ -476,9 +510,40 @@ export const Navbar: React.FC = () => {
               <Button variant="outline" size="md" href="/contact" className="w-full border-white/20 text-white hover:bg-white/10">
                 Contact Sales
               </Button>
-              <Button variant="ghost" size="sm" href="/login" className="w-full text-slate-300 hover:text-white hover:bg-white/5">
-                Client Portal Login
-              </Button>
+              {isAuthenticated ? (
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="md"
+                    href={isAdmin ? "/admin/scheduling" : "/portal"}
+                    onClick={() => setIsOpen(false)}
+                    className="w-full border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+                  >
+                    {isAdmin ? "Admin Scheduling Desk" : "Client Portal"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsOpen(false);
+                      signOut();
+                    }}
+                    className="w-full text-slate-400 hover:text-rose-400 hover:bg-white/5"
+                  >
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-slate-300 hover:text-white hover:bg-white/5"
+                >
+                  Client Portal Login
+                </Button>
+              )}
             </div>
 
             {/* Official Social Channels */}

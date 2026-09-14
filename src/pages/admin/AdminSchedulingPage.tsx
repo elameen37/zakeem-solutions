@@ -69,6 +69,7 @@ import {
   getLagosTodayDateString,
   formatDisplayTime,
 } from "@/lib/schedulingEngine";
+import { useAuth } from "@/context/AuthContext";
 
 type ActiveTab = "bookings" | "settings" | "rules" | "exceptions";
 type DrawerTab = "details" | "reschedule" | "audit" | "notifications";
@@ -86,8 +87,17 @@ const PRODUCT_FILTER_OPTIONS = [
 ];
 
 export const AdminSchedulingPage: React.FC = () => {
-  // Authentication gate state
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Authentication gate state connected to shared AuthContext
+  const {
+    isAuthenticated: authIsAuthenticated,
+    isAdmin: authIsAdmin,
+    signIn: authSignIn,
+    signOut: authSignOut,
+  } = useAuth();
+
+  const [localDevAuthed, setLocalDevAuthed] = useState(false);
+  const isDeskUnlocked = (authIsAuthenticated && authIsAdmin) || localDevAuthed;
+
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [passkey, setPasskey] = useState("");
@@ -146,20 +156,6 @@ export const AdminSchedulingPage: React.FC = () => {
   const [notifications, setNotifications] = useState<BookingNotification[]>([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
 
-  // Check active Supabase session on mount
-  useEffect(() => {
-    if (isSupabaseConfigured()) {
-      const client = getSupabaseClient();
-      if (client) {
-        client.auth.getSession().then(({ data: { session } }) => {
-          if (session?.user) {
-            setIsAuthenticated(true);
-          }
-        });
-      }
-    }
-  }, []);
-
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setActionError(null);
@@ -191,10 +187,10 @@ export const AdminSchedulingPage: React.FC = () => {
   }, [selectedBooking]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isDeskUnlocked) {
       loadData();
     }
-  }, [isAuthenticated, loadData]);
+  }, [isDeskUnlocked, loadData]);
 
   // Load audit logs and notifications for a selected booking
   const loadBookingHistory = useCallback(async (bookingId: string) => {
@@ -256,30 +252,25 @@ export const AdminSchedulingPage: React.FC = () => {
 
     // Production mode: Authenticate against Supabase Auth for RLS compliance
     if (isSupabaseConfigured()) {
-      const client = getSupabaseClient();
-      if (client) {
-        setIsLoading(true);
-        const { data, error } = await client.auth.signInWithPassword({
-          email: adminEmail.trim(),
-          password: adminPassword,
-        });
-        setIsLoading(false);
+      setIsLoading(true);
+      const res = await authSignIn(adminEmail.trim(), adminPassword);
+      setIsLoading(false);
 
-        if (error) {
-          setAuthError(error.message || "Invalid administrative credentials. Please verify your solutions login.");
-          return;
-        }
-
-        if (data.session?.user) {
-          setIsAuthenticated(true);
-          return;
-        }
+      if (!res.success) {
+        setAuthError(res.error || "Invalid administrative credentials. Please verify your solutions login.");
+        return;
       }
+
+      if (res.role !== "admin") {
+        setAuthError("Access restricted. This account does not have administrative privileges.");
+        return;
+      }
+      return;
     }
 
     // Local development mode: Verify admin access via operational passkey
     if (passkey.trim() === "zakeem-executive" || passkey.trim().length >= 8) {
-      setIsAuthenticated(true);
+      setLocalDevAuthed(true);
       setAuthError(null);
     } else {
       setAuthError("Invalid administrative credentials. Please verify your solutions passkey.");
@@ -287,13 +278,8 @@ export const AdminSchedulingPage: React.FC = () => {
   };
 
   const handleSignOut = async () => {
-    if (isSupabaseConfigured()) {
-      const client = getSupabaseClient();
-      if (client) {
-        await client.auth.signOut();
-      }
-    }
-    setIsAuthenticated(false);
+    await authSignOut();
+    setLocalDevAuthed(false);
     setSelectedBooking(null);
     setPasskey("");
     setAdminEmail("");
@@ -571,7 +557,7 @@ export const AdminSchedulingPage: React.FC = () => {
   };
 
   // Auth Gate Render
-  if (!isAuthenticated) {
+  if (!isDeskUnlocked) {
     return (
       <>
         <SEO

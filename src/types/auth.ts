@@ -11,6 +11,37 @@ export interface UserProfile {
   updatedAt?: string;
 }
 
+export type InvitationStatus = "pending" | "accepted" | "expired" | "revoked";
+
+export interface ClientInvitation {
+  id: string;
+  email: string;
+  organization: string;
+  fullName: string;
+  status: InvitationStatus;
+  invitedBy?: string;
+  leadId?: string;
+  expiresAt: string;
+  createdAt: string;
+  acceptedAt?: string;
+}
+
+export interface InvitationVerificationResult {
+  valid: boolean;
+  email?: string;
+  organization?: string;
+  fullName?: string;
+  leadId?: string;
+  error?: string;
+}
+
+export interface CreateInvitationPayload {
+  email: string;
+  organization: string;
+  fullName: string;
+  leadId?: string;
+}
+
 export interface AuthState {
   user: User | null;
   session: Session | null;
@@ -26,4 +57,6 @@ export interface AuthContextValue extends AuthState {
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string; role?: UserRole }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
 }

@@ -30,6 +30,8 @@ import {
   ExternalLink,
   Layers,
   ChevronRight,
+  Copy,
+  UserPlus,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -63,6 +65,12 @@ import {
   getAdminBookingNotifications,
   getPublicAvailableSlots,
 } from "@/lib/schedulingService";
+import {
+  listAdminInvitations,
+  createAdminInvitation,
+  revokeAdminInvitation,
+} from "@/lib/invitationService";
+import { ClientInvitation } from "@/types/auth";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import { formatDisplayDate } from "@/lib/leadValidation";
 import {
@@ -71,7 +79,7 @@ import {
 } from "@/lib/schedulingEngine";
 import { useAuth } from "@/context/AuthContext";
 
-type ActiveTab = "bookings" | "settings" | "rules" | "exceptions";
+type ActiveTab = "bookings" | "invitations" | "settings" | "rules" | "exceptions";
 type DrawerTab = "details" | "reschedule" | "audit" | "notifications";
 
 const PRODUCT_FILTER_OPTIONS = [
@@ -111,6 +119,16 @@ export const AdminSchedulingPage: React.FC = () => {
   const [settings, setSettings] = useState<ScheduleSettings | null>(null);
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
   const [exceptions, setExceptions] = useState<AvailabilityException[]>([]);
+  const [invitations, setInvitations] = useState<ClientInvitation[]>([]);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteOrg, setInviteOrg] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviteLeadId, setInviteLeadId] = useState("");
+  const [isCreatingInvite, setIsCreatingInvite] = useState(false);
+  const [createdInviteToken, setCreatedInviteToken] = useState<string | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [isRevokingId, setIsRevokingId] = useState<string | null>(null);
 
   // Filtering & Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -160,16 +178,20 @@ export const AdminSchedulingPage: React.FC = () => {
     setIsLoading(true);
     setActionError(null);
     try {
-      const [b, s, r, e] = await Promise.all([
+      const [b, s, r, e, invRes] = await Promise.all([
         getAdminBookings(),
         getAdminScheduleSettings(),
         getAdminAvailabilityRules(),
         getAdminExceptions(),
+        listAdminInvitations(),
       ]);
       setBookings(b);
       setSettings(s);
       setRules(r);
       setExceptions(e);
+      if (invRes.success) {
+        setInvitations(invRes.invitations);
+      }
 
       // Keep selectedBooking refreshed if drawer is open
       if (selectedBooking) {
@@ -467,6 +489,73 @@ export const AdminSchedulingPage: React.FC = () => {
     setExceptions(updated);
     setActionSuccess("Blackout date removed.");
     setTimeout(() => setActionSuccess(null), 2500);
+  };
+
+  const handleCreateInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionError(null);
+    setActionSuccess(null);
+
+    if (!inviteEmail.trim() || !inviteOrg.trim() || !inviteName.trim()) {
+      setActionError("Email, organization name, and contact name are required.");
+      return;
+    }
+
+    setIsCreatingInvite(true);
+    try {
+      const res = await createAdminInvitation({
+        email: inviteEmail.trim(),
+        organization: inviteOrg.trim(),
+        fullName: inviteName.trim(),
+        leadId: inviteLeadId.trim() || undefined,
+      });
+
+      if (res.success && res.token) {
+        setCreatedInviteToken(res.token);
+        setActionSuccess(`Invitation generated for ${inviteOrg.trim()}.`);
+        const listRes = await listAdminInvitations();
+        if (listRes.success) {
+          setInvitations(listRes.invitations);
+        }
+      } else {
+        setActionError(res.error || "Failed to create client invitation.");
+      }
+    } catch {
+      setActionError("An unexpected error occurred while generating invitation.");
+    } finally {
+      setIsCreatingInvite(false);
+    }
+  };
+
+  const handleRevokeInvite = async (invitationId: string) => {
+    if (!window.confirm("Are you sure you want to revoke this invitation? The client will no longer be able to activate an account.")) {
+      return;
+    }
+    setIsRevokingId(invitationId);
+    try {
+      const res = await revokeAdminInvitation(invitationId);
+      if (res.success) {
+        setActionSuccess("Invitation revoked successfully.");
+        const listRes = await listAdminInvitations();
+        if (listRes.success) {
+          setInvitations(listRes.invitations);
+        }
+      } else {
+        setActionError(res.error || "Failed to revoke invitation.");
+      }
+    } catch {
+      setActionError("Error occurred while revoking invitation.");
+    } finally {
+      setIsRevokingId(null);
+    }
+  };
+
+  const handleCopyInviteLink = (token: string) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://www.zakeemsolutions.com";
+    const link = `${origin}/accept-invite?token=${token}`;
+    navigator.clipboard.writeText(link);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 3000);
   };
 
   // Multi-field filtered bookings
@@ -769,6 +858,19 @@ export const AdminSchedulingPage: React.FC = () => {
             >
               <Calendar className="w-3.5 h-3.5" />
               Bookings Management ({bookings.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("invitations")}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-mono font-medium transition-colors flex items-center gap-2 whitespace-nowrap",
+                activeTab === "invitations"
+                  ? "bg-[#e57804] text-white"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              )}
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Client Invitations ({invitations.length})
             </button>
             <button
               type="button"
@@ -1252,6 +1354,295 @@ export const AdminSchedulingPage: React.FC = () => {
                         </button>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Client Account Invitations */}
+          {activeTab === "invitations" && (
+            <div className="space-y-6">
+              {/* Header Card with Metrics and Create Button */}
+              <div data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="neon">B2B Identity Governance</Badge>
+                    <span className="text-xs font-mono text-slate-400">Controlled Onboarding</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-white">Client Portal Invitations</h2>
+                  <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
+                    Generate secure single-use onboarding invitations for approved enterprise accounts. Unrestricted public self-registration is permanently prohibited.
+                  </p>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    setShowInviteModal(!showInviteModal);
+                    setCreatedInviteToken(null);
+                  }}
+                  leftIcon={<UserPlus className="w-4 h-4" />}
+                >
+                  {showInviteModal ? "Close Panel" : "+ Invite Client"}
+                </Button>
+              </div>
+
+              {/* Status Metrics Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div data-surface="dark" className="p-4 rounded-2xl bg-[#081c38] border border-white/10">
+                  <span className="text-[10px] font-mono uppercase text-slate-400">Total Issued</span>
+                  <div className="text-xl font-bold text-white mt-1">{invitations.length}</div>
+                </div>
+                <div data-surface="dark" className="p-4 rounded-2xl bg-[#081c38] border border-white/10">
+                  <span className="text-[10px] font-mono uppercase text-amber-400">Pending Activation</span>
+                  <div className="text-xl font-bold text-amber-400 mt-1">
+                    {invitations.filter((i) => i.status === "pending").length}
+                  </div>
+                </div>
+                <div data-surface="dark" className="p-4 rounded-2xl bg-[#081c38] border border-white/10">
+                  <span className="text-[10px] font-mono uppercase text-emerald-400">Accepted & Provisioned</span>
+                  <div className="text-xl font-bold text-emerald-400 mt-1">
+                    {invitations.filter((i) => i.status === "accepted").length}
+                  </div>
+                </div>
+                <div data-surface="dark" className="p-4 rounded-2xl bg-[#081c38] border border-white/10">
+                  <span className="text-[10px] font-mono uppercase text-slate-400">Revoked / Expired</span>
+                  <div className="text-xl font-bold text-slate-300 mt-1">
+                    {invitations.filter((i) => i.status === "revoked" || i.status === "expired").length}
+                  </div>
+                </div>
+              </div>
+
+              {/* Invitation Generator Panel */}
+              {showInviteModal && (
+                <div data-surface="dark" className="p-6 rounded-3xl bg-[#0a2347] border border-[#e57804]/40 shadow-2xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <UserPlus className="w-4 h-4 text-[#e57804]" />
+                      Issue Client Account Invitation
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowInviteModal(false)}
+                      className="text-slate-400 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {createdInviteToken ? (
+                    <div className="p-5 rounded-2xl bg-[#06152b] border border-emerald-500/30 space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span>Invitation Token Successfully Generated!</span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        Share this secure onboarding link with the client representative. The link is valid for 7 days and expires upon single redemption:
+                      </p>
+                      <div className="flex items-center gap-2 p-2.5 rounded-xl bg-black/40 border border-white/10">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`${typeof window !== "undefined" ? window.location.origin : "https://www.zakeemsolutions.com"}/accept-invite?token=${createdInviteToken}`}
+                          className="w-full bg-transparent text-xs font-mono text-white focus:outline-none truncate"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleCopyInviteLink(createdInviteToken)}
+                          className="px-3 py-1.5 rounded-lg bg-[#e57804] text-white text-xs font-mono font-medium hover:bg-[#ff8906] transition-colors flex items-center gap-1 shrink-0"
+                        >
+                          {copySuccess ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copySuccess ? "Copied" : "Copy Link"}
+                        </button>
+                      </div>
+                      <div className="pt-2 flex justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setCreatedInviteToken(null);
+                            setInviteEmail("");
+                            setInviteOrg("");
+                            setInviteName("");
+                            setInviteLeadId("");
+                          }}
+                          className="text-xs"
+                        >
+                          Issue Another Invitation
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleCreateInvite} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                          Client Work Email *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          placeholder="client@organization.com"
+                          className="w-full px-3.5 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                          Client Organization *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={inviteOrg}
+                          onChange={(e) => setInviteOrg(e.target.value)}
+                          placeholder="First Capital Bank PLC"
+                          className="w-full px-3.5 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                          Contact Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={inviteName}
+                          onChange={(e) => setInviteName(e.target.value)}
+                          placeholder="Alhaji Ibrahim Danladi"
+                          className="w-full px-3.5 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                          Lead Reference ID (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={inviteLeadId}
+                          onChange={(e) => setInviteLeadId(e.target.value)}
+                          placeholder="ZK-202609-XXXX"
+                          className="w-full px-3.5 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2 pt-2 flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          type="button"
+                          onClick={() => setShowInviteModal(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          type="submit"
+                          disabled={isCreatingInvite}
+                        >
+                          {isCreatingInvite ? "Generating Invitation..." : "Issue Invitation & Token"}
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              )}
+
+              {/* Invitations Table */}
+              <div data-surface="dark" className="rounded-2xl bg-[#081c38] border border-white/10 overflow-hidden">
+                <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                  <span className="text-xs font-bold text-white font-mono uppercase">
+                    Authorized Client Onboarding Registry ({invitations.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={loadData}
+                    className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors"
+                  >
+                    <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
+                    Refresh
+                  </button>
+                </div>
+
+                {invitations.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 text-xs italic">
+                    No client invitations have been issued yet. Click "+ Invite Client" above to initiate onboarding.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-[#06152b] text-slate-400 font-mono uppercase border-b border-white/5">
+                        <tr>
+                          <th className="p-3.5">Organization / Contact</th>
+                          <th className="p-3.5">Email</th>
+                          <th className="p-3.5">Status</th>
+                          <th className="p-3.5">Lead Reference</th>
+                          <th className="p-3.5">Expires</th>
+                          <th className="p-3.5 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {invitations.map((inv) => (
+                          <tr key={inv.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="p-3.5">
+                              <div className="font-bold text-white">{inv.organization}</div>
+                              <div className="text-[11px] text-slate-400">{inv.fullName}</div>
+                            </td>
+                            <td className="p-3.5 font-mono text-slate-300">{inv.email}</td>
+                            <td className="p-3.5">
+                              {inv.status === "pending" && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                  Pending Activation
+                                </span>
+                              )}
+                              {inv.status === "accepted" && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                  Accepted
+                                </span>
+                              )}
+                              {inv.status === "expired" && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-500/20 text-slate-400 border border-slate-500/30">
+                                  Expired
+                                </span>
+                              )}
+                              {inv.status === "revoked" && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                  Revoked
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5 font-mono text-slate-400">
+                              {inv.leadId || "—"}
+                            </td>
+                            <td className="p-3.5 font-mono text-[11px] text-slate-400">
+                              {new Date(inv.expiresAt).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </td>
+                            <td className="p-3.5 text-right">
+                              {inv.status === "pending" && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRevokeInvite(inv.id)}
+                                  disabled={isRevokingId === inv.id}
+                                  className="text-[11px] text-rose-400 hover:text-rose-300 hover:underline disabled:opacity-50"
+                                >
+                                  {isRevokingId === inv.id ? "Revoking..." : "Revoke"}
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>

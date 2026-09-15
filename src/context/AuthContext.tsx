@@ -261,6 +261,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRole(null);
   }, []);
 
+  const resetPassword = useCallback(async (email: string): Promise<{ success: boolean; error?: string }> => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      return { success: false, error: "Please provide a valid work email address." };
+    }
+
+    if (isSupabaseConfigured()) {
+      const client = getSupabaseClient();
+      if (!client) {
+        return { success: false, error: "Database client is unavailable." };
+      }
+
+      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
+      const { error } = await client.auth.resetPasswordForEmail(trimmedEmail, {
+        redirectTo,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("client-password-reset-requested", {
+            bubbles: true,
+            detail: { email: trimmedEmail },
+          })
+        );
+      }
+
+      return { success: true };
+    }
+
+    // Local development fallback simulation
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("client-password-reset-requested", {
+          bubbles: true,
+          detail: { email: trimmedEmail },
+        })
+      );
+    }
+    return { success: true };
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    if (!newPassword || newPassword.length < 8) {
+      return { success: false, error: "Password must be at least 8 characters in length." };
+    }
+
+    if (isSupabaseConfigured()) {
+      const client = getSupabaseClient();
+      if (!client) {
+        return { success: false, error: "Database client is unavailable." };
+      }
+
+      const { error } = await client.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    }
+
+    // Local development fallback simulation
+    return { success: true };
+  }, []);
+
   const isAuthenticated = useMemo(() => {
     if (isSupabaseConfigured()) {
       return Boolean(user && session);
@@ -284,8 +355,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signIn,
       signOut,
       refreshSession,
+      resetPassword,
+      updatePassword,
     }),
-    [user, session, profile, role, isAuthenticated, isAdmin, isClient, loading, signIn, signOut, refreshSession]
+    [
+      user,
+      session,
+      profile,
+      role,
+      isAuthenticated,
+      isAdmin,
+      isClient,
+      loading,
+      signIn,
+      signOut,
+      refreshSession,
+      resetPassword,
+      updatePassword,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

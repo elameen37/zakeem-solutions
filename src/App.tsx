@@ -22,6 +22,8 @@ const PricingPage = React.lazy(() => import("@/pages/PricingPage").then((m) => (
 const ContactPage = React.lazy(() => import("@/pages/ContactPage").then((m) => ({ default: m.ContactPage })));
 const RequestDemoPage = React.lazy(() => import("@/pages/RequestDemoPage").then((m) => ({ default: m.RequestDemoPage })));
 const LoginPage = React.lazy(() => import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage })));
+const AcceptInvitationPage = React.lazy(() => import("@/pages/auth/AcceptInvitationPage").then((m) => ({ default: m.AcceptInvitationPage })));
+const ResetPasswordPage = React.lazy(() => import("@/pages/auth/ResetPasswordPage").then((m) => ({ default: m.ResetPasswordPage })));
 const ClientPortalPage = React.lazy(() => import("@/pages/portal/ClientPortalPage").then((m) => ({ default: m.ClientPortalPage })));
 const SupportPage = React.lazy(() => import("@/pages/SupportPage").then((m) => ({ default: m.SupportPage })));
 const PrivacyPage = React.lazy(() => import("@/pages/PrivacyPage").then((m) => ({ default: m.PrivacyPage })));
@@ -76,6 +78,8 @@ export const App: React.FC = () => {
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/request-demo" element={<RequestDemoPage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/accept-invite" element={<AcceptInvitationPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route
                 path="/portal"
                 element={

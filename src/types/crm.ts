@@ -1,6 +1,6 @@
 /**
  * Zakeem Solutions — Canonical CRM Types & Entities
- * Phase 26B: Persistent Lead, Organization, Contact, Opportunity & Activity Foundation
+ * Phase 26C: Persistent Lead, Organization, Contact, Opportunity & Activity Foundation
  */
 
 export type OrganizationStatus =
@@ -43,6 +43,41 @@ export type LeadStatus =
   | "converted"
   | "disqualified";
 
+/**
+ * Strict CRM Lead Lifecycle Governance Transitions.
+ * Terminal states (converted, disqualified) cannot be transitioned further.
+ */
+export const VALID_LEAD_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
+  new: ["contacted", "disqualified"],
+  contacted: ["qualified", "disqualified"],
+  qualified: ["converted", "disqualified"],
+  converted: [], // Terminal
+  disqualified: [], // Terminal
+};
+
+export interface CRMLeadBookingSummary {
+  id: string;
+  referenceId: string;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+}
+
+export interface CRMLeadOpportunitySummary {
+  id: string;
+  title: string;
+  stage: OpportunityStage;
+  dealValueNgn?: number | null;
+}
+
+export interface CRMLeadInvitationSummary {
+  id: string;
+  status: string;
+  expiresAt: string;
+  acceptedAt?: string | null;
+}
+
 export interface CRMLead {
   id: string;
   referenceId: string; // Format: ZK-YYYYMM-XXXX
@@ -64,6 +99,10 @@ export interface CRMLead {
   convertedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  // Associated entities (when resolved)
+  booking?: CRMLeadBookingSummary | null;
+  opportunity?: CRMLeadOpportunitySummary | null;
+  invitation?: CRMLeadInvitationSummary | null;
 }
 
 export type OpportunityStage =

@@ -1,6 +1,6 @@
 /**
  * Zakeem Solutions — Canonical CRM Service Layer
- * Phase 26B: Centralized API for Leads, Organizations, Contacts, Opportunities & Activities
+ * Phase 26C: Centralized API for Leads, Organizations, Contacts, Opportunities & Activities
  */
 
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
@@ -13,6 +13,7 @@ import {
   CRMStats,
   LeadStatus,
   OpportunityStage,
+  VALID_LEAD_TRANSITIONS,
 } from "@/types/crm";
 
 // Local storage keys for non-production / offline fallback
@@ -43,6 +44,21 @@ function setStored<T>(key: string, data: T[]): void {
   }
 }
 
+function emitAnalyticsEvent(name: string, detail: Record<string, unknown>): void {
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(
+        new CustomEvent(name, {
+          bubbles: true,
+          detail,
+        })
+      );
+    } catch {
+      // Non-blocking
+    }
+  }
+}
+
 // -----------------------------------------------------------------------------
 // LEADS RETRIEVAL & MANAGEMENT
 // -----------------------------------------------------------------------------
@@ -50,6 +66,8 @@ function setStored<T>(key: string, data: T[]): void {
 export async function getAdminLeads(filters?: {
   status?: LeadStatus;
   formType?: string;
+  product?: string;
+  search?: string;
 }): Promise<{ success: boolean; leads: CRMLead[]; error?: string }> {
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
@@ -75,6 +93,9 @@ export async function getAdminLeads(filters?: {
       if (filters?.formType) {
         query = query.eq("form_type", filters.formType);
       }
+      if (filters?.product) {
+        query = query.eq("product_interest", filters.product);
+      }
 
       const { data, error } = await query;
       if (error) {
@@ -82,7 +103,7 @@ export async function getAdminLeads(filters?: {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const leads: CRMLead[] = (data || []).map((row: any) => ({
+      let leads: CRMLead[] = (data || []).map((row: any) => ({
         id: row.id,
         referenceId: row.reference_id,
         organizationId: row.organization_id,
@@ -129,6 +150,19 @@ export async function getAdminLeads(filters?: {
           : null,
       }));
 
+      // Apply client-side search filtering if present
+      if (filters?.search && filters.search.trim()) {
+        const q = filters.search.toLowerCase().trim();
+        leads = leads.filter(
+          (l) =>
+            l.referenceId.toLowerCase().includes(q) ||
+            l.contact?.fullName.toLowerCase().includes(q) ||
+            l.contact?.email.toLowerCase().includes(q) ||
+            l.organization?.name.toLowerCase().includes(q) ||
+            (l.productInterest && l.productInterest.toLowerCase().includes(q))
+        );
+      }
+
       return { success: true, leads };
     } catch (err: any) {
       return { success: false, leads: [], error: err?.message || "Failed to fetch leads." };
@@ -143,14 +177,213 @@ export async function getAdminLeads(filters?: {
   if (filters?.formType) {
     list = list.filter((l) => l.formType === filters.formType);
   }
+  if (filters?.product) {
+    list = list.filter((l) => l.productInterest === filters.product);
+  }
+  if (filters?.search && filters.search.trim()) {
+    const q = filters.search.toLowerCase().trim();
+    list = list.filter(
+      (l) =>
+        l.referenceId.toLowerCase().includes(q) ||
+        l.contact?.fullName.toLowerCase().includes(q) ||
+        l.contact?.email.toLowerCase().includes(q) ||
+        l.organization?.name.toLowerCase().includes(q) ||
+        (l.productInterest && l.productInterest.toLowerCase().includes(q))
+    );
+  }
   return { success: true, leads: list };
 }
 
+/**
+ * Retrieves comprehensive detail for a single lead, including associated
+ * booking, opportunity, invitation, and activities.
+ */
+export async function getLeadDetails(
+  leadId: string
+): Promise<{ success: boolean; lead?: CRMLead; activities: CRMActivity[]; error?: string }> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, activities: [], error: "Database client unavailable." };
+    }
+
+    try {
+      // 1. Fetch lead
+      const { data: row, error: leadErr } = await client
+        .from("crm_leads")
+        .select(`
+          id, reference_id, organization_id, contact_id, form_type, status,
+          product_interest, tier, suite, billing, deployment, inquiry_category,
+          notes, attribution, disqualification_reason, converted_at, created_at, updated_at,
+          organization:crm_organizations(id, name, slug, domain, industry, company_size, status, created_at, updated_at),
+          contact:crm_contacts(id, organization_id, email, full_name, phone, job_title, profile_id, is_primary, created_at, updated_at)
+        `)
+        .eq("id", leadId)
+        .single();
+
+      if (leadErr || !row) {
+        return { success: false, activities: [], error: leadErr?.message || "Lead not found." };
+      }
+
+      // 2. Fetch associated booking (if any)
+      const { data: bookingRow } = await client
+        .from("bookings")
+        .select("id, reference_id, booking_date, start_time, end_time, status")
+        .or(`lead_id.eq.${row.reference_id},contact_id.eq.${row.contact_id || '00000000-0000-0000-0000-000000000000'}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // 3. Fetch associated opportunity (if any)
+      const { data: oppRow } = await client
+        .from("crm_opportunities")
+        .select("id, title, stage, deal_value_ngn")
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // 4. Fetch associated invitation (if any)
+      const { data: invRow } = await client
+        .from("client_invitations")
+        .select("id, status, expires_at, accepted_at")
+        .or(`lead_id.eq.${row.reference_id},contact_id.eq.${row.contact_id || '00000000-0000-0000-0000-000000000000'}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // 5. Fetch associated activities
+      const { data: actRows } = await client
+        .from("crm_activities")
+        .select("id, activity_type, organization_id, contact_id, lead_id, booking_id, opportunity_id, actor_id, title, description, metadata, created_at")
+        .or(`lead_id.eq.${leadId},contact_id.eq.${row.contact_id || '00000000-0000-0000-0000-000000000000'}`)
+        .order("created_at", { ascending: false })
+        .limit(40);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lead: CRMLead = {
+        id: row.id,
+        referenceId: row.reference_id,
+        organizationId: row.organization_id,
+        contactId: row.contact_id,
+        formType: row.form_type,
+        status: row.status,
+        productInterest: row.product_interest,
+        tier: row.tier,
+        suite: row.suite,
+        billing: row.billing,
+        deployment: row.deployment,
+        inquiryCategory: row.inquiry_category,
+        notes: row.notes,
+        attribution: row.attribution || {},
+        disqualificationReason: row.disqualification_reason,
+        convertedAt: row.converted_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        organization: (row as any).organization
+          ? {
+              id: (row as any).organization.id,
+              name: (row as any).organization.name,
+              slug: (row as any).organization.slug,
+              domain: (row as any).organization.domain,
+              industry: (row as any).organization.industry,
+              companySize: (row as any).organization.company_size,
+              status: (row as any).organization.status,
+              createdAt: (row as any).organization.created_at,
+              updatedAt: (row as any).organization.updated_at,
+            }
+          : null,
+        contact: (row as any).contact
+          ? {
+              id: (row as any).contact.id,
+              organizationId: (row as any).contact.organization_id,
+              email: (row as any).contact.email,
+              fullName: (row as any).contact.full_name,
+              phone: (row as any).contact.phone,
+              jobTitle: (row as any).contact.job_title,
+              profileId: (row as any).contact.profile_id,
+              isPrimary: Boolean((row as any).contact.is_primary),
+              createdAt: (row as any).contact.created_at,
+              updatedAt: (row as any).contact.updated_at,
+            }
+          : null,
+        booking: bookingRow
+          ? {
+              id: bookingRow.id,
+              referenceId: bookingRow.reference_id,
+              bookingDate: bookingRow.booking_date,
+              startTime: bookingRow.start_time,
+              endTime: bookingRow.end_time,
+              status: bookingRow.status,
+            }
+          : null,
+        opportunity: oppRow
+          ? {
+              id: oppRow.id,
+              title: oppRow.title,
+              stage: oppRow.stage,
+              dealValueNgn: oppRow.deal_value_ngn ? Number(oppRow.deal_value_ngn) : null,
+            }
+          : null,
+        invitation: invRow
+          ? {
+              id: invRow.id,
+              status: invRow.status,
+              expiresAt: invRow.expires_at,
+              acceptedAt: invRow.accepted_at,
+            }
+          : null,
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const activities: CRMActivity[] = (actRows || []).map((a: any) => ({
+        id: a.id,
+        activityType: a.activity_type,
+        organizationId: a.organization_id,
+        contactId: a.contact_id,
+        leadId: a.lead_id,
+        bookingId: a.booking_id,
+        opportunityId: a.opportunity_id,
+        actorId: a.actor_id,
+        title: a.title,
+        description: a.description,
+        metadata: a.metadata || {},
+        createdAt: a.created_at,
+      }));
+
+      emitAnalyticsEvent("crm:lead_viewed", {
+        leadId,
+        referenceId: lead.referenceId,
+        status: lead.status,
+      });
+
+      return { success: true, lead, activities };
+    } catch (err: any) {
+      return { success: false, activities: [], error: err?.message || "Failed to load lead details." };
+    }
+  }
+
+  // Local fallback
+  const list = getStored<CRMLead>(STORAGE_KEYS.LEADS, []);
+  const found = list.find((l) => l.id === leadId);
+  if (!found) {
+    return { success: false, activities: [], error: "Lead not found." };
+  }
+  const allActs = getStored<CRMActivity>(STORAGE_KEYS.ACTIVITIES, []);
+  const leadActs = allActs.filter((a) => a.leadId === leadId);
+  return { success: true, lead: found, activities: leadActs };
+}
+
+/**
+ * Executes a controlled, validated lifecycle status transition for a lead.
+ * Enforces strict transition rules and requires a reason for disqualification.
+ */
 export async function updateLeadStatus(
   leadId: string,
   newStatus: LeadStatus,
   reason?: string
 ): Promise<{ success: boolean; error?: string }> {
+  // 1. Client-side state machine validation
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
     if (!client) {
@@ -158,25 +391,62 @@ export async function updateLeadStatus(
     }
 
     try {
+      // First attempt the atomic database RPC for lifecycle enforcement
+      const { data: rpcData, error: rpcErr } = await client.rpc("update_lead_status_atomic", {
+        p_lead_id: leadId,
+        p_new_status: newStatus,
+        p_reason: reason || null,
+      });
+
+      if (!rpcErr && rpcData) {
+        if (rpcData.success === false) {
+          return { success: false, error: rpcData.error || "Transition rejected by database rules." };
+        }
+        emitAnalyticsEvent("crm:lead_status_changed", {
+          leadId,
+          newStatus,
+          reason,
+        });
+        if (newStatus === "disqualified") {
+          emitAnalyticsEvent("crm:lead_disqualified", { leadId, reason });
+        }
+        return { success: true };
+      }
+
+      // Fallback if RPC migration is not yet pushed to remote instance:
+      // Perform strict validation and direct update under RLS
+      const { data: leadData, error: fetchErr } = await client
+        .from("crm_leads")
+        .select("id, reference_id, organization_id, contact_id, status")
+        .eq("id", leadId)
+        .single();
+
+      if (fetchErr || !leadData) {
+        return { success: false, error: fetchErr?.message || "Lead not found." };
+      }
+
+      const currentStatus = leadData.status as LeadStatus;
+      const allowed = VALID_LEAD_TRANSITIONS[currentStatus] || [];
+      if (!allowed.includes(newStatus)) {
+        return {
+          success: false,
+          error: `Invalid lifecycle transition: cannot move from [${currentStatus}] to [${newStatus}].`,
+        };
+      }
+
+      if (newStatus === "disqualified" && (!reason || reason.trim().length < 3)) {
+        return { success: false, error: "A specific disqualification reason (minimum 3 characters) is required." };
+      }
+
       const updatePayload: Record<string, unknown> = {
         status: newStatus,
         updated_at: new Date().toISOString(),
       };
-      if (newStatus === "disqualified" && reason) {
-        updatePayload.disqualification_reason = reason;
+      if (newStatus === "disqualified") {
+        updatePayload.disqualification_reason = reason!.trim();
       }
       if (newStatus === "converted") {
         updatePayload.converted_at = new Date().toISOString();
-      }
-
-      const { data: leadData, error: fetchErr } = await client
-        .from("crm_leads")
-        .select("id, organization_id, contact_id, reference_id")
-        .eq("id", leadId)
-        .single();
-
-      if (fetchErr) {
-        return { success: false, error: fetchErr.message };
       }
 
       const { error: updateErr } = await client
@@ -191,16 +461,27 @@ export async function updateLeadStatus(
       // Record status change activity
       await client.from("crm_activities").insert({
         activity_type: "lead_status_changed",
-        organization_id: leadData?.organization_id || null,
-        contact_id: leadData?.contact_id || null,
+        organization_id: leadData.organization_id || null,
+        contact_id: leadData.contact_id || null,
         lead_id: leadId,
         title: `Lead status transitioned to ${newStatus}`,
-        description: reason ? `Reason: ${reason}` : undefined,
+        description: reason ? `Reason: ${reason.trim()}` : undefined,
         metadata: {
+          previous_status: currentStatus,
           new_status: newStatus,
-          reference_id: leadData?.reference_id,
+          reason: reason?.trim(),
+          reference_id: leadData.reference_id,
         },
       });
+
+      emitAnalyticsEvent("crm:lead_status_changed", {
+        leadId,
+        newStatus,
+        reason,
+      });
+      if (newStatus === "disqualified") {
+        emitAnalyticsEvent("crm:lead_disqualified", { leadId, reason });
+      }
 
       return { success: true };
     } catch (err: any) {
@@ -208,21 +489,239 @@ export async function updateLeadStatus(
     }
   }
 
+  // Local development fallback
+  const list = getStored<CRMLead>(STORAGE_KEYS.LEADS, []);
+  const idx = list.findIndex((l) => l.id === leadId);
+  if (idx < 0) {
+    return { success: false, error: "Lead not found." };
+  }
+
+  const current = list[idx].status;
+  const allowed = VALID_LEAD_TRANSITIONS[current] || [];
+  if (!allowed.includes(newStatus)) {
+    return {
+      success: false,
+      error: `Invalid lifecycle transition: cannot move from [${current}] to [${newStatus}].`,
+    };
+  }
+
+  if (newStatus === "disqualified" && (!reason || reason.trim().length < 3)) {
+    return { success: false, error: "A specific disqualification reason (minimum 3 characters) is required." };
+  }
+
+  list[idx] = {
+    ...list[idx],
+    status: newStatus,
+    disqualificationReason: newStatus === "disqualified" ? reason!.trim() : list[idx].disqualificationReason,
+    convertedAt: newStatus === "converted" ? new Date().toISOString() : list[idx].convertedAt,
+    updatedAt: new Date().toISOString(),
+  };
+  setStored(STORAGE_KEYS.LEADS, list);
+
+  // Record mock activity
+  const activities = getStored<CRMActivity>(STORAGE_KEYS.ACTIVITIES, []);
+  activities.unshift({
+    id: `act-${Date.now()}`,
+    activityType: "lead_status_changed",
+    organizationId: list[idx].organizationId,
+    contactId: list[idx].contactId,
+    leadId: list[idx].id,
+    title: `Lead status transitioned to ${newStatus}`,
+    description: reason ? `Reason: ${reason.trim()}` : undefined,
+    metadata: { previous_status: current, new_status: newStatus },
+    createdAt: new Date().toISOString(),
+  });
+  setStored(STORAGE_KEYS.ACTIVITIES, activities);
+
+  return { success: true };
+}
+
+/**
+ * Converts a qualified lead into a commercial opportunity in the pipeline.
+ * Links to existing organization & contact, sets initial stage, and marks lead converted.
+ */
+export async function convertLeadToOpportunity(
+  leadId: string,
+  options?: { dealTitle?: string; primaryProduct?: string }
+): Promise<{ success: boolean; opportunityId?: string; error?: string }> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      // 1. Attempt atomic RPC
+      const { data: rpcData, error: rpcErr } = await client.rpc("convert_lead_to_opportunity_atomic", {
+        p_lead_id: leadId,
+        p_deal_title: options?.dealTitle || null,
+        p_product: options?.primaryProduct || null,
+      });
+
+      if (!rpcErr && rpcData) {
+        if (rpcData.success === false) {
+          return { success: false, error: rpcData.error || "Conversion rejected by database." };
+        }
+        emitAnalyticsEvent("crm:lead_converted", {
+          leadId,
+          opportunityId: rpcData.opportunity_id,
+        });
+        return { success: true, opportunityId: rpcData.opportunity_id };
+      }
+
+      // 2. Direct fallback
+      const { data: lead, error: fetchErr } = await client
+        .from("crm_leads")
+        .select(`
+          id, reference_id, organization_id, contact_id, status, product_interest, tier,
+          organization:crm_organizations(id, name)
+        `)
+        .eq("id", leadId)
+        .single();
+
+      if (fetchErr || !lead) {
+        return { success: false, error: fetchErr?.message || "Lead not found." };
+      }
+
+      if (lead.status === "converted") {
+        return { success: false, error: "Duplicate conversion rejected: Lead has already been converted." };
+      }
+
+      if (lead.status !== "qualified") {
+        return {
+          success: false,
+          error: `Invalid conversion: Only qualified leads can be converted to opportunities (current status: [${lead.status}]).`,
+        };
+      }
+
+      // Check for existing opportunity
+      const { data: existingOpp } = await client
+        .from("crm_opportunities")
+        .select("id")
+        .eq("lead_id", leadId)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingOpp) {
+        return { success: false, error: "Duplicate conversion rejected: An opportunity already exists for this lead." };
+      }
+
+      if (!lead.organization_id) {
+        return { success: false, error: "Lead must have an associated organization before conversion." };
+      }
+
+      const orgName = (lead.organization as any)?.name || "Enterprise Account";
+      const targetProduct = options?.primaryProduct || lead.product_interest || "zakeem-realty-erp";
+
+      // Check if demo booking exists
+      const { data: booking } = await client
+        .from("bookings")
+        .select("id")
+        .or(`lead_id.eq.${lead.reference_id},contact_id.eq.${lead.contact_id || '00000000-0000-0000-0000-000000000000'}`)
+        .not("status", "eq", "cancelled")
+        .limit(1)
+        .maybeSingle();
+
+      const stage: OpportunityStage = booking ? "demo_scheduled" : "discovery";
+      const title = options?.dealTitle || `${orgName} — ${targetProduct} (${lead.tier || "Enterprise"})`;
+
+      // Insert opportunity
+      const { data: newOpp, error: oppErr } = await client
+        .from("crm_opportunities")
+        .insert({
+          organization_id: lead.organization_id,
+          contact_id: lead.contact_id,
+          lead_id: leadId,
+          title,
+          primary_product: targetProduct,
+          stage,
+        })
+        .select("id")
+        .single();
+
+      if (oppErr) {
+        return { success: false, error: oppErr.message };
+      }
+
+      // Transition lead
+      await client
+        .from("crm_leads")
+        .update({
+          status: "converted",
+          converted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", leadId);
+
+      // Record activity
+      await client.from("crm_activities").insert({
+        activity_type: "opportunity_created",
+        organization_id: lead.organization_id,
+        contact_id: lead.contact_id,
+        lead_id: leadId,
+        opportunity_id: newOpp.id,
+        title: "Commercial Opportunity Created",
+        description: `Converted from lead ${lead.reference_id} with initial stage [${stage}]`,
+        metadata: { opportunity_id: newOpp.id, stage, product: targetProduct },
+      });
+
+      emitAnalyticsEvent("crm:lead_converted", {
+        leadId,
+        opportunityId: newOpp.id,
+      });
+
+      return { success: true, opportunityId: newOpp.id };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to convert lead." };
+    }
+  }
+
   // Local fallback
   const list = getStored<CRMLead>(STORAGE_KEYS.LEADS, []);
   const idx = list.findIndex((l) => l.id === leadId);
-  if (idx >= 0) {
-    list[idx] = {
-      ...list[idx],
-      status: newStatus,
-      disqualificationReason: newStatus === "disqualified" ? reason : list[idx].disqualificationReason,
-      convertedAt: newStatus === "converted" ? new Date().toISOString() : list[idx].convertedAt,
-      updatedAt: new Date().toISOString(),
-    };
-    setStored(STORAGE_KEYS.LEADS, list);
-    return { success: true };
+  if (idx < 0) return { success: false, error: "Lead not found." };
+
+  if (list[idx].status === "converted") {
+    return { success: false, error: "Duplicate conversion rejected: Lead has already been converted." };
   }
-  return { success: false, error: "Lead not found." };
+
+  if (list[idx].status !== "qualified") {
+    return {
+      success: false,
+      error: `Invalid conversion: Only qualified leads can be converted to opportunities (current status: [${list[idx].status}]).`,
+    };
+  }
+
+  const opps = getStored<CRMOpportunity>(STORAGE_KEYS.OPPORTUNITIES, []);
+  const existingOpp = opps.find((o) => o.leadId === leadId);
+  if (existingOpp) {
+    return { success: false, error: "Duplicate conversion rejected: An opportunity already exists for this lead." };
+  }
+
+  const oppId = `opp-${Date.now()}`;
+  opps.push({
+    id: oppId,
+    organizationId: list[idx].organizationId || "org-default",
+    contactId: list[idx].contactId,
+    leadId,
+    title: options?.dealTitle || `${list[idx].organization?.name || "Enterprise"} — ${list[idx].productInterest || "Solution"}`,
+    primaryProduct: options?.primaryProduct || list[idx].productInterest || "zakeem-realty-erp",
+    stage: "discovery",
+    dealValueNgn: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  setStored(STORAGE_KEYS.OPPORTUNITIES, opps);
+
+  list[idx] = {
+    ...list[idx],
+    status: "converted",
+    convertedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  setStored(STORAGE_KEYS.LEADS, list);
+
+  return { success: true, opportunityId: oppId };
 }
 
 // -----------------------------------------------------------------------------
@@ -309,7 +808,7 @@ export async function getAdminContacts(): Promise<{
         phone: row.phone,
         jobTitle: row.job_title,
         profileId: row.profile_id,
-        isPrimary: Boolean(row.is_primary),
+        isPrimary: Boolean(row.contact_is_primary || row.is_primary),
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         organization: row.organization
@@ -414,91 +913,6 @@ export async function getAdminOpportunities(): Promise<{
   return { success: true, opportunities: getStored<CRMOpportunity>(STORAGE_KEYS.OPPORTUNITIES, []) };
 }
 
-export async function updateOpportunityStage(
-  opportunityId: string,
-  newStage: OpportunityStage,
-  options?: { dealValueNgn?: number; lossReason?: string; closeDate?: string }
-): Promise<{ success: boolean; error?: string }> {
-  if (isSupabaseConfigured()) {
-    const client = getSupabaseClient();
-    if (!client) {
-      return { success: false, error: "Database client unavailable." };
-    }
-
-    try {
-      const updatePayload: Record<string, unknown> = {
-        stage: newStage,
-        updated_at: new Date().toISOString(),
-      };
-      if (options?.dealValueNgn !== undefined) {
-        updatePayload.deal_value_ngn = options.dealValueNgn;
-      }
-      if (options?.lossReason) {
-        updatePayload.loss_reason = options.lossReason;
-      }
-      if (options?.closeDate) {
-        updatePayload.close_date = options.closeDate;
-      }
-
-      const { data: opp, error: fetchErr } = await client
-        .from("crm_opportunities")
-        .select("id, organization_id, contact_id, lead_id, title, primary_product")
-        .eq("id", opportunityId)
-        .single();
-
-      if (fetchErr) {
-        return { success: false, error: fetchErr.message };
-      }
-
-      const { error: updateErr } = await client
-        .from("crm_opportunities")
-        .update(updatePayload)
-        .eq("id", opportunityId);
-
-      if (updateErr) {
-        return { success: false, error: updateErr.message };
-      }
-
-      // Record stage_changed activity
-      await client.from("crm_activities").insert({
-        activity_type: "stage_changed",
-        organization_id: opp?.organization_id || null,
-        contact_id: opp?.contact_id || null,
-        lead_id: opp?.lead_id || null,
-        opportunity_id: opportunityId,
-        title: `Opportunity stage updated to ${newStage}`,
-        description: options?.lossReason ? `Loss reason: ${options.lossReason}` : undefined,
-        metadata: {
-          new_stage: newStage,
-          title: opp?.title,
-          deal_value_ngn: options?.dealValueNgn,
-        },
-      });
-
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || "Failed to update opportunity stage." };
-    }
-  }
-
-  // Local fallback
-  const list = getStored<CRMOpportunity>(STORAGE_KEYS.OPPORTUNITIES, []);
-  const idx = list.findIndex((o) => o.id === opportunityId);
-  if (idx >= 0) {
-    list[idx] = {
-      ...list[idx],
-      stage: newStage,
-      dealValueNgn: options?.dealValueNgn !== undefined ? options.dealValueNgn : list[idx].dealValueNgn,
-      lossReason: options?.lossReason || list[idx].lossReason,
-      closeDate: options?.closeDate || list[idx].closeDate,
-      updatedAt: new Date().toISOString(),
-    };
-    setStored(STORAGE_KEYS.OPPORTUNITIES, list);
-    return { success: true };
-  }
-  return { success: false, error: "Opportunity not found." };
-}
-
 // -----------------------------------------------------------------------------
 // ACTIVITIES & TIMELINE
 // -----------------------------------------------------------------------------
@@ -601,6 +1015,20 @@ export async function addCRMNote(params: {
     }
   }
 
+  const activities = getStored<CRMActivity>(STORAGE_KEYS.ACTIVITIES, []);
+  activities.unshift({
+    id: `act-${Date.now()}`,
+    activityType: "note_added",
+    organizationId: params.organizationId,
+    contactId: params.contactId,
+    leadId: params.leadId,
+    opportunityId: params.opportunityId,
+    title: params.title.trim(),
+    description: params.notes.trim(),
+    metadata: {},
+    createdAt: new Date().toISOString(),
+  });
+  setStored(STORAGE_KEYS.ACTIVITIES, activities);
   return { success: true };
 }
 

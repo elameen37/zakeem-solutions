@@ -36,6 +36,7 @@ import {
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { AdminNav } from "@/components/admin/AdminNav";
 import { cn } from "@/lib/utils";
 import {
   AvailabilityException,
@@ -777,6 +778,9 @@ export const AdminSchedulingPage: React.FC = () => {
 
       <section className="pt-12 pb-24 border-b border-white/10 min-h-screen">
         <div className="container mx-auto px-4 md:px-6 max-w-6xl space-y-8">
+          {/* Admin Navigation Suite */}
+          <AdminNav currentTab="scheduling" />
+
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
             <div>

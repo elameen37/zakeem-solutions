@@ -487,10 +487,10 @@ export const LoginPage: React.FC = () => {
                     {/* Explanatory Callout */}
                     <div className="p-4 rounded-2xl bg-[#06152b] border border-[#e57804]/30 space-y-1.5">
                       <p className="text-xs font-semibold text-white">
-                        New to Zakeem? Create your client account with an invitation.
+                        Have a Zakeem invitation?
                       </p>
                       <p className="text-xs text-slate-300 leading-relaxed">
-                        Client accounts are created through a secure Zakeem invitation. Enter your authorization token or paste your complete invitation link below.
+                        Use your secure invitation link to create your client account. Enter your authorization token or paste your complete invitation link below.
                       </p>
                     </div>
 
@@ -573,7 +573,7 @@ export const LoginPage: React.FC = () => {
                         rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                         className="w-full border-[#e57804]/50 text-[#e57804] hover:bg-[#e57804]/10 hover:text-white"
                       >
-                        Request Enterprise Demo & Invitation
+                        Request Access
                       </Button>
                       <div className="text-center pt-1">
                         <Link to="/contact" className="text-[11px] text-slate-400 hover:text-white hover:underline transition-colors">

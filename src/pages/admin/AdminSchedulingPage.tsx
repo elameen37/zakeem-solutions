@@ -70,7 +70,7 @@ import {
   createAdminInvitation,
   revokeAdminInvitation,
 } from "@/lib/invitationService";
-import { ClientInvitation } from "@/types/auth";
+import { ClientInvitation, CreateInvitationResult } from "@/types/auth";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import { formatDisplayDate } from "@/lib/leadValidation";
 import {
@@ -133,7 +133,9 @@ export const AdminSchedulingPage: React.FC = () => {
   const [inviteName, setInviteName] = useState("");
   const [inviteLeadId, setInviteLeadId] = useState("");
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
+  const [inviteExpiresInDays, setInviteExpiresInDays] = useState<number>(7);
   const [createdInviteToken, setCreatedInviteToken] = useState<string | null>(null);
+  const [createdInvitationData, setCreatedInvitationData] = useState<CreateInvitationResult | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isRevokingId, setIsRevokingId] = useState<string | null>(null);
 
@@ -515,10 +517,12 @@ export const AdminSchedulingPage: React.FC = () => {
         organization: inviteOrg.trim(),
         fullName: inviteName.trim(),
         leadId: inviteLeadId.trim() || undefined,
+        expiresInDays: inviteExpiresInDays,
       });
 
       if (res.success && res.token) {
         setCreatedInviteToken(res.token);
+        setCreatedInvitationData(res);
         setActionSuccess(`Invitation generated for ${inviteOrg.trim()}.`);
         const listRes = await listAdminInvitations();
         if (listRes.success) {
@@ -1440,14 +1444,52 @@ export const AdminSchedulingPage: React.FC = () => {
                   </div>
 
                   {createdInviteToken ? (
-                    <div className="p-5 rounded-2xl bg-[#06152b] border border-emerald-500/30 space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
-                        <CheckCircle2 className="w-4 h-4 shrink-0" />
-                        <span>Invitation Token Successfully Generated!</span>
+                    <div className="p-5 rounded-2xl bg-[#06152b] border border-emerald-500/30 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span className="text-sm font-bold text-white">Invitation Ready</span>
+                        </div>
+                        <Badge variant="neon">Single-Use Token</Badge>
                       </div>
-                      <p className="text-xs text-slate-300 leading-relaxed">
-                        Share this secure onboarding link with the client representative. The link is valid for 7 days and expires upon single redemption:
+
+                      {/* Recipient, Organization, and Expiration Details */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-black/40 border border-white/10 text-xs">
+                        <div>
+                          <span className="block text-[10px] font-mono uppercase text-slate-400">Recipient</span>
+                          <span className="text-white font-medium truncate block">
+                            {createdInvitationData?.fullName || inviteName || "Client Contact"}
+                          </span>
+                          <span className="text-slate-400 text-[11px] truncate block">
+                            {createdInvitationData?.email || inviteEmail}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-[10px] font-mono uppercase text-slate-400">Organization</span>
+                          <span className="text-white font-medium truncate block">
+                            {createdInvitationData?.organization || inviteOrg}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-[10px] font-mono uppercase text-slate-400">Expiration</span>
+                          <span className="text-[#e57804] font-mono text-[11px] block">
+                            {createdInvitationData?.expiresAt
+                              ? new Date(createdInvitationData.expiresAt).toLocaleString(undefined, {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : `${inviteExpiresInDays} Days`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                        Share this secure invitation link with the client.
                       </p>
+
                       <div className="flex items-center gap-2 p-2.5 rounded-xl bg-black/40 border border-white/10">
                         <input
                           type="text"
@@ -1458,22 +1500,26 @@ export const AdminSchedulingPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleCopyInviteLink(createdInviteToken)}
-                          className="px-3 py-1.5 rounded-lg bg-[#e57804] text-white text-xs font-mono font-medium hover:bg-[#ff8906] transition-colors flex items-center gap-1 shrink-0"
+                          className="px-3 py-1.5 rounded-lg bg-[#e57804] text-white text-xs font-mono font-medium hover:bg-[#ff8906] transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                          aria-label="Copy Invitation Link"
                         >
                           {copySuccess ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                          {copySuccess ? "Copied" : "Copy Link"}
+                          {copySuccess ? "Copied!" : "Copy Link"}
                         </button>
                       </div>
+
                       <div className="pt-2 flex justify-end">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => {
                             setCreatedInviteToken(null);
+                            setCreatedInvitationData(null);
                             setInviteEmail("");
                             setInviteOrg("");
                             setInviteName("");
                             setInviteLeadId("");
+                            setInviteExpiresInDays(7);
                           }}
                           className="text-xs"
                         >
@@ -1536,6 +1582,22 @@ export const AdminSchedulingPage: React.FC = () => {
                           placeholder="ZK-202609-XXXX"
                           className="w-full px-3.5 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                          Expiration Period *
+                        </label>
+                        <select
+                          value={inviteExpiresInDays}
+                          onChange={(e) => setInviteExpiresInDays(Number(e.target.value))}
+                          className="w-full px-3.5 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
+                        >
+                          <option value={1}>24 Hours (1 Day)</option>
+                          <option value={7}>7 Days (Default)</option>
+                          <option value={14}>14 Days</option>
+                          <option value={30}>30 Days</option>
+                        </select>
                       </div>
 
                       <div className="md:col-span-2 pt-2 flex justify-end gap-2">

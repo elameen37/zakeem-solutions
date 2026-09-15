@@ -47,6 +47,17 @@ export interface CreateInvitationPayload {
   organization: string;
   fullName: string;
   leadId?: string;
+  expiresInDays?: number;
+}
+
+export interface CreateInvitationResult {
+  success: boolean;
+  token?: string;
+  expiresAt?: string;
+  email?: string;
+  organization?: string;
+  fullName?: string;
+  error?: string;
 }
 
 export interface AuthState {

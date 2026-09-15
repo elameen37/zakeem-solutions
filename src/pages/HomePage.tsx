@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   ArrowRight, ShieldCheck, Cpu, Code2, Bot, Layers, 
@@ -35,7 +35,43 @@ const HOMEPAGE_SOLUTIONS = [
   .map((id) => SOLUTIONS.find((sol) => sol.id === id))
   .filter((sol): sol is (typeof SOLUTIONS)[number] => Boolean(sol));
 
+const TRUST_COMPANIES = [
+  "Powerlynx Integrated",
+  "Quantum Construct",
+  "Horizon Energy",
+  "BMO Events Ltd",
+  "Dantata Homes",
+  "Craftwave Solutions",
+  "Wasl Gesher",
+  "Tayyib Homes",
+  "Tekaya",
+  "Alveena Events",
+  "Afrisoil Ltd",
+] as const;
+
+// Transition delay: 3s (3,000 ms)
+const MARQUEE_INTERVAL_MS = 3_000;
+
 export const HomePage: React.FC = () => {
+  const [currentCompanyIndex, setCurrentCompanyIndex] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+      setPrefersReducedMotion(mediaQuery.matches);
+      const listener = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+      mediaQuery.addEventListener?.("change", listener);
+      return () => mediaQuery.removeEventListener?.("change", listener);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentCompanyIndex((prev) => (prev + 1) % TRUST_COMPANIES.length);
+    }, MARQUEE_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, []);
   return (
     <>
       <SEO
@@ -169,22 +205,42 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 2B. TRUSTED ARCHITECTURE FOR LEADING REAL ESTATE COMPANIES */}
+      {/* 2B. TRUSTED ARCHITECTURE MARQUEE */}
       <section
         data-surface="dark"
         className="py-5 bg-[#06152b] border-y border-white/10 relative z-20"
-        aria-label="Engineered for Africa's Leading Real Estate & Enterprise Developers"
+        aria-label="Engineered for Small Businesses and Large Enterprises in Africa"
       >
+        <style>{`
+          @keyframes slideUpFast {
+            0% {
+              transform: translateY(100%);
+              opacity: 0;
+            }
+            100% {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+        `}</style>
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
             <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
-              Engineered for Africa's Leading Real Estate & Enterprise Developers
+              Engineered for Small Businesses and Large Enterprises in Africa
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8">
-              <span className="text-sm font-bold font-mono tracking-tight text-white flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-[#e57804]" />
-                Institutional Property Groups & Land Aggregators
-              </span>
+            <div className="h-7 overflow-hidden relative flex items-center justify-center sm:justify-end min-w-[240px]">
+              <div
+                key={currentCompanyIndex}
+                style={{
+                  animation: !prefersReducedMotion
+                    ? "slideUpFast 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+                    : "none",
+                }}
+                className="text-sm font-bold font-mono tracking-tight text-white flex items-center gap-2 shrink-0"
+              >
+                <Building2 className="w-4 h-4 text-[#e57804] shrink-0" />
+                <span>{TRUST_COMPANIES[currentCompanyIndex]}</span>
+              </div>
             </div>
           </div>
         </div>

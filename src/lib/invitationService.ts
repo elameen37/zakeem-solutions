@@ -8,6 +8,7 @@ import {
   AcceptInvitationResult,
   ClientInvitation,
   CreateInvitationPayload,
+  CreateInvitationResult,
   InvitationVerificationResult,
 } from "@/types/auth";
 
@@ -362,7 +363,7 @@ export async function acceptInvitation(
  */
 export async function createAdminInvitation(
   payload: CreateInvitationPayload
-): Promise<{ success: boolean; token?: string; error?: string }> {
+): Promise<CreateInvitationResult> {
   const rawToken = generateSecureToken();
   const tokenHash = await sha256Hex(rawToken);
 
@@ -370,6 +371,8 @@ export async function createAdminInvitation(
   const trimmedOrg = payload.organization.trim();
   const trimmedName = payload.fullName.trim();
   const trimmedLeadId = payload.leadId?.trim() || undefined;
+  const days = payload.expiresInDays && payload.expiresInDays > 0 ? payload.expiresInDays : 7;
+  const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
@@ -385,6 +388,7 @@ export async function createAdminInvitation(
         token_hash: tokenHash,
         lead_id: trimmedLeadId,
         status: "pending",
+        expires_at: expiresAt,
       });
 
       if (error) {
@@ -396,15 +400,22 @@ export async function createAdminInvitation(
           new CustomEvent("client-invitation-created", {
             bubbles: true,
             detail: {
-              email: trimmedEmail,
               organization: trimmedOrg,
               leadId: trimmedLeadId,
+              expiresAt,
             },
           })
         );
       }
 
-      return { success: true, token: rawToken };
+      return {
+        success: true,
+        token: rawToken,
+        expiresAt,
+        email: trimmedEmail,
+        organization: trimmedOrg,
+        fullName: trimmedName,
+      };
     } catch {
       return { success: false, error: "Failed to persist client invitation." };
     }
@@ -421,7 +432,7 @@ export async function createAdminInvitation(
     leadId: trimmedLeadId,
     status: "pending",
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    expiresAt,
   };
 
   saveLocalInvitations([newLocalInv, ...localList]);
@@ -431,15 +442,22 @@ export async function createAdminInvitation(
       new CustomEvent("client-invitation-created", {
         bubbles: true,
         detail: {
-          email: trimmedEmail,
           organization: trimmedOrg,
           leadId: trimmedLeadId,
+          expiresAt,
         },
       })
     );
   }
 
-  return { success: true, token: rawToken };
+  return {
+    success: true,
+    token: rawToken,
+    expiresAt,
+    email: trimmedEmail,
+    organization: trimmedOrg,
+    fullName: trimmedName,
+  };
 }
 
 /**

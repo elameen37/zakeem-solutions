@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { 
   ChevronDown, Menu, X, ArrowRight, Building2, BrainCircuit, Workflow, ShieldCheck,
   Building, Landmark, Home, Coins, Activity, Zap, Code2, Bot, Layers, Cloud, Shield, Compass, Search, Scale, BookOpen,
-  Linkedin, Facebook, Instagram, Youtube, Globe, LogOut
+  Linkedin, Facebook, Instagram, Youtube, Globe, LogOut, Fuel, UserCheck, CalendarDays
 } from "lucide-react";
 import { MAIN_NAVIGATION } from "@/data/navigation";
 import { SOCIAL_LINKS } from "@/data/social";
@@ -168,6 +168,9 @@ export const Navbar: React.FC = () => {
       case "Compass": return <Compass className={iconClass} />;
       case "Scale": return <Scale className={iconClass} />;
       case "BookOpen": return <BookOpen className={iconClass} />;
+      case "Fuel": return <Fuel className={iconClass} />;
+      case "UserCheck": return <UserCheck className={iconClass} />;
+      case "CalendarDays": return <CalendarDays className={iconClass} />;
       default: return <Layers className={iconClass} />;
     }
   };
@@ -183,14 +186,14 @@ export const Navbar: React.FC = () => {
               ? cn(
                   "shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)]",
                   scrolled
-                    ? "bg-[#06152b]/85 border-white/20 shadow-2xl shadow-black/50 py-2.5"
-                    : "bg-[#06152b]/65 border-white/15 shadow-xl shadow-black/30 py-3 hover:bg-[#06152b]/75 hover:border-white/25"
+                    ? "bg-[#06152b]/30 border-white/20 shadow-2xl shadow-black/50 py-2.5"
+                    : "bg-[#06152b]/30 border-white/15 shadow-xl shadow-black/30 py-3 hover:bg-[#06152b]/40 hover:border-white/25"
                 )
               : cn(
                   "shadow-[0_8px_24px_0_rgba(15,23,42,0.08)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]",
                   scrolled
-                    ? "bg-white/90 border-slate-200/90 shadow-lg shadow-slate-200/50 py-2.5"
-                    : "bg-white/80 border-slate-200/70 shadow-md shadow-slate-200/30 py-3 hover:bg-white/90 hover:border-slate-300"
+                    ? "bg-white/30 border-slate-200/90 shadow-lg shadow-slate-200/50 py-2.5"
+                    : "bg-white/30 border-slate-200/70 shadow-md shadow-slate-200/30 py-3 hover:bg-white/40 hover:border-slate-300"
                 )
           )}
         >

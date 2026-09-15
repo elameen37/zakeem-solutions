@@ -76,18 +76,25 @@ export const MAIN_NAVIGATION: NavItem[] = [
         badge: "v2.4 Live"
       },
       {
-        label: "Zakeem Cortex AI",
-        href: "/products/cortex-ai",
-        description: "Autonomous workflow execution and intelligent document cognition.",
-        icon: "BrainCircuit",
-        badge: "Preview"
+        label: "Zakeem Forecourt",
+        href: "/products/forecourt",
+        description: "Downstream petroleum retail, nozzle automation, and station POS operations.",
+        icon: "Fuel",
+        badge: "Available"
       },
       {
-        label: "Zakeem Flow",
-        href: "/products/flow-procure",
-        description: "B2B procurement, supplier compliance, and invoice reconciliation.",
-        icon: "Workflow",
-        badge: "Q4 Roadmap"
+        label: "Zakeem Smart Attendance",
+        href: "/products/smart-attendance",
+        description: "Biometric and geo-fenced employee presence tracking and shift management.",
+        icon: "UserCheck",
+        badge: "Available"
+      },
+      {
+        label: "Zakeem Events Booking",
+        href: "/products/events-booking",
+        description: "Enterprise venue reservation, ticketing, and event access control.",
+        icon: "CalendarDays",
+        badge: "Available"
       },
       {
         label: "All Product Ecosystem",

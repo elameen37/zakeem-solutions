@@ -186,14 +186,14 @@ export const Navbar: React.FC = () => {
               ? cn(
                   "shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)]",
                   scrolled
-                    ? "bg-[#06152b]/30 border-white/20 shadow-2xl shadow-black/50 py-2.5"
-                    : "bg-[#06152b]/30 border-white/15 shadow-xl shadow-black/30 py-3 hover:bg-[#06152b]/40 hover:border-white/25"
+                    ? "bg-[#06152b]/40 border-white/20 shadow-2xl shadow-black/50 py-2.5"
+                    : "bg-[#06152b]/40 border-white/15 shadow-xl shadow-black/30 py-3 hover:bg-[#06152b]/30 hover:border-white/25"
                 )
               : cn(
                   "shadow-[0_8px_24px_0_rgba(15,23,42,0.08)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]",
                   scrolled
-                    ? "bg-white/30 border-slate-200/90 shadow-lg shadow-slate-200/50 py-2.5"
-                    : "bg-white/30 border-slate-200/70 shadow-md shadow-slate-200/30 py-3 hover:bg-white/40 hover:border-slate-300"
+                    ? "bg-white/40 border-slate-200/90 shadow-lg shadow-slate-200/50 py-2.5"
+                    : "bg-white/40 border-slate-200/70 shadow-md shadow-slate-200/30 py-3 hover:bg-white/30 hover:border-slate-300"
                 )
           )}
         >

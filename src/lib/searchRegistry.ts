@@ -84,10 +84,28 @@ export function getAllSearchItems(): SearchItem[] {
       id: `product-${app.id}`,
       title: app.name,
       category: "Product",
-      description: app.tagline || app.description,
+      description: app.tagline || app.shortDescription || app.description,
       href: app.route,
-      tags: [app.category, app.version, app.status, ...(app.highlights || [])],
-      badge: app.status === "Available" ? "Available" : "Preview",
+      tags: [
+        app.category,
+        app.version,
+        app.status,
+        app.targetAudience || "",
+        ...(app.highlights || []),
+        ...(app.capabilities || []),
+      ].filter(Boolean),
+      badge:
+        app.status === "Available"
+          ? "Available"
+          : app.status === "Beta" || app.status === "Private Beta"
+          ? "Beta"
+          : app.status === "Pilot"
+          ? "Pilot"
+          : app.status === "Early Access"
+          ? "Early Access"
+          : app.status === "Active Solution"
+          ? "Active Solution"
+          : "Preview",
     });
   }
 

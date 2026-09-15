@@ -313,8 +313,15 @@ export const RequestDemoPage: React.FC = () => {
   const getInterestLabel = (val: string) => {
     switch (val) {
       case "zakeem-realty-erp": return "Zakeem Realty ERP (Available v2.4)";
+      case "events-booking": return "Zakeem Events Booking (Available)";
+      case "forecourt": return "Zakeem Forecourt (Available)";
+      case "smart-attendance": return "Zakeem Smart Attendance (Available)";
+      case "feedback": return "Zakeem Feedback (Available)";
       case "cortex-ai": return "Zakeem Cortex AI (Private Beta)";
+      case "performance": return "Zakeem Performance (Beta)";
+      case "ai-automated-hr": return "Zakeem AI Automated HR (Beta)";
       case "e-legal": return "e-Legal & Justice Platform";
+      case "secure-messaging": return "Zakeem Secure Messaging (In Development)";
       case "flow-procure": return "Zakeem Flow (Procurement Hub)";
       case "vault-pay": return "Zakeem Vault (Treasury & Settlement)";
       case "custom-software": return "Custom Software Engineering";
@@ -666,8 +673,15 @@ export const RequestDemoPage: React.FC = () => {
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
                       >
                         <option value="zakeem-realty-erp">Zakeem Realty ERP (Available v2.4)</option>
+                        <option value="events-booking">Zakeem Events Booking (Available)</option>
+                        <option value="forecourt">Zakeem Forecourt (Available)</option>
+                        <option value="smart-attendance">Zakeem Smart Attendance (Available)</option>
+                        <option value="feedback">Zakeem Feedback (Available)</option>
                         <option value="cortex-ai">Zakeem Cortex AI (Private Beta)</option>
+                        <option value="performance">Zakeem Performance (Beta)</option>
+                        <option value="ai-automated-hr">Zakeem AI Automated HR (Beta)</option>
                         <option value="e-legal">e-Legal & Justice Systems (Active Solution)</option>
+                        <option value="secure-messaging">Zakeem Secure Messaging (In Development)</option>
                         <option value="flow-procure">Zakeem Flow (Procurement Hub)</option>
                         <option value="vault-pay">Zakeem Vault (Treasury & Settlement)</option>
                         <option value="custom-software">Custom Software Engineering</option>

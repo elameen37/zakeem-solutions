@@ -115,4 +115,89 @@ export const ZAKKY_KNOWLEDGE_BASE: KnowledgeFact[] = [
       { label: "Request Vault Strategic Brief", href: "/contact?product=vault-pay&type=strategic-brief" },
     ],
   },
+  {
+    topic: "Zakeem Events Booking",
+    keywords: ["events", "event", "booking", "venue", "reservation", "conference", "banquet", "hall", "ticketing", "calendar"],
+    summary:
+      "Zakeem Events Booking is an Available enterprise operations platform engineered for multi-venue reservations, hall scheduling, and automated attendee check-in.",
+    details:
+      "Key capabilities include:\n- Real-time venue availability and conflict-free multi-hall reservation calendars\n- Automated booking deposits, milestone invoice schedules, and digital payment receipts\n- QR-code digital ticket generation and rapid scanner-based door access\n- Dynamic package customization for corporate conferences, banquets, and recurring civic assemblies\n\nCurrent Lifecycle: Available. Production enterprise deployments available for hospitality groups and event centers.",
+    actions: [
+      { label: "Explore Events Booking", href: "/products/events-booking" },
+      { label: "Request Live Demo", href: "/request-demo?product=events-booking" },
+    ],
+  },
+  {
+    topic: "Zakeem Forecourt",
+    keywords: ["forecourt", "petroleum", "fuel", "pump", "wet-stock", "shift", "tank", "dip-stick", "filling station", "retail oil"],
+    summary:
+      "Zakeem Forecourt is an Available operations management platform engineered for independent downstream petroleum retail networks and station forecourts.",
+    details:
+      "Key capabilities include:\n- Pump meter logging, pump attendant shift handovers, and cash-to-meter reconciliation\n- Underground storage tank (UST) wet-stock dip-stick tracking and variance discrepancy alerting\n- Multi-station centralized oversight with per-nozzle sales velocity reporting\n- Offline-resilient transaction capture with automatic cloud synchronization\n\nCurrent Lifecycle: Available. Production deployments available for petroleum retail operators.",
+    actions: [
+      { label: "Explore Forecourt Platform", href: "/products/forecourt" },
+      { label: "Request Platform Demo", href: "/request-demo?product=forecourt" },
+    ],
+  },
+  {
+    topic: "Zakeem Performance",
+    keywords: ["performance", "kpi", "scorecard", "mandate", "parastatal", "government", "appraisal", "institutional", "civil service"],
+    summary:
+      "Zakeem Performance is a Beta institutional performance management and KPI scorecard platform engineered for government organizations and private parastatals.",
+    details:
+      "Key capabilities include:\n- Multi-tiered organizational scorecard hierarchies with weighted KPI cascading\n- Evidence-backed milestone submissions with immutable multi-level review and sign-off workflows\n- Executive and ministerial dashboards tracking mandate delivery and project execution\n- Sovereign role-based permission tiers supporting government organizations, ministries, and private parastatals\n\nCurrent Lifecycle: Beta. Structured deployments available for government organizations and private parastatals.",
+    actions: [
+      { label: "Explore Performance Solution", href: "/products/performance" },
+      { label: "Request Beta Briefing", href: "/request-demo?product=performance" },
+    ],
+  },
+  {
+    topic: "Zakeem Smart Attendance",
+    keywords: ["attendance", "smart attendance", "roster", "geofence", "clock-in", "workforce", "presence", "shift", "timesheet"],
+    summary:
+      "Zakeem Smart Attendance is an Available workforce operations system delivering location-aware attendance verification and shift rostering.",
+    details:
+      "Key capabilities include:\n- Precision GPS geofencing and localized verification beacons to eliminate proxy clock-ins\n- Dynamic multi-shift rostering, rotational schedules, and overtime calculation\n- Automated exception tracking for tardiness, early exits, and unexcused absences\n- Seamless export and automated synchronization into enterprise payroll and HR workflows\n\nCurrent Lifecycle: Available. Production deployments available for institutional and field workforces.",
+    actions: [
+      { label: "Explore Smart Attendance", href: "/products/smart-attendance" },
+      { label: "Request Workforce Demo", href: "/request-demo?product=smart-attendance" },
+    ],
+  },
+  {
+    topic: "Zakeem AI Automated HR",
+    keywords: ["hr", "human resources", "payroll", "employee", "onboarding", "leave", "statutory", "pension", "tax deduction", "automated hr"],
+    summary:
+      "Zakeem AI Automated HR is a Beta AI & intelligence platform combining employee lifecycle management, document intelligence, and compliance-ready payroll workflows.",
+    details:
+      "Key capabilities include:\n- AI-assisted employee onboarding, credential ingestion, and automated personnel dossier filing\n- Automated payroll calculation with statutory tax brackets (PAYE, Pension, NHF), deductions, and direct pay slip generation\n- Self-service leave request administration, balance tracking, and approval hierarchies\n- Continuous workforce analytics, turnover risk signals, and policy compliance verification\n\nCurrent Lifecycle: Beta. Beta access available for enterprise HR and finance teams.",
+    actions: [
+      { label: "Explore AI HR Platform", href: "/products/ai-automated-hr" },
+      { label: "Request Beta Access", href: "/request-demo?product=ai-automated-hr" },
+    ],
+  },
+  {
+    topic: "Zakeem Feedback",
+    keywords: ["feedback", "survey", "nps", "csat", "sentiment", "kiosk", "stakeholder", "customer satisfaction", "incident report"],
+    summary:
+      "Zakeem Feedback is an Available operations platform for multi-channel stakeholder surveys, on-premise kiosk feedback, and automated sentiment scoring.",
+    details:
+      "Key capabilities include:\n- Multi-channel capture via QR kiosks, web prompts, SMS dispatch, and branded portal links\n- Natural language sentiment scoring and automated topic categorization for executive visibility\n- Automated escalation triggers transforming negative feedback into tracked operational tickets\n- Closed-loop stakeholder resolution tracking with satisfaction verification workflows\n\nCurrent Lifecycle: Available. Production deployments available for customer service, hospitality, and civic operations.",
+    actions: [
+      { label: "Explore Feedback Platform", href: "/products/feedback" },
+      { label: "Request Feedback Demo", href: "/request-demo?product=feedback" },
+    ],
+  },
+  {
+    topic: "Zakeem Secure Messaging",
+    keywords: ["messaging", "secure messaging", "chat", "secure", "communication", "confidential", "broadcast", "sovereign chat", "audit trail"],
+    summary:
+      "Zakeem Secure Messaging is an In Development infrastructure platform engineered for sovereign, high-assurance organizational communications and audit compliance.",
+    details:
+      "Key capabilities include:\n- End-to-end encrypted departmental chat channels, executive groups, and emergency broadcast alerts\n- Sovereign cryptographic key governance with organization-owned keys and strict data residency\n- Granular administrative audit retention policies, statutory legal holds, and immutable export logs\n- Zero third-party telemetry, self-hosted deployment options, and strict access boundaries\n\nCurrent Lifecycle: In Development. Architecture briefings available for security-conscious enterprises and government bodies.",
+    actions: [
+      { label: "Explore Secure Messaging", href: "/products/secure-messaging" },
+      { label: "Request Architecture Briefing", href: "/contact?product=secure-messaging&type=security-briefing" },
+    ],
+  },
 ];
+

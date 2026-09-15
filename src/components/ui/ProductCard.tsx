@@ -1,5 +1,9 @@
 import React from "react";
-import { ArrowUpRight, CheckCircle2, Building2, BrainCircuit, Workflow, ShieldCheck, Layers, Scale, ExternalLink } from "lucide-react";
+import { 
+  ArrowUpRight, CheckCircle2, Building2, BrainCircuit, Workflow, ShieldCheck, 
+  Layers, Scale, ExternalLink, CalendarDays, Fuel, TrendingUp, UserCheck, 
+  Bot, MessageSquare, Lock 
+} from "lucide-react";
 import { ZakeemApplication } from "@/data/ecosystem";
 import { Badge } from "./Badge";
 import { Button } from "./Button";
@@ -24,6 +28,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
         return <Workflow className="w-6 h-6 text-[#e57804]" />;
       case "ShieldCheck":
         return <ShieldCheck className="w-6 h-6 text-amber-400" />;
+      case "CalendarDays":
+        return <CalendarDays className="w-6 h-6 text-[#e57804]" />;
+      case "Fuel":
+        return <Fuel className="w-6 h-6 text-amber-400" />;
+      case "TrendingUp":
+        return <TrendingUp className="w-6 h-6 text-emerald-400" />;
+      case "UserCheck":
+        return <UserCheck className="w-6 h-6 text-sky-400" />;
+      case "Bot":
+        return <Bot className="w-6 h-6 text-purple-400" />;
+      case "MessageSquare":
+        return <MessageSquare className="w-6 h-6 text-[#e57804]" />;
+      case "Lock":
+        return <Lock className="w-6 h-6 text-emerald-400" />;
       default:
         return <Layers className="w-6 h-6 text-[#e57804]" />;
     }
@@ -38,11 +56,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
             <span>Available</span>
           </Badge>
         );
+      case "Beta":
       case "Private Beta":
         return (
           <Badge variant="blue" className="inline-flex items-center gap-1.5 border-amber-500/30 text-amber-300 bg-amber-500/10">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <span>Private Beta</span>
+            <span>{status === "Beta" ? "Beta" : "Private Beta"}</span>
+          </Badge>
+        );
+      case "Pilot":
+        return (
+          <Badge variant="blue" className="inline-flex items-center gap-1.5 border-sky-500/30 text-sky-300 bg-sky-500/10">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+            <span>Pilot</span>
+          </Badge>
+        );
+      case "Early Access":
+        return (
+          <Badge variant="blue" className="inline-flex items-center gap-1.5 border-amber-500/30 text-amber-300 bg-amber-500/10">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span>Early Access</span>
           </Badge>
         );
       case "Active Solution":
@@ -54,6 +87,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
         );
       case "Coming Soon":
       case "In Development":
+      case "Roadmap":
         return (
           <Badge variant="neutral" className="inline-flex items-center gap-1.5 text-slate-300">
             <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />

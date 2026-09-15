@@ -60,4 +60,39 @@
     <priority>0.85</priority>
     <changefreq>monthly</changefreq>
   </url>
+  <url>
+    <loc>https://www.zakeemsolutions.com/products/events-booking</loc>
+    <priority>0.85</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.zakeemsolutions.com/products/forecourt</loc>
+    <priority>0.85</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.zakeemsolutions.com/products/performance</loc>
+    <priority>0.85</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.zakeemsolutions.com/products/smart-attendance</loc>
+    <priority>0.85</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.zakeemsolutions.com/products/ai-automated-hr</loc>
+    <priority>0.85</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.zakeemsolutions.com/products/feedback</loc>
+    <priority>0.85</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.zakeemsolutions.com/products/secure-messaging</loc>
+    <priority>0.85</priority>
+    <changefreq>monthly</changefreq>
+  </url>
 </urlset>

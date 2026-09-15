@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 const AboutPage = React.lazy(() => import("@/pages/AboutPage").then((m) => ({ default: m.AboutPage })));
 const ProductsIndexPage = React.lazy(() => import("@/pages/products/ProductsIndexPage").then((m) => ({ default: m.ProductsIndexPage })));
 const ZakeemRealtyERPPage = React.lazy(() => import("@/pages/products/ZakeemRealtyERPPage").then((m) => ({ default: m.ZakeemRealtyERPPage })));
+const ProductDetailPage = React.lazy(() => import("@/pages/products/ProductDetailPage").then((m) => ({ default: m.ProductDetailPage })));
 const SolutionsIndexPage = React.lazy(() => import("@/pages/solutions/SolutionsIndexPage").then((m) => ({ default: m.SolutionsIndexPage })));
 const SolutionDetailPage = React.lazy(() => import("@/pages/solutions/SolutionDetailPage").then((m) => ({ default: m.SolutionDetailPage })));
 const ServicesIndexPage = React.lazy(() => import("@/pages/services/ServicesIndexPage").then((m) => ({ default: m.ServicesIndexPage })));
@@ -55,7 +56,7 @@ export const App: React.FC = () => {
               {/* Products */}
               <Route path="/products" element={<ProductsIndexPage />} />
               <Route path="/products/zakeem-realty-erp" element={<ZakeemRealtyERPPage />} />
-              <Route path="/products/:slug" element={<ProductsIndexPage />} />
+              <Route path="/products/:slug" element={<ProductDetailPage />} />
 
               {/* Solutions */}
               <Route path="/solutions" element={<SolutionsIndexPage />} />

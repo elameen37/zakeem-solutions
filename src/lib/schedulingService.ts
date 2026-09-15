@@ -272,6 +272,9 @@ export async function createBookingReservation(
             timezone: "Africa/Lagos",
             status: "confirmed",
             notes: request.notes,
+            organizationId: result.organization_id,
+            contactId: result.contact_id,
+            opportunityId: result.opportunity_id,
             createdAt: new Date().toISOString(),
           };
           return { success: true, booking: newBooking };

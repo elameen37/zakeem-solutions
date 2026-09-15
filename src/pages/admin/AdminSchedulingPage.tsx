@@ -132,6 +132,9 @@ export const AdminSchedulingPage: React.FC = () => {
   const [inviteOrg, setInviteOrg] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteLeadId, setInviteLeadId] = useState("");
+  const [inviteOrgId, setInviteOrgId] = useState<string | undefined>();
+  const [inviteContactId, setInviteContactId] = useState<string | undefined>();
+  const [inviteBookingId, setInviteBookingId] = useState<string | undefined>();
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
   const [inviteExpiresInDays, setInviteExpiresInDays] = useState<number>(7);
   const [createdInviteToken, setCreatedInviteToken] = useState<string | null>(null);
@@ -517,6 +520,9 @@ export const AdminSchedulingPage: React.FC = () => {
         organization: inviteOrg.trim(),
         fullName: inviteName.trim(),
         leadId: inviteLeadId.trim() || undefined,
+        organizationId: inviteOrgId,
+        contactId: inviteContactId,
+        bookingId: inviteBookingId,
         expiresInDays: inviteExpiresInDays,
       });
 
@@ -2016,6 +2022,27 @@ export const AdminSchedulingPage: React.FC = () => {
                             leftIcon={<Check className="w-3.5 h-3.5" />}
                           >
                             Mark Completed
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setInviteEmail(selectedBooking.email);
+                              setInviteOrg(selectedBooking.organization);
+                              setInviteName(selectedBooking.fullName);
+                              setInviteLeadId(selectedBooking.leadId || "");
+                              setInviteOrgId(selectedBooking.organizationId);
+                              setInviteContactId(selectedBooking.contactId);
+                              setInviteBookingId(selectedBooking.id);
+                              setActiveTab("invitations");
+                              setShowInviteModal(true);
+                              setSelectedBooking(null);
+                            }}
+                            className="text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                            leftIcon={<UserPlus className="w-3.5 h-3.5" />}
+                          >
+                            Issue Invitation
                           </Button>
 
                           <Button

@@ -6,6 +6,9 @@ export interface UserProfile {
   id: string;
   fullName: string;
   organization?: string;
+  organizationId?: string;
+  phone?: string;
+  jobTitle?: string;
   role: UserRole;
   createdAt?: string;
   updatedAt?: string;
@@ -21,6 +24,10 @@ export interface ClientInvitation {
   status: InvitationStatus;
   invitedBy?: string;
   leadId?: string;
+  organizationId?: string;
+  contactId?: string;
+  bookingId?: string;
+  acceptedUserId?: string;
   expiresAt: string;
   createdAt: string;
   acceptedAt?: string;
@@ -30,6 +37,8 @@ export interface InvitationVerificationResult {
   valid: boolean;
   email?: string;
   organization?: string;
+  organizationId?: string;
+  contactId?: string;
   fullName?: string;
   leadId?: string;
   status?: InvitationStatus;
@@ -47,6 +56,9 @@ export interface CreateInvitationPayload {
   organization: string;
   fullName: string;
   leadId?: string;
+  organizationId?: string;
+  contactId?: string;
+  bookingId?: string;
   expiresInDays?: number;
 }
 

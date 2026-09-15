@@ -8,6 +8,7 @@ import {
   LeadSubmissionPayload,
   SubmissionResult,
 } from "@/types/lead";
+import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
 
 let lastSubmissionTimestamp = 0;
 const SUBMISSION_COOLDOWN_MS = 5000;
@@ -112,7 +113,7 @@ export async function submitLead(
   // 4. Update cooldown timestamp
   lastSubmissionTimestamp = Date.now();
 
-  // 5. Build CRM representation (ready for future endpoint integration)
+  // 5. Build CRM representation (ready for logging/inspection)
   const crmRecord = mapToCRMRecord(payload);
 
   // In development, log the structured CRM record for inspection
@@ -121,12 +122,87 @@ export async function submitLead(
     console.info("[CRM Lead Ready]:", crmRecord);
   }
 
-  // 6. Dispatch custom DOM event for analytics / Google Tag Manager / PostHog
+  // 6. Supabase Canonical CRM Persistence
+  let returnedLeadId = payload.id;
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return {
+        success: false,
+        leadId: "",
+        submittedAt: new Date().toISOString(),
+        error: "Database client is unavailable.",
+      };
+    }
+
+    try {
+      const { data, error } = await client.rpc("submit_inbound_lead", {
+        p_reference_id: payload.id,
+        p_form_type: payload.commercial.formType,
+        p_full_name: payload.identity.fullName.trim(),
+        p_work_email: payload.identity.workEmail.trim(),
+        p_company: payload.identity.company.trim(),
+        p_phone: payload.identity.phone?.trim() || null,
+        p_job_title: payload.identity.jobTitle?.trim() || null,
+        p_product: payload.commercial.product || null,
+        p_tier: payload.commercial.tier || null,
+        p_suite: payload.commercial.suite || null,
+        p_billing: payload.commercial.billing || null,
+        p_deployment: payload.commercial.deployment || null,
+        p_inquiry_category: payload.commercial.inquiryCategory || null,
+        p_notes: (payload.message || payload.notes)?.trim() || null,
+        p_attribution: {
+          utm_source: payload.attribution.utmSource || null,
+          utm_medium: payload.attribution.utmMedium || null,
+          utm_campaign: payload.attribution.utmCampaign || null,
+          utm_term: payload.attribution.utmTerm || null,
+          utm_content: payload.attribution.utmContent || null,
+          referrer: payload.attribution.referrer || null,
+          landing_page: payload.attribution.landingPage || null,
+        },
+      });
+
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error("[CRM Lead Persistence Error]:", error.message);
+        return {
+          success: false,
+          leadId: "",
+          submittedAt: new Date().toISOString(),
+          error: error.message || "Failed to persist inquiry to CRM.",
+        };
+      }
+
+      if (data && data.success === false) {
+        return {
+          success: false,
+          leadId: "",
+          submittedAt: new Date().toISOString(),
+          error: data.error || "Failed to persist inquiry.",
+        };
+      }
+
+      if (data?.reference_id) {
+        returnedLeadId = data.reference_id;
+      }
+    } catch (err: any) {
+      // eslint-disable-next-line no-console
+      console.error("[CRM Lead Submission Exception]:", err);
+      return {
+        success: false,
+        leadId: "",
+        submittedAt: new Date().toISOString(),
+        error: err?.message || "An unexpected error occurred while saving your inquiry.",
+      };
+    }
+  }
+
+  // 7. Dispatch custom DOM event for analytics / Google Tag Manager / PostHog
   if (typeof window !== "undefined") {
     const event = new CustomEvent("zakeem:lead_capture", {
       bubbles: true,
       detail: {
-        id: payload.id,
+        id: returnedLeadId,
         formType: payload.commercial.formType,
         product: payload.commercial.product,
         tier: payload.commercial.tier,
@@ -152,7 +228,7 @@ export async function submitLead(
 
   return {
     success: true,
-    leadId: payload.id,
+    leadId: returnedLeadId,
     submittedAt: payload.submittedAt,
   };
 }

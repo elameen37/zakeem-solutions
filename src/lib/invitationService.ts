@@ -387,6 +387,9 @@ export async function createAdminInvitation(
         full_name: trimmedName,
         token_hash: tokenHash,
         lead_id: trimmedLeadId,
+        organization_id: payload.organizationId || null,
+        contact_id: payload.contactId || null,
+        booking_id: payload.bookingId || null,
         status: "pending",
         expires_at: expiresAt,
       });
@@ -477,13 +480,14 @@ export async function listAdminInvitations(): Promise<{
     try {
       const { data, error } = await client
         .from("client_invitations")
-        .select("id, email, organization, full_name, status, lead_id, expires_at, created_at, accepted_at")
+        .select("id, email, organization, full_name, status, lead_id, organization_id, contact_id, booking_id, accepted_user_id, expires_at, created_at, accepted_at")
         .order("created_at", { ascending: false });
 
       if (error) {
         return { success: false, invitations: [], error: error.message };
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapped: ClientInvitation[] = (data || []).map((row: any) => ({
         id: row.id,
         email: row.email,
@@ -491,6 +495,10 @@ export async function listAdminInvitations(): Promise<{
         fullName: row.full_name,
         status: row.status,
         leadId: row.lead_id || undefined,
+        organizationId: row.organization_id || undefined,
+        contactId: row.contact_id || undefined,
+        bookingId: row.booking_id || undefined,
+        acceptedUserId: row.accepted_user_id || undefined,
         expiresAt: row.expires_at,
         createdAt: row.created_at,
         acceptedAt: row.accepted_at || undefined,

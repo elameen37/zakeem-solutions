@@ -68,6 +68,9 @@ export interface Booking {
   rescheduleCount?: number;
   cancellationReason?: string;
   cancelledAt?: string;
+  organizationId?: string;
+  contactId?: string;
+  opportunityId?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -97,6 +100,9 @@ export interface BookingRequest {
   startTime: string;
   endTime: string;
   notes?: string;
+  organizationId?: string;
+  contactId?: string;
+  opportunityId?: string;
 }
 
 export interface BookingResponse {

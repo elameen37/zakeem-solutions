@@ -5,6 +5,7 @@
 
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import {
+  AcceptInvitationResult,
   ClientInvitation,
   CreateInvitationPayload,
   InvitationVerificationResult,
@@ -60,19 +61,47 @@ function saveLocalInvitations(invitations: ClientInvitation[]): void {
   }
 }
 
+function emitAnalyticsEvent(name: string, detail: Record<string, unknown>): void {
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(
+        new CustomEvent(name, {
+          bubbles: true,
+          detail,
+        })
+      );
+    } catch {
+      // Non-blocking
+    }
+  }
+}
+
 /**
  * Verifies an invitation token via Supabase RPC or local fallback.
  * Never leaks administrative metadata to anonymous callers.
  */
 export async function verifyInvitation(token: string): Promise<InvitationVerificationResult> {
   const trimmed = token.trim();
+  emitAnalyticsEvent("invitation-verification-started", {
+    hasToken: Boolean(trimmed),
+    timestamp: new Date().toISOString(),
+  });
+
   if (!trimmed) {
+    emitAnalyticsEvent("invitation-verification-failed", {
+      reason: "missing_token",
+      timestamp: new Date().toISOString(),
+    });
     return { valid: false, error: "Invitation token parameter is required." };
   }
 
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
     if (!client) {
+      emitAnalyticsEvent("invitation-verification-failed", {
+        reason: "db_unavailable",
+        timestamp: new Date().toISOString(),
+      });
       return { valid: false, error: "Database client is unavailable." };
     }
 
@@ -82,11 +111,39 @@ export async function verifyInvitation(token: string): Promise<InvitationVerific
       });
 
       if (error) {
+        emitAnalyticsEvent("invitation-verification-failed", {
+          reason: "rpc_error",
+          timestamp: new Date().toISOString(),
+        });
         return { valid: false, error: error.message };
       }
 
       if (!data || data.valid === false) {
-        return { valid: false, error: data?.error || "Invalid or expired invitation token." };
+        const errorMsg = (data?.error || "Invalid or expired invitation token.").toLowerCase();
+        let derivedStatus: "expired" | "revoked" | "accepted" | undefined = undefined;
+        let failReason = "invalid_token";
+
+        if (errorMsg.includes("expired")) {
+          derivedStatus = "expired";
+          failReason = "expired";
+        } else if (errorMsg.includes("revoked")) {
+          derivedStatus = "revoked";
+          failReason = "revoked";
+        } else if (errorMsg.includes("already") || errorMsg.includes("accepted")) {
+          derivedStatus = "accepted";
+          failReason = "already_accepted";
+        }
+
+        emitAnalyticsEvent("invitation-verification-failed", {
+          reason: failReason,
+          timestamp: new Date().toISOString(),
+        });
+
+        return {
+          valid: false,
+          status: derivedStatus,
+          error: data?.error || "Invalid or expired invitation token.",
+        };
       }
 
       return {
@@ -95,8 +152,13 @@ export async function verifyInvitation(token: string): Promise<InvitationVerific
         organization: data.organization,
         fullName: data.full_name,
         leadId: data.lead_id,
+        status: "pending",
       };
     } catch {
+      emitAnalyticsEvent("invitation-verification-failed", {
+        reason: "network_error",
+        timestamp: new Date().toISOString(),
+      });
       return { valid: false, error: "Unable to verify invitation. Please try again later." };
     }
   }
@@ -106,7 +168,15 @@ export async function verifyInvitation(token: string): Promise<InvitationVerific
   const found = localList.find((inv) => inv.id === trimmed || (inv as any).token === trimmed);
   if (found) {
     if (found.status !== "pending") {
-      return { valid: false, error: `Invitation status is ${found.status}.` };
+      emitAnalyticsEvent("invitation-verification-failed", {
+        reason: found.status,
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        valid: false,
+        status: found.status,
+        error: `Invitation status is ${found.status}.`,
+      };
     }
     return {
       valid: true,
@@ -114,6 +184,7 @@ export async function verifyInvitation(token: string): Promise<InvitationVerific
       organization: found.organization,
       fullName: found.fullName,
       leadId: found.leadId,
+      status: "pending",
     };
   }
 
@@ -125,9 +196,14 @@ export async function verifyInvitation(token: string): Promise<InvitationVerific
       organization: "Enterprise Partner Ltd",
       fullName: "Lead Executive",
       leadId: "ZK-202609-TEST",
+      status: "pending",
     };
   }
 
+  emitAnalyticsEvent("invitation-verification-failed", {
+    reason: "token_not_found",
+    timestamp: new Date().toISOString(),
+  });
   return { valid: false, error: "Invalid invitation token." };
 }
 
@@ -139,18 +215,26 @@ export async function acceptInvitation(
   password: string,
   fullName?: string,
   organization?: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<AcceptInvitationResult> {
   const trimmedToken = token.trim();
 
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
     if (!client) {
+      emitAnalyticsEvent("signup-failed", {
+        reason: "db_unavailable",
+        timestamp: new Date().toISOString(),
+      });
       return { success: false, error: "Database client is unavailable." };
     }
 
     // 1. Verify token to retrieve authoritative email
     const verification = await verifyInvitation(trimmedToken);
     if (!verification.valid || !verification.email) {
+      emitAnalyticsEvent("signup-failed", {
+        reason: "invalid_invitation",
+        timestamp: new Date().toISOString(),
+      });
       return { success: false, error: verification.error || "Invalid invitation token." };
     }
 
@@ -171,11 +255,51 @@ export async function acceptInvitation(
     });
 
     if (authError) {
+      const msg = (authError.message || "").toLowerCase();
+      const isExisting =
+        msg.includes("already registered") ||
+        msg.includes("already exists") ||
+        msg.includes("user already") ||
+        (authError as any).status === 422;
+
+      if (isExisting) {
+        emitAnalyticsEvent("signup-failed", {
+          reason: "existing_account",
+          timestamp: new Date().toISOString(),
+        });
+        return {
+          success: false,
+          error: "An account with this email address already exists. Please sign in or reset your password.",
+          isExistingAccount: true,
+        };
+      }
+
+      emitAnalyticsEvent("signup-failed", {
+        reason: "auth_signup_error",
+        timestamp: new Date().toISOString(),
+      });
       return { success: false, error: authError.message };
+    }
+
+    // Check for duplicate account where Supabase returns empty identities array
+    if (authData?.user && Array.isArray(authData.user.identities) && authData.user.identities.length === 0) {
+      emitAnalyticsEvent("signup-failed", {
+        reason: "existing_account",
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        success: false,
+        error: "An account with this email address already exists. Please sign in or reset your password.",
+        isExistingAccount: true,
+      };
     }
 
     const userId = authData.user?.id;
     if (!userId) {
+      emitAnalyticsEvent("signup-failed", {
+        reason: "missing_user_id",
+        timestamp: new Date().toISOString(),
+      });
       return { success: false, error: "User profile registration could not be established." };
     }
 
@@ -190,17 +314,23 @@ export async function acceptInvitation(
     if (rpcError) {
       // Non-fatal if signup succeeded, but report warning
       console.warn("[Provisioning Notice]:", rpcError.message);
+    } else if (rpcData && rpcData.success === false) {
+      emitAnalyticsEvent("signup-failed", {
+        reason: "invitation_state_error",
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        success: false,
+        error: rpcData.error || "Invitation could not be finalized.",
+      };
     }
 
-    // 4. Dispatch analytics event
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("client-invitation-accepted", {
-          bubbles: true,
-          detail: { email, organization: finalOrg },
-        })
-      );
-    }
+    // 4. Dispatch analytics event (Privacy-safe: no tokens, passwords, emails, or personal names)
+    emitAnalyticsEvent("signup-completed", {
+      role: "client",
+      hasOrganization: Boolean(finalOrg),
+      timestamp: new Date().toISOString(),
+    });
 
     return { success: true };
   }
@@ -216,16 +346,13 @@ export async function acceptInvitation(
 
   if (typeof window !== "undefined") {
     localStorage.setItem("zakeem_local_auth_role", "client");
-    window.dispatchEvent(
-      new CustomEvent("client-invitation-accepted", {
-        bubbles: true,
-        detail: {
-          email: "partner@enterprise-client.com",
-          organization: organization || "Enterprise Partner Ltd",
-        },
-      })
-    );
   }
+
+  emitAnalyticsEvent("signup-completed", {
+    role: "client",
+    hasOrganization: Boolean(organization),
+    timestamp: new Date().toISOString(),
+  });
 
   return { success: true };
 }

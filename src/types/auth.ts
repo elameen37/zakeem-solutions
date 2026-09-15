@@ -32,7 +32,14 @@ export interface InvitationVerificationResult {
   organization?: string;
   fullName?: string;
   leadId?: string;
+  status?: InvitationStatus;
   error?: string;
+}
+
+export interface AcceptInvitationResult {
+  success: boolean;
+  error?: string;
+  isExistingAccount?: boolean;
 }
 
 export interface CreateInvitationPayload {

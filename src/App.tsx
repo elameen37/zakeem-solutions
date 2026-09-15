@@ -80,6 +80,7 @@ export const App: React.FC = () => {
               <Route path="/request-demo" element={<RequestDemoPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/accept-invite" element={<AcceptInvitationPage />} />
+              <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route
                 path="/portal"

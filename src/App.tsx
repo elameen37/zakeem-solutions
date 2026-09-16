@@ -34,6 +34,7 @@ const AdminLeadsPage = React.lazy(() => import("@/pages/admin/AdminLeadsPage").t
 const AdminPipelinePage = React.lazy(() => import("@/pages/admin/AdminPipelinePage").then((m) => ({ default: m.default || m.AdminPipelinePage })));
 const AdminOrganizationsPage = React.lazy(() => import("@/pages/admin/AdminOrganizationsPage").then((m) => ({ default: m.default || m.AdminOrganizationsPage })));
 const AdminContactsPage = React.lazy(() => import("@/pages/admin/AdminContactsPage").then((m) => ({ default: m.default || m.AdminContactsPage })));
+const AdminReportsPage = React.lazy(() => import("@/pages/admin/AdminReportsPage").then((m) => ({ default: m.default || m.AdminReportsPage })));
 
 // Minimal on-brand loading fallback for seamless route transitions
 const RouteLoadingFallback: React.FC = () => (
@@ -128,6 +129,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <AdminContactsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/crm/reports"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminReportsPage />
                   </ProtectedRoute>
                 }
               />

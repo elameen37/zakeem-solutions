@@ -5,7 +5,10 @@
 
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import {
+  AccountContactMetrics,
+  AttributionMetric,
   CRMActivity,
+  CRMCommercialReport,
   CRMContact,
   CRMContactDetail,
   CRMLead,
@@ -14,12 +17,22 @@ import {
   CRMOrganization,
   CRMOrganizationDetail,
   CRMStats,
+  ExecutiveCRMSummary,
+  LeadFunnelMetrics,
   LeadStatus,
   OpportunityStage,
   OrganizationStatus,
+  PipelineStageMetric,
+  PipelineValueMetrics,
+  ProductDemandMetric,
+  ReportDateRangeFilter,
+  ReportDateRangeOption,
+  SchedulingReportMetrics,
+  TrendDataPoint,
   VALID_LEAD_TRANSITIONS,
   VALID_OPPORTUNITY_TRANSITIONS,
 } from "@/types/crm";
+import { ZAKEEM_APPLICATIONS } from "@/data/ecosystem";
 
 // Local storage keys for non-production / offline fallback
 const STORAGE_KEYS = {
@@ -28,6 +41,7 @@ const STORAGE_KEYS = {
   CONTACTS: "zakeem_crm_contacts",
   OPPORTUNITIES: "zakeem_crm_opportunities",
   ACTIVITIES: "zakeem_crm_activities",
+  BOOKINGS: "zakeem_bookings",
 };
 
 function getStored<T>(key: string, defaultVal: T[]): T[] {
@@ -1793,6 +1807,21 @@ export async function getCRMStats(): Promise<{
         client.from("crm_contacts").select("id", { count: "exact", head: true }),
       ]);
 
+      if (leadsRes.error || newLeadsRes.error || oppsRes.error || orgsRes.error || contactsRes.error) {
+        const errorMsg =
+          leadsRes.error?.message ||
+          newLeadsRes.error?.message ||
+          oppsRes.error?.message ||
+          orgsRes.error?.message ||
+          contactsRes.error?.message ||
+          "Failed to fetch one or more CRM metrics from database.";
+        return {
+          success: false,
+          stats: { totalLeads: 0, newLeads: 0, activeOpportunities: 0, totalOrganizations: 0, totalContacts: 0 },
+          error: errorMsg,
+        };
+      }
+
       return {
         success: true,
         stats: {
@@ -1825,6 +1854,529 @@ export async function getCRMStats(): Promise<{
       activeOpportunities: opps.filter((o) => o.stage !== "won" && o.stage !== "lost").length,
       totalOrganizations: orgs.length,
       totalContacts: contacts.length,
+    },
+  };
+}
+
+// -----------------------------------------------------------------------------
+// PHASE 26E: COMMERCIAL INTELLIGENCE & REPORTING
+// -----------------------------------------------------------------------------
+
+/**
+ * Calculates start and end timestamps from a date range filter.
+ * Semantics strictly use Africa/Lagos WAT offset.
+ */
+function resolveDateRangeBoundaries(filter: ReportDateRangeFilter): {
+  startDate?: string;
+  endDate?: string;
+  rangeLabel: string;
+} {
+  const now = new Date();
+
+  switch (filter.option) {
+    case "7d": {
+      const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return {
+        startDate: start.toISOString(),
+        endDate: now.toISOString(),
+        rangeLabel: "Last 7 Days",
+      };
+    }
+    case "30d": {
+      const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return {
+        startDate: start.toISOString(),
+        endDate: now.toISOString(),
+        rangeLabel: "Last 30 Days",
+      };
+    }
+    case "90d": {
+      const start = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      return {
+        startDate: start.toISOString(),
+        endDate: now.toISOString(),
+        rangeLabel: "Last 90 Days",
+      };
+    }
+    case "ytd": {
+      const year = now.getFullYear();
+      const start = new Date(`${year}-01-01T00:00:00.000Z`);
+      return {
+        startDate: start.toISOString(),
+        endDate: now.toISOString(),
+        rangeLabel: `Year to Date (${year})`,
+      };
+    }
+    case "custom": {
+      const start = filter.customStartDate ? new Date(`${filter.customStartDate}T00:00:00.000Z`).toISOString() : undefined;
+      const end = filter.customEndDate ? new Date(`${filter.customEndDate}T23:59:59.999Z`).toISOString() : undefined;
+      const label = filter.customStartDate && filter.customEndDate
+        ? `${filter.customStartDate} to ${filter.customEndDate}`
+        : filter.customStartDate
+        ? `From ${filter.customStartDate}`
+        : filter.customEndDate
+        ? `Until ${filter.customEndDate}`
+        : "Custom Range";
+      return { startDate: start, endDate: end, rangeLabel: label };
+    }
+    case "all":
+    default:
+      return { rangeLabel: "All Time" };
+  }
+}
+
+/**
+ * Builds the canonical product demand list mapping actual CRM counts to ZAKEEM_APPLICATIONS.
+ * If an application has 0 records, it is displayed as 0 only if present in canonical registry.
+ */
+function buildCanonicalProductDemand(
+  leads: CRMLead[],
+  opps: CRMOpportunity[]
+): ProductDemandMetric[] {
+  const demandMap: Record<string, { leadCount: number; opportunityCount: number; convertedCount: number }> = {};
+
+  for (const app of ZAKEEM_APPLICATIONS) {
+    demandMap[app.id] = { leadCount: 0, opportunityCount: 0, convertedCount: 0 };
+    demandMap[app.slug] = demandMap[app.id];
+  }
+
+  for (const lead of leads) {
+    if (lead.productInterest) {
+      const target = demandMap[lead.productInterest];
+      if (target) {
+        target.leadCount += 1;
+        if (lead.status === "converted") {
+          target.convertedCount += 1;
+        }
+      }
+    }
+  }
+
+  for (const opp of opps) {
+    if (opp.primaryProduct) {
+      const target = demandMap[opp.primaryProduct];
+      if (target) {
+        target.opportunityCount += 1;
+      }
+    }
+  }
+
+  return ZAKEEM_APPLICATIONS.map((app) => {
+    const data = demandMap[app.id] || { leadCount: 0, opportunityCount: 0, convertedCount: 0 };
+    return {
+      productId: app.id,
+      productName: app.name,
+      slug: app.slug,
+      category: app.category,
+      leadCount: data.leadCount,
+      opportunityCount: data.opportunityCount,
+      convertedCount: data.convertedCount,
+    };
+  });
+}
+
+/**
+ * Computes daily trend buckets for leads, opportunities, and bookings.
+ */
+function computeTrendBuckets(
+  leads: any[],
+  opps: any[],
+  bookings: any[]
+): TrendDataPoint[] {
+  const dateMap: Record<string, { leads: number; opportunities: number; bookings: number }> = {};
+
+  const addDate = (row: any, type: "leads" | "opportunities" | "bookings") => {
+    const isoString = row?.createdAt || row?.created_at;
+    if (!isoString || typeof isoString !== "string") return;
+    const dateKey = isoString.split("T")[0];
+    if (!dateMap[dateKey]) {
+      dateMap[dateKey] = { leads: 0, opportunities: 0, bookings: 0 };
+    }
+    dateMap[dateKey][type] += 1;
+  };
+
+  for (const l of leads) addDate(l, "leads");
+  for (const o of opps) addDate(o, "opportunities");
+  for (const b of bookings) addDate(b, "bookings");
+
+  return Object.keys(dateMap)
+    .sort()
+    .slice(-30) // limit to recent 30 active days
+    .map((dateKey) => ({
+      date: dateKey,
+      leads: dateMap[dateKey].leads,
+      opportunities: dateMap[dateKey].opportunities,
+      bookings: dateMap[dateKey].bookings,
+    }));
+}
+
+/**
+ * Fetches the canonical CRM commercial intelligence report.
+ * Supports date filtering, database-level aggregation RPC with client-side query and local fallback.
+ */
+export async function getCRMCommercialReport(
+  filter: ReportDateRangeFilter
+): Promise<{ success: boolean; report?: CRMCommercialReport; error?: string }> {
+  const { startDate, endDate, rangeLabel } = resolveDateRangeBoundaries(filter);
+  const timestampBasis = "Records evaluated on created_at (Africa/Lagos WAT)";
+
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      // 1. Attempt atomic reporting RPC
+      const { data: rpcData, error: rpcErr } = await client.rpc("get_crm_commercial_reports_atomic", {
+        p_start_date: startDate || null,
+        p_end_date: endDate || null,
+      });
+
+      if (!rpcErr && rpcData?.success && rpcData?.report) {
+        const rawReport = rpcData.report;
+
+        // Merge product demand with canonical registry
+        const rawDemand: { productId: string; leadCount: number; opportunityCount: number; convertedCount: number }[] = rawReport.productDemand || [];
+        const demandLookup = new Map<string, { leadCount: number; opportunityCount: number; convertedCount: number }>();
+        for (const item of rawDemand) {
+          if (item.productId) demandLookup.set(item.productId.toLowerCase(), item);
+        }
+
+        const canonicalDemand: ProductDemandMetric[] = ZAKEEM_APPLICATIONS.map((app) => {
+          const match = demandLookup.get(app.id.toLowerCase()) || demandLookup.get(app.slug.toLowerCase());
+          return {
+            productId: app.id,
+            productName: app.name,
+            slug: app.slug,
+            category: app.category,
+            leadCount: match?.leadCount || 0,
+            opportunityCount: match?.opportunityCount || 0,
+            convertedCount: match?.convertedCount || 0,
+          };
+        });
+
+        // Concurrently fetch recent timestamp slices for trends
+        const [trendLeadsRes, trendOppsRes, trendBookingsRes] = await Promise.all([
+          client.from("crm_leads").select("created_at").gte(startDate ? "created_at" : "id", startDate || "").lte(endDate ? "created_at" : "id", endDate || "zzzz").limit(300),
+          client.from("crm_opportunities").select("created_at").gte(startDate ? "created_at" : "id", startDate || "").lte(endDate ? "created_at" : "id", endDate || "zzzz").limit(300),
+          client.from("bookings").select("created_at").gte(startDate ? "created_at" : "id", startDate || "").lte(endDate ? "created_at" : "id", endDate || "zzzz").limit(300),
+        ]);
+
+        const trends = computeTrendBuckets(
+          trendLeadsRes.data || [],
+          trendOppsRes.data || [],
+          trendBookingsRes.data || []
+        );
+
+        emitAnalyticsEvent("crm:reports_viewed", { dateRange: filter.option });
+
+        return {
+          success: true,
+          report: {
+            ...rawReport,
+            productDemand: canonicalDemand,
+            trends,
+            dateRange: {
+              option: filter.option,
+              startDate,
+              endDate,
+              rangeLabel,
+              timestampBasis,
+            },
+          },
+        };
+      }
+
+      // 2. Direct fallback under admin RLS
+      let leadsQuery = client.from("crm_leads").select("id, status, product_interest, attribution, created_at");
+      let oppsQuery = client.from("crm_opportunities").select("id, stage, primary_product, deal_value_ngn, created_at");
+      let orgsQuery = client.from("crm_organizations").select("id, status, created_at");
+      let contactsQuery = client.from("crm_contacts").select("id, organization_id, is_primary, created_at");
+      let bookingsQuery = client.from("bookings").select("id, status, created_at");
+
+      if (startDate) {
+        leadsQuery = leadsQuery.gte("created_at", startDate);
+        oppsQuery = oppsQuery.gte("created_at", startDate);
+        orgsQuery = orgsQuery.gte("created_at", startDate);
+        contactsQuery = contactsQuery.gte("created_at", startDate);
+        bookingsQuery = bookingsQuery.gte("created_at", startDate);
+      }
+      if (endDate) {
+        leadsQuery = leadsQuery.lte("created_at", endDate);
+        oppsQuery = oppsQuery.lte("created_at", endDate);
+        orgsQuery = orgsQuery.lte("created_at", endDate);
+        contactsQuery = contactsQuery.lte("created_at", endDate);
+        bookingsQuery = bookingsQuery.lte("created_at", endDate);
+      }
+
+      const [leadsRes, oppsRes, orgsRes, contactsRes, bookingsRes] = await Promise.all([
+        leadsQuery,
+        oppsQuery,
+        orgsQuery,
+        contactsQuery,
+        bookingsQuery,
+      ]);
+
+      // RIGOROUS DATA INTEGRITY:
+      // If ANY query fails, do NOT treat null data as an empty database.
+      // Failing silently would fabricate false zeroed/mock commercial metrics.
+      if (leadsRes.error || oppsRes.error || orgsRes.error || contactsRes.error || bookingsRes.error) {
+        const errorDetails = [
+          leadsRes.error && `leads: ${leadsRes.error.message}`,
+          oppsRes.error && `opportunities: ${oppsRes.error.message}`,
+          orgsRes.error && `organizations: ${orgsRes.error.message}`,
+          contactsRes.error && `contacts: ${contactsRes.error.message}`,
+          bookingsRes.error && `bookings: ${bookingsRes.error.message}`,
+        ]
+          .filter(Boolean)
+          .join("; ");
+
+        return {
+          success: false,
+          error: `Database reporting query failed. ${errorDetails}${rpcErr ? ` (RPC: ${rpcErr.message})` : ""}`,
+        };
+      }
+
+      if (!leadsRes.data || !oppsRes.data || !orgsRes.data || !contactsRes.data || !bookingsRes.data) {
+        return {
+          success: false,
+          error: "Database reporting queries returned incomplete or null records.",
+        };
+      }
+
+      const leads = leadsRes.data as any[];
+      const opps = oppsRes.data as any[];
+      const orgs = orgsRes.data as any[];
+      const contacts = contactsRes.data as any[];
+      const bookings = bookingsRes.data as any[];
+
+      return {
+        success: true,
+        report: compileReportFromData(leads, opps, orgs, contacts, bookings, filter.option, startDate, endDate, rangeLabel, timestampBasis),
+      };
+    } catch (err: any) {
+      // NEVER fall back to mock data when Supabase is configured
+      return {
+        success: false,
+        error: err?.message || "Failed to compile CRM reports from database.",
+      };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // EXPLICITLY UNCONFIGURED LOCAL-DEVELOPMENT ENVIRONMENT ONLY
+  // ---------------------------------------------------------------------------
+  if (isSupabaseConfigured()) {
+    return {
+      success: false,
+      error: "Supabase is configured but database reporting failed. Mock data rejected to protect data integrity.",
+    };
+  }
+
+  // Local storage fallback (strictly for unconfigured local development)
+  let leads = getStored<CRMLead>(STORAGE_KEYS.LEADS, []);
+  let opps = getStored<CRMOpportunity>(STORAGE_KEYS.OPPORTUNITIES, []);
+  let orgs = getStored<CRMOrganization>(STORAGE_KEYS.ORGANIZATIONS, []);
+  let contacts = getStored<CRMContact>(STORAGE_KEYS.CONTACTS, []);
+  let bookings = getStored<any>(STORAGE_KEYS.BOOKINGS, []);
+
+  if (startDate) {
+    const sTime = new Date(startDate).getTime();
+    leads = leads.filter((l) => new Date(l.createdAt).getTime() >= sTime);
+    opps = opps.filter((o) => new Date(o.createdAt).getTime() >= sTime);
+    orgs = orgs.filter((o) => new Date(o.createdAt).getTime() >= sTime);
+    contacts = contacts.filter((c) => new Date(c.createdAt).getTime() >= sTime);
+    bookings = bookings.filter((b) => new Date(b.createdAt).getTime() >= sTime);
+  }
+  if (endDate) {
+    const eTime = new Date(endDate).getTime();
+    leads = leads.filter((l) => new Date(l.createdAt).getTime() <= eTime);
+    opps = opps.filter((o) => new Date(o.createdAt).getTime() <= eTime);
+    orgs = orgs.filter((o) => new Date(o.createdAt).getTime() <= eTime);
+    contacts = contacts.filter((c) => new Date(c.createdAt).getTime() <= eTime);
+    bookings = bookings.filter((b) => new Date(b.createdAt).getTime() <= eTime);
+  }
+
+  return {
+    success: true,
+    report: compileReportFromData(leads, opps, orgs, contacts, bookings, filter.option, startDate, endDate, rangeLabel, timestampBasis),
+  };
+}
+
+/**
+ * Pure helper function to compute complete CRMCommercialReport structure from dataset arrays.
+ */
+function compileReportFromData(
+  leads: any[],
+  opps: any[],
+  orgs: any[],
+  contacts: any[],
+  bookings: any[],
+  option: ReportDateRangeOption,
+  startDate: string | undefined,
+  endDate: string | undefined,
+  rangeLabel: string,
+  timestampBasis: string
+): CRMCommercialReport {
+  // Lead Funnel
+  const newL = leads.filter((l) => l.status === "new").length;
+  const contL = leads.filter((l) => l.status === "contacted").length;
+  const qualL = leads.filter((l) => l.status === "qualified").length;
+  const convL = leads.filter((l) => l.status === "converted").length;
+  const disqL = leads.filter((l) => l.status === "disqualified").length;
+  const totalL = leads.length;
+
+  const leadFunnel: LeadFunnelMetrics = {
+    new: newL,
+    contacted: contL,
+    qualified: qualL,
+    converted: convL,
+    disqualified: disqL,
+    total: totalL,
+    conversionRatePercent: totalL > 0 ? Math.round((convL / totalL) * 1000) / 10 : null,
+    qualificationRatePercent: totalL > 0 ? Math.round(((qualL + convL) / totalL) * 1000) / 10 : null,
+  };
+
+  // Opportunity Stages & Populated Deal Values
+  const stageKeys: OpportunityStage[] = [
+    "discovery",
+    "demo_scheduled",
+    "demo_completed",
+    "proposal",
+    "negotiation",
+    "won",
+    "lost",
+  ];
+
+  const stageRecord: Record<OpportunityStage, PipelineStageMetric> = {} as any;
+  let totalPopulatedVal: number | null = null;
+  let openPopulatedVal: number | null = null;
+  let wonPopulatedVal: number | null = null;
+  let knownValCount = 0;
+
+  for (const sk of stageKeys) {
+    const stageOpps = opps.filter((o) => (o.stage || "").toLowerCase() === sk);
+    let stageVal: number | null = null;
+    let sKnown = 0;
+    for (const opp of stageOpps) {
+      const val = opp.deal_value_ngn !== undefined ? opp.deal_value_ngn : opp.dealValueNgn;
+      if (val !== null && val !== undefined && !isNaN(Number(val))) {
+        const num = Number(val);
+        stageVal = (stageVal ?? 0) + num;
+        totalPopulatedVal = (totalPopulatedVal ?? 0) + num;
+        if (sk !== "won" && sk !== "lost") {
+          openPopulatedVal = (openPopulatedVal ?? 0) + num;
+        }
+        if (sk === "won") {
+          wonPopulatedVal = (wonPopulatedVal ?? 0) + num;
+        }
+        sKnown += 1;
+        knownValCount += 1;
+      }
+    }
+    stageRecord[sk] = {
+      count: stageOpps.length,
+      populatedValueNgn: stageVal,
+      knownValueCount: sKnown,
+      unallocatedValueCount: stageOpps.length - sKnown,
+    };
+  }
+
+  const pipeline: PipelineValueMetrics = {
+    totalDealsCount: opps.length,
+    dealsWithKnownValueCount: knownValCount,
+    dealsWithoutValueCount: opps.length - knownValCount,
+    totalPopulatedValueNgn: totalPopulatedVal,
+    openPopulatedValueNgn: openPopulatedVal,
+    wonPopulatedValueNgn: wonPopulatedVal,
+    stages: stageRecord,
+  };
+
+  // Executive Summary
+  const summary: ExecutiveCRMSummary = {
+    totalLeads: totalL,
+    newLeads: newL,
+    contactedLeads: contL,
+    qualifiedLeads: qualL,
+    convertedLeads: convL,
+    disqualifiedLeads: disqL,
+    openOpportunities: opps.filter((o) => o.stage !== "won" && o.stage !== "lost").length,
+    wonOpportunities: opps.filter((o) => o.stage === "won").length,
+    lostOpportunities: opps.filter((o) => o.stage === "lost").length,
+    totalOrganizations: orgs.length,
+    totalContacts: contacts.length,
+    scheduledWalkthroughs: bookings.length,
+  };
+
+  // Canonical Product Demand
+  const productDemand = buildCanonicalProductDemand(leads, opps);
+
+  // Scheduling
+  const scheduling: SchedulingReportMetrics = {
+    totalBookings: bookings.length,
+    pending: bookings.filter((b) => b.status === "pending").length,
+    confirmed: bookings.filter((b) => b.status === "confirmed").length,
+    completed: bookings.filter((b) => b.status === "completed").length,
+    cancelled: bookings.filter((b) => b.status === "cancelled").length,
+    noShow: bookings.filter((b) => b.status === "no_show").length,
+  };
+
+  // Accounts & Contacts
+  const orgStatuses: OrganizationStatus[] = ["customer", "prospect", "lead", "partner", "churned"];
+  const orgsByStatus: Record<OrganizationStatus, number> = {} as any;
+  for (const st of orgStatuses) {
+    orgsByStatus[st] = orgs.filter((o) => o.status === st).length;
+  }
+
+  const contactsWithOrg = contacts.filter((c) => Boolean(c.organizationId || c.organization_id)).length;
+  const primaryContacts = contacts.filter((c) => Boolean(c.isPrimary || c.is_primary)).length;
+
+  const accountContact: AccountContactMetrics = {
+    organizationsByStatus: orgsByStatus,
+    contactsTotal: contacts.length,
+    contactsWithOrg,
+    contactsIndependent: contacts.length - contactsWithOrg,
+    primaryDecisionMakers: primaryContacts,
+    secondaryStakeholders: contacts.length - primaryContacts,
+  };
+
+  // Attribution
+  const attMap: Record<string, number> = {};
+  for (const lead of leads) {
+    const att = lead.attribution;
+    if (att && typeof att === "object" && Object.keys(att).length > 0) {
+      const src = att.source || att.utm_source || "Direct / Organic";
+      const med = att.medium || att.utm_medium || "None";
+      const camp = att.campaign || att.utm_campaign || "None";
+      const key = `${src}:::${med}:::${camp}`;
+      attMap[key] = (attMap[key] || 0) + 1;
+    }
+  }
+
+  const attribution: AttributionMetric[] = Object.entries(attMap).map(([key, count]) => {
+    const [source, medium, campaign] = key.split(":::");
+    return { source, medium, campaign, leadCount: count };
+  });
+
+  // Trends
+  const trends = computeTrendBuckets(leads, opps, bookings);
+
+  return {
+    summary,
+    leadFunnel,
+    pipeline,
+    productDemand,
+    attribution,
+    scheduling,
+    accountContact,
+    trends,
+    dateRange: {
+      option,
+      startDate,
+      endDate,
+      rangeLabel,
+      timestampBasis,
     },
   };
 }

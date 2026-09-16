@@ -207,3 +207,124 @@ export interface CRMStats {
   totalOrganizations: number;
   totalContacts: number;
 }
+
+// -----------------------------------------------------------------------------
+// PHASE 26E: COMMERCIAL INTELLIGENCE & REPORTING TYPES
+// -----------------------------------------------------------------------------
+
+export type ReportDateRangeOption =
+  | "7d"
+  | "30d"
+  | "90d"
+  | "ytd"
+  | "all"
+  | "custom";
+
+export interface ReportDateRangeFilter {
+  option: ReportDateRangeOption;
+  customStartDate?: string; // YYYY-MM-DD
+  customEndDate?: string;   // YYYY-MM-DD
+}
+
+export interface ExecutiveCRMSummary {
+  totalLeads: number;
+  newLeads: number;
+  contactedLeads: number;
+  qualifiedLeads: number;
+  convertedLeads: number;
+  disqualifiedLeads: number;
+  openOpportunities: number;
+  wonOpportunities: number;
+  lostOpportunities: number;
+  totalOrganizations: number;
+  totalContacts: number;
+  scheduledWalkthroughs: number;
+}
+
+export interface LeadFunnelMetrics {
+  new: number;
+  contacted: number;
+  qualified: number;
+  converted: number;
+  disqualified: number;
+  total: number;
+  conversionRatePercent: number | null;
+  qualificationRatePercent: number | null;
+}
+
+export interface PipelineStageMetric {
+  count: number;
+  populatedValueNgn: number | null;
+  knownValueCount: number;
+  unallocatedValueCount: number;
+}
+
+export interface PipelineValueMetrics {
+  totalDealsCount: number;
+  dealsWithKnownValueCount: number;
+  dealsWithoutValueCount: number;
+  totalPopulatedValueNgn: number | null;
+  openPopulatedValueNgn: number | null;
+  wonPopulatedValueNgn: number | null;
+  stages: Record<OpportunityStage, PipelineStageMetric>;
+}
+
+export interface ProductDemandMetric {
+  productId: string;
+  productName: string;
+  slug: string;
+  category: string;
+  leadCount: number;
+  opportunityCount: number;
+  convertedCount: number;
+}
+
+export interface AttributionMetric {
+  source: string;
+  medium: string;
+  campaign: string;
+  leadCount: number;
+}
+
+export interface SchedulingReportMetrics {
+  totalBookings: number;
+  pending: number;
+  confirmed: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+}
+
+export interface AccountContactMetrics {
+  organizationsByStatus: Record<OrganizationStatus, number>;
+  contactsTotal: number;
+  contactsWithOrg: number;
+  contactsIndependent: number;
+  primaryDecisionMakers: number;
+  secondaryStakeholders: number;
+}
+
+export interface TrendDataPoint {
+  date: string; // YYYY-MM-DD
+  leads: number;
+  opportunities: number;
+  bookings: number;
+}
+
+export interface CRMCommercialReport {
+  summary: ExecutiveCRMSummary;
+  leadFunnel: LeadFunnelMetrics;
+  pipeline: PipelineValueMetrics;
+  productDemand: ProductDemandMetric[];
+  attribution: AttributionMetric[];
+  scheduling: SchedulingReportMetrics;
+  accountContact: AccountContactMetrics;
+  trends: TrendDataPoint[];
+  dateRange: {
+    option: ReportDateRangeOption;
+    startDate?: string;
+    endDate?: string;
+    rangeLabel: string;
+    timestampBasis: string;
+  };
+}

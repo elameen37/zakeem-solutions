@@ -6,13 +6,14 @@ import {
   Briefcase,
   Building2,
   Contact,
+  BarChart3,
   ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AdminNavProps {
-  currentTab?: "leads" | "opportunities" | "organizations" | "contacts" | "scheduling";
-  activeDesk?: "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "pipeline" | "accounts";
+  currentTab?: "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "reports";
+  activeDesk?: "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "pipeline" | "accounts" | "reports";
 }
 
 export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) => {
@@ -25,6 +26,7 @@ export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) =>
   const isPipeline = active === "opportunities" || active === "pipeline" || path.startsWith("/admin/crm/pipeline");
   const isOrgs = active === "organizations" || active === "accounts" || path.startsWith("/admin/crm/organizations");
   const isContacts = active === "contacts" || path.startsWith("/admin/crm/contacts");
+  const isReports = active === "reports" || path.startsWith("/admin/crm/reports");
 
   return (
     <nav aria-label="Admin Suite Navigation" className="border-b border-white/10 bg-[#06152b]/60 backdrop-blur-md rounded-2xl p-2 mb-6">
@@ -99,7 +101,21 @@ export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) =>
             )}
           >
             <Calendar className="w-3.5 h-3.5" />
-            <span>Scheduling & Walkthroughs</span>
+            <span>Scheduling</span>
+          </Link>
+
+          {/* Commercial Intelligence & Reports */}
+          <Link
+            to="/admin/crm/reports"
+            className={cn(
+              "px-3.5 py-2 rounded-xl text-xs font-mono font-medium transition-all flex items-center gap-2 whitespace-nowrap",
+              isReports
+                ? "bg-[#e57804] text-white shadow-lg shadow-[#e57804]/20"
+                : "text-slate-400 hover:text-white hover:bg-white/5"
+            )}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>Reports</span>
           </Link>
         </div>
 

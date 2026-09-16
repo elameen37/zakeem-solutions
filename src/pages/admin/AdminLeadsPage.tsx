@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Users,
   Search,
@@ -54,6 +54,8 @@ type FormTypeFilter = "all" | "demo" | "contact";
 
 export const AdminLeadsPage: React.FC = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlLeadId = searchParams.get("leadId");
   const [leads, setLeads] = useState<CRMLead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,10 +135,21 @@ export const AdminLeadsPage: React.FC = () => {
     }
   }, []);
 
+  // Synchronize URL param ?leadId= with selected lead
+  useEffect(() => {
+    if (urlLeadId && urlLeadId !== selectedLeadId) {
+      setSelectedLeadId(urlLeadId);
+      loadLeadDetails(urlLeadId);
+    }
+  }, [urlLeadId, selectedLeadId, loadLeadDetails]);
+
   const handleSelectLead = (lead: CRMLead) => {
     setSelectedLeadId(lead.id);
     setSelectedLead(lead);
     loadLeadDetails(lead.id);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("leadId", lead.id);
+    setSearchParams(newParams);
   };
 
   const handleCloseDrawer = () => {
@@ -144,6 +157,9 @@ export const AdminLeadsPage: React.FC = () => {
     setSelectedLead(null);
     setLeadActivities([]);
     setInternalNoteInput("");
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("leadId");
+    setSearchParams(newParams);
   };
 
   // Status transitions
@@ -780,10 +796,14 @@ export const AdminLeadsPage: React.FC = () => {
 
                   {/* Terminal status indicators */}
                   {selectedLead.status === "converted" && (
-                    <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
+                    <Link
+                      to={(selectedLead.opportunity?.id || (selectedLead as any).opportunityId) ? `/admin/crm/pipeline?oppId=${selectedLead.opportunity?.id || (selectedLead as any).opportunityId}` : "/admin/crm/pipeline"}
+                      className="text-xs font-mono text-emerald-400 hover:underline flex items-center gap-1"
+                    >
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      Deal Pipeline Active
-                    </span>
+                      <span>Deal Pipeline Active</span>
+                      <ExternalLink className="w-3 h-3 ml-0.5" />
+                    </Link>
                   )}
 
                   {selectedLead.status === "disqualified" && (
@@ -821,7 +841,19 @@ export const AdminLeadsPage: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
                     <span className="text-slate-400 block text-[11px]">Full Name:</span>
-                    <span className="text-white font-medium">{selectedLead.contact?.fullName || "—"}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-medium">{selectedLead.contact?.fullName || "—"}</span>
+                      {(selectedLead.contact?.id || selectedLead.contactId) && (
+                        <Link
+                          to={`/admin/crm/contacts?contactId=${selectedLead.contact?.id || selectedLead.contactId}`}
+                          className="text-[10px] text-brand-400 hover:underline flex items-center gap-0.5"
+                          title="Open in Contacts Desk"
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          View Contact
+                        </Link>
+                      )}
+                    </div>
                   </div>
 
                   <div>
@@ -857,10 +889,22 @@ export const AdminLeadsPage: React.FC = () => {
 
                   <div>
                     <span className="text-slate-400 block text-[11px]">Organization Name:</span>
-                    <span className="text-white font-semibold flex items-center gap-1">
-                      <Building2 className="w-3 h-3 text-slate-400" />
-                      {selectedLead.organization?.name || "Independent"}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-semibold flex items-center gap-1">
+                        <Building2 className="w-3 h-3 text-slate-400" />
+                        {selectedLead.organization?.name || "Independent"}
+                      </span>
+                      {(selectedLead.organization?.id || selectedLead.organizationId) && (
+                        <Link
+                          to={`/admin/crm/organizations?orgId=${selectedLead.organization?.id || selectedLead.organizationId}`}
+                          className="text-[10px] text-brand-400 hover:underline flex items-center gap-0.5"
+                          title="Open in Accounts Desk"
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          View Account
+                        </Link>
+                      )}
+                    </div>
                   </div>
 
                   <div>
@@ -1195,9 +1239,22 @@ export const AdminLeadsPage: React.FC = () => {
                     ID: {convertSuccessData.opportunityId}
                   </span>
                 </div>
-                <div className="pt-3">
+                <div className="pt-3 flex flex-col gap-2">
+                  <Link
+                    to={`/admin/crm/pipeline?oppId=${convertSuccessData.opportunityId}`}
+                    className="w-full"
+                  >
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+                    >
+                      Open in Pipeline Desk
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </Link>
                   <Button
-                    variant="primary"
+                    variant="outline"
                     size="sm"
                     onClick={() => setShowConvertModal(false)}
                     className="w-full"
@@ -1277,3 +1334,5 @@ export const AdminLeadsPage: React.FC = () => {
     </>
   );
 };
+
+export default AdminLeadsPage;

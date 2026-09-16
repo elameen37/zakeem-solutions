@@ -7,13 +7,18 @@ import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import {
   CRMActivity,
   CRMContact,
+  CRMContactDetail,
   CRMLead,
   CRMOpportunity,
+  CRMOpportunityDetail,
   CRMOrganization,
+  CRMOrganizationDetail,
   CRMStats,
   LeadStatus,
   OpportunityStage,
+  OrganizationStatus,
   VALID_LEAD_TRANSITIONS,
+  VALID_OPPORTUNITY_TRANSITIONS,
 } from "@/types/crm";
 
 // Local storage keys for non-production / offline fallback
@@ -728,7 +733,11 @@ export async function convertLeadToOpportunity(
 // ORGANIZATIONS & ACCOUNTS
 // -----------------------------------------------------------------------------
 
-export async function getAdminOrganizations(): Promise<{
+export async function getAdminOrganizations(filters?: {
+  status?: OrganizationStatus;
+  industry?: string;
+  search?: string;
+}): Promise<{
   success: boolean;
   organizations: CRMOrganization[];
   error?: string;
@@ -740,17 +749,25 @@ export async function getAdminOrganizations(): Promise<{
     }
 
     try {
-      const { data, error } = await client
+      let query = client
         .from("crm_organizations")
         .select("id, name, slug, domain, industry, company_size, status, created_at, updated_at")
         .order("name", { ascending: true });
 
+      if (filters?.status) {
+        query = query.eq("status", filters.status);
+      }
+      if (filters?.industry) {
+        query = query.eq("industry", filters.industry);
+      }
+
+      const { data, error } = await query;
       if (error) {
         return { success: false, organizations: [], error: error.message };
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const orgs: CRMOrganization[] = (data || []).map((row: any) => ({
+      let orgs: CRMOrganization[] = (data || []).map((row: any) => ({
         id: row.id,
         name: row.name,
         slug: row.slug,
@@ -762,20 +779,183 @@ export async function getAdminOrganizations(): Promise<{
         updatedAt: row.updated_at,
       }));
 
+      if (filters?.search && filters.search.trim()) {
+        const q = filters.search.toLowerCase().trim();
+        orgs = orgs.filter(
+          (o) =>
+            o.name.toLowerCase().includes(q) ||
+            (o.domain && o.domain.toLowerCase().includes(q)) ||
+            (o.industry && o.industry.toLowerCase().includes(q))
+        );
+      }
+
       return { success: true, organizations: orgs };
     } catch (err: any) {
       return { success: false, organizations: [], error: err?.message || "Failed to fetch organizations." };
     }
   }
 
-  return { success: true, organizations: getStored<CRMOrganization>(STORAGE_KEYS.ORGANIZATIONS, []) };
+  let orgs = getStored<CRMOrganization>(STORAGE_KEYS.ORGANIZATIONS, []);
+  if (filters?.status) orgs = orgs.filter((o) => o.status === filters.status);
+  if (filters?.industry) orgs = orgs.filter((o) => o.industry === filters.industry);
+  if (filters?.search && filters.search.trim()) {
+    const q = filters.search.toLowerCase().trim();
+    orgs = orgs.filter(
+      (o) =>
+        o.name.toLowerCase().includes(q) ||
+        (o.domain && o.domain.toLowerCase().includes(q)) ||
+        (o.industry && o.industry.toLowerCase().includes(q))
+    );
+  }
+  return { success: true, organizations: orgs };
+}
+
+export async function getOrganizationDetails(orgId: string): Promise<{
+  success: boolean;
+  organization?: CRMOrganizationDetail;
+  error?: string;
+}> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const { data: orgRow, error: orgErr } = await client
+        .from("crm_organizations")
+        .select("id, name, slug, domain, industry, company_size, status, created_at, updated_at")
+        .eq("id", orgId)
+        .single();
+
+      if (orgErr || !orgRow) {
+        return { success: false, error: orgErr?.message || "Organization not found." };
+      }
+
+      // Concurrently fetch related entities
+      const [contactsRes, leadsRes, oppsRes] = await Promise.all([
+        client
+          .from("crm_contacts")
+          .select("id, organization_id, email, full_name, phone, job_title, profile_id, is_primary, created_at, updated_at")
+          .eq("organization_id", orgId)
+          .order("full_name", { ascending: true }),
+        client
+          .from("crm_leads")
+          .select("id, reference_id, form_type, status, product_interest, tier, created_at")
+          .eq("organization_id", orgId)
+          .order("created_at", { ascending: false }),
+        client
+          .from("crm_opportunities")
+          .select("id, organization_id, contact_id, lead_id, title, primary_product, stage, deal_value_ngn, close_date, created_at, updated_at")
+          .eq("organization_id", orgId)
+          .order("created_at", { ascending: false }),
+      ]);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const contacts: CRMContact[] = (contactsRes.data || []).map((r: any) => ({
+        id: r.id,
+        organizationId: r.organization_id,
+        email: r.email,
+        fullName: r.full_name,
+        phone: r.phone,
+        jobTitle: r.job_title,
+        profileId: r.profile_id,
+        isPrimary: Boolean(r.is_primary),
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const leads: CRMLead[] = (leadsRes.data || []).map((r: any) => ({
+        id: r.id,
+        referenceId: r.reference_id,
+        organizationId: orgId,
+        formType: r.form_type,
+        status: r.status,
+        productInterest: r.product_interest,
+        tier: r.tier,
+        attribution: {},
+        createdAt: r.created_at,
+        updatedAt: r.created_at,
+      }));
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const opportunities: CRMOpportunity[] = (oppsRes.data || []).map((r: any) => ({
+        id: r.id,
+        organizationId: r.organization_id,
+        contactId: r.contact_id,
+        leadId: r.lead_id,
+        title: r.title,
+        primaryProduct: r.primary_product,
+        stage: r.stage,
+        dealValueNgn: r.deal_value_ngn ? Number(r.deal_value_ngn) : null,
+        closeDate: r.close_date,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
+
+      const activeOpps = opportunities.filter((o) => o.stage !== "won" && o.stage !== "lost");
+
+      const orgDetail: CRMOrganizationDetail = {
+        id: orgRow.id,
+        name: orgRow.name,
+        slug: orgRow.slug,
+        domain: orgRow.domain,
+        industry: orgRow.industry,
+        companySize: orgRow.company_size,
+        status: orgRow.status,
+        createdAt: orgRow.created_at,
+        updatedAt: orgRow.updated_at,
+        contacts,
+        leads,
+        opportunities,
+        bookings: [],
+        contactsCount: contacts.length,
+        leadsCount: leads.length,
+        opportunitiesCount: opportunities.length,
+        activeOpportunitiesCount: activeOpps.length,
+      };
+
+      emitAnalyticsEvent("crm:organization_opened", { orgId, name: orgRow.name });
+
+      return { success: true, organization: orgDetail };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to load organization details." };
+    }
+  }
+
+  const orgs = getStored<CRMOrganization>(STORAGE_KEYS.ORGANIZATIONS, []);
+  const found = orgs.find((o) => o.id === orgId);
+  if (!found) return { success: false, error: "Organization not found." };
+
+  const contacts = getStored<CRMContact>(STORAGE_KEYS.CONTACTS, []).filter((c) => c.organizationId === orgId);
+  const leads = getStored<CRMLead>(STORAGE_KEYS.LEADS, []).filter((l) => l.organizationId === orgId);
+  const opps = getStored<CRMOpportunity>(STORAGE_KEYS.OPPORTUNITIES, []).filter((o) => o.organizationId === orgId);
+
+  return {
+    success: true,
+    organization: {
+      ...found,
+      contacts,
+      leads,
+      opportunities: opps,
+      bookings: [],
+      contactsCount: contacts.length,
+      leadsCount: leads.length,
+      opportunitiesCount: opps.length,
+      activeOpportunitiesCount: opps.filter((o) => o.stage !== "won" && o.stage !== "lost").length,
+    },
+  };
 }
 
 // -----------------------------------------------------------------------------
 // CONTACTS & DECISION MAKERS
 // -----------------------------------------------------------------------------
 
-export async function getAdminContacts(): Promise<{
+export async function getAdminContacts(filters?: {
+  organizationId?: string;
+  search?: string;
+}): Promise<{
   success: boolean;
   contacts: CRMContact[];
   error?: string;
@@ -787,7 +967,7 @@ export async function getAdminContacts(): Promise<{
     }
 
     try {
-      const { data, error } = await client
+      let query = client
         .from("crm_contacts")
         .select(`
           id, organization_id, email, full_name, phone, job_title, profile_id, is_primary, created_at, updated_at,
@@ -795,12 +975,17 @@ export async function getAdminContacts(): Promise<{
         `)
         .order("full_name", { ascending: true });
 
+      if (filters?.organizationId) {
+        query = query.eq("organization_id", filters.organizationId);
+      }
+
+      const { data, error } = await query;
       if (error) {
         return { success: false, contacts: [], error: error.message };
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const contacts: CRMContact[] = (data || []).map((row: any) => ({
+      let contacts: CRMContact[] = (data || []).map((row: any) => ({
         id: row.id,
         organizationId: row.organization_id,
         email: row.email,
@@ -808,7 +993,7 @@ export async function getAdminContacts(): Promise<{
         phone: row.phone,
         jobTitle: row.job_title,
         profileId: row.profile_id,
-        isPrimary: Boolean(row.contact_is_primary || row.is_primary),
+        isPrimary: Boolean(row.is_primary),
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         organization: row.organization
@@ -825,20 +1010,187 @@ export async function getAdminContacts(): Promise<{
           : null,
       }));
 
+      if (filters?.search && filters.search.trim()) {
+        const q = filters.search.toLowerCase().trim();
+        contacts = contacts.filter(
+          (c) =>
+            c.fullName.toLowerCase().includes(q) ||
+            c.email.toLowerCase().includes(q) ||
+            (c.phone && c.phone.includes(q)) ||
+            (c.organization?.name && c.organization.name.toLowerCase().includes(q))
+        );
+      }
+
       return { success: true, contacts };
     } catch (err: any) {
       return { success: false, contacts: [], error: err?.message || "Failed to fetch contacts." };
     }
   }
 
-  return { success: true, contacts: getStored<CRMContact>(STORAGE_KEYS.CONTACTS, []) };
+  let contacts = getStored<CRMContact>(STORAGE_KEYS.CONTACTS, []);
+  if (filters?.organizationId) contacts = contacts.filter((c) => c.organizationId === filters.organizationId);
+  if (filters?.search && filters.search.trim()) {
+    const q = filters.search.toLowerCase().trim();
+    contacts = contacts.filter(
+      (c) =>
+        c.fullName.toLowerCase().includes(q) ||
+        c.email.toLowerCase().includes(q) ||
+        (c.phone && c.phone.includes(q)) ||
+        (c.organization?.name && c.organization.name.toLowerCase().includes(q))
+    );
+  }
+  return { success: true, contacts };
+}
+
+export async function getContactDetails(contactId: string): Promise<{
+  success: boolean;
+  contact?: CRMContactDetail;
+  activities: CRMActivity[];
+  error?: string;
+}> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, activities: [], error: "Database client unavailable." };
+    }
+
+    try {
+      const { data: row, error: fetchErr } = await client
+        .from("crm_contacts")
+        .select(`
+          id, organization_id, email, full_name, phone, job_title, profile_id, is_primary, created_at, updated_at,
+          organization:crm_organizations(id, name, slug, domain, industry, status, created_at, updated_at)
+        `)
+        .eq("id", contactId)
+        .single();
+
+      if (fetchErr || !row) {
+        return { success: false, activities: [], error: fetchErr?.message || "Contact not found." };
+      }
+
+      const [leadsRes, oppsRes, bookingsRes, actsRes] = await Promise.all([
+        client.from("crm_leads").select("id, reference_id, form_type, status, product_interest, tier, created_at").eq("contact_id", contactId).order("created_at", { ascending: false }),
+        client.from("crm_opportunities").select("id, title, primary_product, stage, deal_value_ngn, created_at").eq("contact_id", contactId).order("created_at", { ascending: false }),
+        client.from("bookings").select("id, reference_id, booking_date, start_time, end_time, status").eq("contact_id", contactId).order("created_at", { ascending: false }),
+        client.from("crm_activities").select("id, activity_type, organization_id, contact_id, lead_id, booking_id, opportunity_id, actor_id, title, description, metadata, created_at").eq("contact_id", contactId).order("created_at", { ascending: false }),
+      ]);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const leads: CRMLead[] = (leadsRes.data || []).map((l: any) => ({
+        id: l.id,
+        referenceId: l.reference_id,
+        contactId,
+        formType: l.form_type,
+        status: l.status,
+        productInterest: l.product_interest,
+        tier: l.tier,
+        attribution: {},
+        createdAt: l.created_at,
+        updatedAt: l.created_at,
+      }));
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const opportunities: CRMOpportunity[] = (oppsRes.data || []).map((o: any) => ({
+        id: o.id,
+        organizationId: row.organization_id,
+        contactId,
+        title: o.title,
+        primaryProduct: o.primary_product,
+        stage: o.stage,
+        dealValueNgn: o.deal_value_ngn ? Number(o.deal_value_ngn) : null,
+        createdAt: o.created_at,
+        updatedAt: o.created_at,
+      }));
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bookings: any[] = (bookingsRes.data || []).map((b: any) => ({
+        id: b.id,
+        referenceId: b.reference_id,
+        bookingDate: b.booking_date,
+        startTime: b.start_time,
+        endTime: b.end_time,
+        status: b.status,
+      }));
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const activities: CRMActivity[] = (actsRes.data || []).map((a: any) => ({
+        id: a.id,
+        activityType: a.activity_type,
+        organizationId: a.organization_id,
+        contactId: a.contact_id,
+        leadId: a.lead_id,
+        bookingId: a.booking_id,
+        opportunityId: a.opportunity_id,
+        actorId: a.actor_id,
+        title: a.title,
+        description: a.description,
+        metadata: a.metadata || {},
+        createdAt: a.created_at,
+      }));
+
+      const contactDetail: CRMContactDetail = {
+        id: row.id,
+        organizationId: row.organization_id,
+        email: row.email,
+        fullName: row.full_name,
+        phone: row.phone,
+        jobTitle: row.job_title,
+        profileId: row.profile_id,
+        isPrimary: Boolean(row.is_primary),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        organization: (row as any).organization
+          ? {
+              id: (row as any).organization.id,
+              name: (row as any).organization.name,
+              slug: (row as any).organization.slug,
+              domain: (row as any).organization.domain,
+              industry: (row as any).organization.industry,
+              status: (row as any).organization.status,
+              createdAt: (row as any).organization.created_at,
+              updatedAt: (row as any).organization.updated_at,
+            }
+          : null,
+        leads,
+        opportunities,
+        bookings,
+      };
+
+      emitAnalyticsEvent("crm:contact_opened", { contactId, fullName: row.full_name });
+
+      return { success: true, contact: contactDetail, activities };
+    } catch (err: any) {
+      return { success: false, activities: [], error: err?.message || "Failed to load contact details." };
+    }
+  }
+
+  const contacts = getStored<CRMContact>(STORAGE_KEYS.CONTACTS, []);
+  const found = contacts.find((c) => c.id === contactId);
+  if (!found) return { success: false, activities: [], error: "Contact not found." };
+
+  const allActs = getStored<CRMActivity>(STORAGE_KEYS.ACTIVITIES, []);
+  return {
+    success: true,
+    contact: {
+      ...found,
+      leads: [],
+      opportunities: [],
+      bookings: [],
+    },
+    activities: allActs.filter((a) => a.contactId === contactId),
+  };
 }
 
 // -----------------------------------------------------------------------------
-// OPPORTUNITIES & DEALS
+// OPPORTUNITIES & SALES PIPELINE
 // -----------------------------------------------------------------------------
 
-export async function getAdminOpportunities(): Promise<{
+export async function getAdminOpportunities(filters?: {
+  stage?: OpportunityStage;
+  product?: string;
+  organizationId?: string;
+  search?: string;
+}): Promise<{
   success: boolean;
   opportunities: CRMOpportunity[];
   error?: string;
@@ -850,7 +1202,7 @@ export async function getAdminOpportunities(): Promise<{
     }
 
     try {
-      const { data, error } = await client
+      let query = client
         .from("crm_opportunities")
         .select(`
           id, organization_id, contact_id, lead_id, title, primary_product, stage,
@@ -860,12 +1212,23 @@ export async function getAdminOpportunities(): Promise<{
         `)
         .order("created_at", { ascending: false });
 
+      if (filters?.stage) {
+        query = query.eq("stage", filters.stage);
+      }
+      if (filters?.product) {
+        query = query.eq("primary_product", filters.product);
+      }
+      if (filters?.organizationId) {
+        query = query.eq("organization_id", filters.organizationId);
+      }
+
+      const { data, error } = await query;
       if (error) {
         return { success: false, opportunities: [], error: error.message };
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const opps: CRMOpportunity[] = (data || []).map((row: any) => ({
+      let opps: CRMOpportunity[] = (data || []).map((row: any) => ({
         id: row.id,
         organizationId: row.organization_id,
         contactId: row.contact_id,
@@ -904,13 +1267,383 @@ export async function getAdminOpportunities(): Promise<{
           : null,
       }));
 
+      if (filters?.search && filters.search.trim()) {
+        const q = filters.search.toLowerCase().trim();
+        opps = opps.filter(
+          (o) =>
+            o.title.toLowerCase().includes(q) ||
+            o.primaryProduct.toLowerCase().includes(q) ||
+            (o.organization?.name && o.organization.name.toLowerCase().includes(q)) ||
+            (o.contact?.fullName && o.contact.fullName.toLowerCase().includes(q))
+        );
+      }
+
       return { success: true, opportunities: opps };
     } catch (err: any) {
       return { success: false, opportunities: [], error: err?.message || "Failed to fetch opportunities." };
     }
   }
 
-  return { success: true, opportunities: getStored<CRMOpportunity>(STORAGE_KEYS.OPPORTUNITIES, []) };
+  let opps = getStored<CRMOpportunity>(STORAGE_KEYS.OPPORTUNITIES, []);
+  if (filters?.stage) opps = opps.filter((o) => o.stage === filters.stage);
+  if (filters?.product) opps = opps.filter((o) => o.primaryProduct === filters.product);
+  if (filters?.organizationId) opps = opps.filter((o) => o.organizationId === filters.organizationId);
+  if (filters?.search && filters.search.trim()) {
+    const q = filters.search.toLowerCase().trim();
+    opps = opps.filter(
+      (o) =>
+        o.title.toLowerCase().includes(q) ||
+        o.primaryProduct.toLowerCase().includes(q) ||
+        (o.organization?.name && o.organization.name.toLowerCase().includes(q)) ||
+        (o.contact?.fullName && o.contact.fullName.toLowerCase().includes(q))
+    );
+  }
+  return { success: true, opportunities: opps };
+}
+
+export async function getOpportunityDetails(opportunityId: string): Promise<{
+  success: boolean;
+  opportunity?: CRMOpportunityDetail;
+  error?: string;
+}> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const { data: row, error: fetchErr } = await client
+        .from("crm_opportunities")
+        .select(`
+          id, organization_id, contact_id, lead_id, title, primary_product, stage,
+          deal_value_ngn, close_date, loss_reason, created_at, updated_at,
+          organization:crm_organizations(id, name, slug, domain, industry, company_size, status, created_at, updated_at),
+          contact:crm_contacts(id, organization_id, email, full_name, phone, job_title, is_primary, created_at, updated_at),
+          lead:crm_leads(id, reference_id, form_type, status, product_interest, tier, notes, created_at)
+        `)
+        .eq("id", opportunityId)
+        .single();
+
+      if (fetchErr || !row) {
+        return { success: false, error: fetchErr?.message || "Opportunity not found." };
+      }
+
+      // Check for associated booking
+      let bookingData = null;
+      const leadObj = (row as any).lead;
+      if (leadObj?.reference_id || row.contact_id) {
+        const { data: bRow } = await client
+          .from("bookings")
+          .select("id, reference_id, booking_date, start_time, end_time, status")
+          .or(`lead_id.eq.${leadObj?.reference_id || '00000000'},contact_id.eq.${row.contact_id || '00000000-0000-0000-0000-000000000000'}`)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (bRow) {
+          bookingData = {
+            id: bRow.id,
+            referenceId: bRow.reference_id,
+            bookingDate: bRow.booking_date,
+            startTime: bRow.start_time,
+            endTime: bRow.end_time,
+            status: bRow.status,
+          };
+        }
+      }
+
+      // Fetch activities for this opportunity or lead
+      const { data: actRows } = await client
+        .from("crm_activities")
+        .select("id, activity_type, organization_id, contact_id, lead_id, booking_id, opportunity_id, actor_id, title, description, metadata, created_at")
+        .or(`opportunity_id.eq.${opportunityId},lead_id.eq.${row.lead_id || '00000000-0000-0000-0000-000000000000'}`)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const activities: CRMActivity[] = (actRows || []).map((a: any) => ({
+        id: a.id,
+        activityType: a.activity_type,
+        organizationId: a.organization_id,
+        contactId: a.contact_id,
+        leadId: a.lead_id,
+        bookingId: a.booking_id,
+        opportunityId: a.opportunity_id,
+        actorId: a.actor_id,
+        title: a.title,
+        description: a.description,
+        metadata: a.metadata || {},
+        createdAt: a.created_at,
+      }));
+
+      const oppDetail: CRMOpportunityDetail = {
+        id: row.id,
+        organizationId: row.organization_id,
+        contactId: row.contact_id,
+        leadId: row.lead_id,
+        title: row.title,
+        primaryProduct: row.primary_product,
+        stage: row.stage,
+        dealValueNgn: row.deal_value_ngn ? Number(row.deal_value_ngn) : null,
+        closeDate: row.close_date,
+        lossReason: row.loss_reason,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        organization: row.organization
+          ? {
+              id: (row as any).organization.id,
+              name: (row as any).organization.name,
+              slug: (row as any).organization.slug,
+              domain: (row as any).organization.domain,
+              industry: (row as any).organization.industry,
+              companySize: (row as any).organization.company_size,
+              status: (row as any).organization.status,
+              createdAt: (row as any).organization.created_at,
+              updatedAt: (row as any).organization.updated_at,
+            }
+          : null,
+        contact: row.contact
+          ? {
+              id: (row as any).contact.id,
+              organizationId: (row as any).contact.organization_id,
+              email: (row as any).contact.email,
+              fullName: (row as any).contact.full_name,
+              phone: (row as any).contact.phone,
+              jobTitle: (row as any).contact.job_title,
+              isPrimary: Boolean((row as any).contact.is_primary),
+              createdAt: (row as any).contact.created_at,
+              updatedAt: (row as any).contact.updated_at,
+            }
+          : null,
+        lead: row.lead
+          ? {
+              id: (row as any).lead.id,
+              referenceId: (row as any).lead.reference_id,
+              formType: (row as any).lead.form_type,
+              status: (row as any).lead.status,
+              productInterest: (row as any).lead.product_interest,
+              tier: (row as any).lead.tier,
+              notes: (row as any).lead.notes,
+              attribution: {},
+              createdAt: (row as any).lead.created_at,
+              updatedAt: (row as any).lead.created_at,
+            }
+          : null,
+        booking: bookingData,
+        activities,
+      };
+
+      emitAnalyticsEvent("crm:opportunity_opened", { opportunityId, stage: row.stage });
+
+      return { success: true, opportunity: oppDetail };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to load opportunity details." };
+    }
+  }
+
+  const opps = getStored<CRMOpportunity>(STORAGE_KEYS.OPPORTUNITIES, []);
+  const found = opps.find((o) => o.id === opportunityId);
+  if (!found) return { success: false, error: "Opportunity not found." };
+
+  const allActs = getStored<CRMActivity>(STORAGE_KEYS.ACTIVITIES, []);
+  return {
+    success: true,
+    opportunity: {
+      ...found,
+      booking: null,
+      activities: allActs.filter((a) => a.opportunityId === opportunityId || a.leadId === found.leadId),
+    },
+  };
+}
+
+export async function updateOpportunityStage(
+  opportunityId: string,
+  newStage: OpportunityStage,
+  lossReason?: string
+): Promise<{ success: boolean; error?: string }> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      // 1. Attempt atomic RPC
+      const { data: rpcData, error: rpcErr } = await client.rpc("update_opportunity_stage_atomic", {
+        p_opportunity_id: opportunityId,
+        p_new_stage: newStage,
+        p_loss_reason: lossReason || null,
+      });
+
+      if (!rpcErr && rpcData) {
+        if (rpcData.success === false) {
+          return { success: false, error: rpcData.error || "Stage transition rejected by rules." };
+        }
+        emitAnalyticsEvent("crm:opportunity_stage_changed", { opportunityId, newStage, lossReason });
+        return { success: true };
+      }
+
+      // 2. Direct RLS fallback with strict transition assertions
+      const { data: opp, error: fetchErr } = await client
+        .from("crm_opportunities")
+        .select("id, organization_id, contact_id, lead_id, title, stage")
+        .eq("id", opportunityId)
+        .single();
+
+      if (fetchErr || !opp) {
+        return { success: false, error: fetchErr?.message || "Opportunity not found." };
+      }
+
+      const currentStage = opp.stage as OpportunityStage;
+      if (currentStage === "won" || currentStage === "lost") {
+        return { success: false, error: `Terminal stage [${currentStage}] cannot be altered.` };
+      }
+
+      const allowed = VALID_OPPORTUNITY_TRANSITIONS[currentStage] || [];
+      if (!allowed.includes(newStage)) {
+        return {
+          success: false,
+          error: `Invalid progression: cannot advance from [${currentStage}] to [${newStage}].`,
+        };
+      }
+
+      const payload: Record<string, unknown> = {
+        stage: newStage,
+        updated_at: new Date().toISOString(),
+      };
+      if (newStage === "lost" && lossReason) {
+        payload.loss_reason = lossReason.trim();
+      }
+      if (newStage === "won" || newStage === "lost") {
+        payload.close_date = new Date().toISOString().split("T")[0];
+      }
+
+      const { error: updateErr } = await client
+        .from("crm_opportunities")
+        .update(payload)
+        .eq("id", opportunityId);
+
+      if (updateErr) {
+        return { success: false, error: updateErr.message };
+      }
+
+      // Insert activity log
+      await client.from("crm_activities").insert({
+        activity_type: "stage_changed",
+        organization_id: opp.organization_id,
+        contact_id: opp.contact_id,
+        lead_id: opp.lead_id,
+        opportunity_id: opportunityId,
+        title: `Deal stage updated: ${currentStage} → ${newStage}`,
+        description: newStage === "lost" && lossReason ? `Loss reason: ${lossReason.trim()}` : undefined,
+        metadata: { previous_stage: currentStage, new_stage: newStage, loss_reason: lossReason?.trim() },
+      });
+
+      emitAnalyticsEvent("crm:opportunity_stage_changed", { opportunityId, newStage, lossReason });
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to update opportunity stage." };
+    }
+  }
+
+  // Local storage fallback
+  const opps = getStored<CRMOpportunity>(STORAGE_KEYS.OPPORTUNITIES, []);
+  const idx = opps.findIndex((o) => o.id === opportunityId);
+  if (idx < 0) return { success: false, error: "Opportunity not found." };
+
+  const currentStage = opps[idx].stage;
+  if (currentStage === "won" || currentStage === "lost") {
+    return { success: false, error: `Terminal stage [${currentStage}] cannot be altered.` };
+  }
+
+  const allowed = VALID_OPPORTUNITY_TRANSITIONS[currentStage] || [];
+  if (!allowed.includes(newStage)) {
+    return {
+      success: false,
+      error: `Invalid progression: cannot advance from [${currentStage}] to [${newStage}].`,
+    };
+  }
+
+  opps[idx] = {
+    ...opps[idx],
+    stage: newStage,
+    lossReason: newStage === "lost" ? lossReason?.trim() || null : opps[idx].lossReason,
+    closeDate: newStage === "won" || newStage === "lost" ? new Date().toISOString().split("T")[0] : opps[idx].closeDate,
+    updatedAt: new Date().toISOString(),
+  };
+  setStored(STORAGE_KEYS.OPPORTUNITIES, opps);
+
+  // Record activity
+  const acts = getStored<CRMActivity>(STORAGE_KEYS.ACTIVITIES, []);
+  acts.unshift({
+    id: `act-${Date.now()}`,
+    activityType: "stage_changed",
+    organizationId: opps[idx].organizationId,
+    contactId: opps[idx].contactId,
+    opportunityId,
+    title: `Deal stage updated: ${currentStage} → ${newStage}`,
+    description: newStage === "lost" && lossReason ? `Loss reason: ${lossReason.trim()}` : undefined,
+    metadata: { previous_stage: currentStage, new_stage: newStage, loss_reason: lossReason?.trim() },
+    createdAt: new Date().toISOString(),
+  });
+  setStored(STORAGE_KEYS.ACTIVITIES, acts);
+
+  emitAnalyticsEvent("crm:opportunity_stage_changed", { opportunityId, newStage, lossReason });
+  return { success: true };
+}
+
+export async function updateOpportunityDetails(
+  opportunityId: string,
+  updates: { title?: string; dealValueNgn?: number | null; closeDate?: string | null }
+): Promise<{ success: boolean; error?: string }> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const payload: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (updates.title !== undefined && updates.title.trim()) {
+        payload.title = updates.title.trim();
+      }
+      if (updates.dealValueNgn !== undefined) {
+        payload.deal_value_ngn = updates.dealValueNgn;
+      }
+      if (updates.closeDate !== undefined) {
+        payload.close_date = updates.closeDate;
+      }
+
+      const { error } = await client
+        .from("crm_opportunities")
+        .update(payload)
+        .eq("id", opportunityId);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to update opportunity details." };
+    }
+  }
+
+  const opps = getStored<CRMOpportunity>(STORAGE_KEYS.OPPORTUNITIES, []);
+  const idx = opps.findIndex((o) => o.id === opportunityId);
+  if (idx < 0) return { success: false, error: "Opportunity not found." };
+
+  opps[idx] = {
+    ...opps[idx],
+    title: updates.title?.trim() || opps[idx].title,
+    dealValueNgn: updates.dealValueNgn !== undefined ? updates.dealValueNgn : opps[idx].dealValueNgn,
+    closeDate: updates.closeDate !== undefined ? updates.closeDate : opps[idx].closeDate,
+    updatedAt: new Date().toISOString(),
+  };
+  setStored(STORAGE_KEYS.OPPORTUNITIES, opps);
+  return { success: true };
 }
 
 // -----------------------------------------------------------------------------

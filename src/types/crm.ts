@@ -114,6 +114,20 @@ export type OpportunityStage =
   | "won"
   | "lost";
 
+/**
+ * Strict CRM Opportunity Stage Governance Transitions.
+ * Terminal states (won, lost) cannot be transitioned further.
+ */
+export const VALID_OPPORTUNITY_TRANSITIONS: Record<OpportunityStage, OpportunityStage[]> = {
+  discovery: ["demo_scheduled", "demo_completed", "proposal", "lost"],
+  demo_scheduled: ["demo_completed", "proposal", "lost"],
+  demo_completed: ["proposal", "negotiation", "lost"],
+  proposal: ["negotiation", "won", "lost"],
+  negotiation: ["won", "lost"],
+  won: [], // Terminal
+  lost: [], // Terminal
+};
+
 export interface CRMOpportunity {
   id: string;
   organizationId: string;
@@ -130,6 +144,28 @@ export interface CRMOpportunity {
   lossReason?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CRMOpportunityDetail extends CRMOpportunity {
+  booking?: CRMLeadBookingSummary | null;
+  activities: CRMActivity[];
+}
+
+export interface CRMOrganizationDetail extends CRMOrganization {
+  contacts: CRMContact[];
+  leads: CRMLead[];
+  opportunities: CRMOpportunity[];
+  bookings: CRMLeadBookingSummary[];
+  contactsCount: number;
+  leadsCount: number;
+  opportunitiesCount: number;
+  activeOpportunitiesCount: number;
+}
+
+export interface CRMContactDetail extends CRMContact {
+  leads: CRMLead[];
+  opportunities: CRMOpportunity[];
+  bookings: CRMLeadBookingSummary[];
 }
 
 export type CRMActivityType =

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   Sliders,
@@ -16,10 +16,16 @@ import {
   CircleDot,
 } from "lucide-react";
 import { CRMActivity, CRMActivityType } from "@/types/crm";
+import { getAdminActivities } from "@/lib/crmService";
 import { cn } from "@/lib/utils";
 
 interface CRMActivityStreamProps {
-  activities: CRMActivity[];
+  activities?: CRMActivity[];
+  organizationId?: string;
+  contactId?: string;
+  leadId?: string;
+  opportunityId?: string;
+  refreshTrigger?: number;
   isLoading?: boolean;
   className?: string;
   emptyMessage?: string;
@@ -98,12 +104,50 @@ function formatRelativeTime(isoString: string): string {
 }
 
 export const CRMActivityStream: React.FC<CRMActivityStreamProps> = ({
-  activities,
+  activities: externalActivities,
+  organizationId,
+  contactId,
+  leadId,
+  opportunityId,
+  refreshTrigger = 0,
   isLoading = false,
   className,
   emptyMessage = "No activities recorded yet for this entity.",
 }) => {
-  if (isLoading) {
+  const [internalActivities, setInternalActivities] = useState<CRMActivity[]>([]);
+  const [internalLoading, setInternalLoading] = useState(false);
+
+  useEffect(() => {
+    if (externalActivities !== undefined) return;
+    if (!organizationId && !contactId && !leadId && !opportunityId) return;
+
+    let isMounted = true;
+    setInternalLoading(true);
+    getAdminActivities({
+      organizationId,
+      contactId,
+      leadId,
+      opportunityId,
+      limit: 50,
+    })
+      .then((res) => {
+        if (isMounted && res.success) {
+          setInternalActivities(res.activities);
+        }
+      })
+      .finally(() => {
+        if (isMounted) setInternalLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [externalActivities, organizationId, contactId, leadId, opportunityId, refreshTrigger]);
+
+  const activeActivities = externalActivities !== undefined ? externalActivities : internalActivities;
+  const activeLoading = isLoading || (externalActivities === undefined && internalLoading);
+
+  if (activeLoading) {
     return (
       <div className="py-8 text-center space-y-2">
         <div className="w-6 h-6 rounded-full border-2 border-[#e57804]/20 border-t-[#e57804] animate-spin mx-auto" />
@@ -112,7 +156,7 @@ export const CRMActivityStream: React.FC<CRMActivityStreamProps> = ({
     );
   }
 
-  if (activities.length === 0) {
+  if (activeActivities.length === 0) {
     return (
       <div className="p-6 rounded-2xl bg-[#06152b] border border-white/5 text-center text-xs text-slate-400 italic">
         {emptyMessage}
@@ -123,7 +167,7 @@ export const CRMActivityStream: React.FC<CRMActivityStreamProps> = ({
   return (
     <div className={cn("space-y-3", className)}>
       <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-[1px] before:bg-white/10">
-        {activities.map((act, index) => {
+        {activeActivities.map((act, index) => {
           const isNewest = index === 0;
           return (
             <div key={act.id} className="relative group">

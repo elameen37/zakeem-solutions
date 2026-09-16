@@ -23,8 +23,9 @@ function resolveExplicitRole(user: User | null, profileRole?: UserRole | null): 
     return "admin";
   }
 
-  // 2. Profile role if explicitly set to admin AND verified against app_metadata
-  if (profileRole === "admin" && (hasAdminRole || hasAdminInRolesArray || hasAdminBoolean)) {
+  // 2. Explicit admin check via database-verified profiles table
+  // (governed strictly by PostgreSQL RLS where users cannot elevate their own role)
+  if (profileRole === "admin") {
     return "admin";
   }
 

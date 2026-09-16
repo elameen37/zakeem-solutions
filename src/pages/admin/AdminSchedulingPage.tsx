@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -119,8 +119,23 @@ export const AdminSchedulingPage: React.FC = () => {
   const [passkey, setPasskey] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<ActiveTab>("bookings");
+  const [searchParams] = useSearchParams();
+
+  // Tab state (supports direct linking, e.g. /admin/invitations -> /admin/scheduling?tab=invitations)
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "invitations" || tabParam === "settings" || tabParam === "rules" || tabParam === "exceptions") {
+      return tabParam as ActiveTab;
+    }
+    return "bookings";
+  });
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "invitations" || tabParam === "settings" || tabParam === "rules" || tabParam === "exceptions") {
+      setActiveTab(tabParam as ActiveTab);
+    }
+  }, [searchParams]);
 
   // Data state
   const [bookings, setBookings] = useState<Booking[]>([]);

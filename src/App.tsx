@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { HomePage } from "@/pages/HomePage";
 
@@ -100,6 +100,22 @@ export const App: React.FC = () => {
               <Route path="/terms" element={<TermsPage />} />
 
               {/* Internal Admin Operations */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Navigate to="/admin/crm/leads" replace />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/invitations"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Navigate to="/admin/scheduling?tab=invitations" replace />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/admin/crm/leads"
                 element={

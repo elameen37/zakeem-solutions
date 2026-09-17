@@ -14,18 +14,17 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "dark";
+    if (typeof window === "undefined") return "light";
 
     try {
       const stored = localStorage.getItem(THEME_STORAGE_KEY);
       if (stored === "light" || stored === "dark") {
         return stored;
       }
-      // Check system preference; default to dark for Zakeem flagship identity if no preference
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      return prefersDark ? "dark" : "dark";
+      // Default theme for new users with no saved preference is strictly light
+      return "light";
     } catch {
-      return "dark";
+      return "light";
     }
   });
 
@@ -50,24 +49,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Ignore storage write errors (e.g. private browsing)
     }
   }, [theme]);
-
-  // Listen for system theme changes if user hasn't explicitly set preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (e: MediaQueryListEvent) => {
-      try {
-        const stored = localStorage.getItem(THEME_STORAGE_KEY);
-        if (!stored) {
-          setThemeState(e.matches ? "dark" : "light");
-        }
-      } catch {
-        // Ignore
-      }
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);

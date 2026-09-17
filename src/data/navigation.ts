@@ -217,7 +217,7 @@ export const FOOTER_NAVIGATION = {
   resources: [
     { label: "Insights & Whitepapers", href: "/insights" },
     { label: "Client Support Portal", href: "/support" },
-    { label: "Client Login", href: "/login" },
+    { label: "Login", href: "/login" },
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" }
   ]

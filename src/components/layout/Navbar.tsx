@@ -403,7 +403,7 @@ export const Navbar: React.FC = () => {
                     : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
                 )}
               >
-                Client Login
+                Login
               </Link>
             )}
             <Button variant="primary" size="sm" href="/request-demo">
@@ -544,7 +544,7 @@ export const Navbar: React.FC = () => {
                   onClick={() => setIsOpen(false)}
                   className="w-full text-slate-300 hover:text-white hover:bg-white/5"
                 >
-                  Client Portal Login
+                  Login
                 </Button>
               )}
             </div>

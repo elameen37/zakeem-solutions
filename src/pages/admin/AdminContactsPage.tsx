@@ -27,6 +27,7 @@ import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 import { CRMActivityStream } from "@/components/admin/CRMActivityStream";
 import { cn } from "@/lib/utils";
 import {
@@ -56,6 +57,15 @@ export default function AdminContactsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [orgFilter, setOrgFilter] = useState<string>(urlOrgId || "all");
   const [primaryFilter, setPrimaryFilter] = useState<"all" | "primary" | "secondary">("all");
+
+  // Pagination
+  const PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, orgFilter, primaryFilter]);
 
   // Drawer / Selection
   const [selectedContactId, setSelectedContactId] = useState<string | null>(urlContactId);
@@ -194,6 +204,12 @@ export default function AdminContactsPage() {
     return { total, primary, linkedAccounts, activeProfiles };
   }, [contacts]);
 
+  // Paginated contacts slice
+  const paginatedContacts = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return contacts.slice(start, start + PAGE_SIZE);
+  }, [contacts, currentPage]);
+
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-brand-500/20">
       <SEO
@@ -206,14 +222,14 @@ export default function AdminContactsPage() {
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header Strip */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400">
                 <Users className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
                   Contacts & Decision Makers
                   {!isSupabaseConfigured() && (
                     <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10 text-xs">
@@ -221,7 +237,7 @@ export default function AdminContactsPage() {
                     </Badge>
                   )}
                 </h1>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   Manage individual stakeholders, identify key decision makers, and monitor client communications.
                 </p>
               </div>
@@ -234,7 +250,7 @@ export default function AdminContactsPage() {
               size="sm"
               onClick={fetchContacts}
               disabled={loading}
-              className="border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-300"
+              className="border-slate-300 bg-white hover:bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:hover:bg-slate-800 dark:text-slate-300"
             >
               <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
               Refresh
@@ -386,7 +402,7 @@ export default function AdminContactsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {contacts.map((contact) => {
+                  {paginatedContacts.map((contact) => {
                     const isSelected = selectedContactId === contact.id;
 
                     return (
@@ -464,7 +480,7 @@ export default function AdminContactsPage() {
                               e.stopPropagation();
                               handleSelectContact(contact.id);
                             }}
-                            className="text-slate-400 hover:text-white hover:bg-slate-800"
+                            className="text-slate-200 hover:text-white hover:bg-slate-800"
                           >
                             View Profile
                             <ChevronRight className="w-4 h-4 ml-1" />
@@ -476,6 +492,17 @@ export default function AdminContactsPage() {
                 </tbody>
               </table>
             </div>
+          )}
+
+          {/* Pagination Controls */}
+          {!loading && contacts.length > 0 && (
+            <AdminPagination
+              currentPage={currentPage}
+              totalItems={contacts.length}
+              pageSize={PAGE_SIZE}
+              onPageChange={setCurrentPage}
+              itemName="contacts"
+            />
           )}
         </div>
       </main>

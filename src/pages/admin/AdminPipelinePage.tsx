@@ -34,6 +34,7 @@ import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 import { CRMActivityStream } from "@/components/admin/CRMActivityStream";
 import { cn } from "@/lib/utils";
 import {
@@ -123,6 +124,14 @@ export const AdminPipelinePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [stageFilter, setStageFilter] = useState<StageFilter>("all");
   const [productFilter, setProductFilter] = useState<string>("all");
+
+  // Pagination
+  const PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, stageFilter, productFilter]);
 
   // Selected Opportunity Detail Drawer
   const [selectedOppId, setSelectedOppId] = useState<string | null>(null);
@@ -346,6 +355,12 @@ export const AdminPipelinePage: React.FC = () => {
     return { total, open, proposal, negotiation, won, lost };
   }, [opportunities]);
 
+  // Paginated opportunities slice
+  const paginatedOpportunities = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return opportunities.slice(start, start + PAGE_SIZE);
+  }, [opportunities, currentPage]);
+
   const getProductTitle = (slugOrId?: string | null) => {
     if (!slugOrId) return "Unspecified Solution";
     const found = ZAKEEM_APPLICATIONS.find((a) => a.slug === slugOrId || a.id === slugOrId);
@@ -389,7 +404,7 @@ export const AdminPipelinePage: React.FC = () => {
           <AdminNav currentTab="opportunities" />
 
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-6">
             <div>
               <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
                 <Badge variant="neon">Commercial Pipeline</Badge>
@@ -398,8 +413,9 @@ export const AdminPipelinePage: React.FC = () => {
                   Stage Governance Enforced
                 </span>
                 {isSupabaseConfigured() ? (
-                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-[10px]">
-                    Supabase Connected
+                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-[10px] flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Secured Connection
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="border-amber-500/40 text-amber-400 text-[10px]">
@@ -407,10 +423,10 @@ export const AdminPipelinePage: React.FC = () => {
                   </Badge>
                 )}
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white">
                 Sales Pipeline & Deal Management
               </h1>
-              <p className="text-xs md:text-sm text-slate-400 mt-1 max-w-2xl">
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
                 Structured stage progression from discovery to closed-won, backed by verified relational accounts and contacts.
               </p>
             </div>
@@ -422,7 +438,7 @@ export const AdminPipelinePage: React.FC = () => {
                 onClick={loadOpportunities}
                 disabled={isLoading}
                 leftIcon={<RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />}
-                className="border-white/15 text-white hover:bg-white/10"
+                className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-white/15 dark:text-white dark:hover:bg-white/10"
               >
                 Refresh
               </Button>
@@ -600,7 +616,7 @@ export const AdminPipelinePage: React.FC = () => {
                 </p>
                 <div className="pt-2">
                   <Link to="/admin/crm/leads">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
                       Go to Inbound Leads
                     </Button>
                   </Link>
@@ -620,7 +636,7 @@ export const AdminPipelinePage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {opportunities.map((opp) => {
+                    {paginatedOpportunities.map((opp) => {
                       const isSelected = selectedOppId === opp.id;
                       const cfg = STAGE_CONFIG[opp.stage] || STAGE_CONFIG.discovery;
                       return (
@@ -692,7 +708,7 @@ export const AdminPipelinePage: React.FC = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="border-white/10 hover:border-[#e57804]/40 hover:text-white py-1 px-2.5 text-xs h-auto"
+                              className="border-white/20 text-white hover:text-white hover:border-[#e57804] hover:bg-[#e57804]/15 py-1 px-2.5 text-xs h-auto transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleSelectOpp(opp);
@@ -708,6 +724,17 @@ export const AdminPipelinePage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+            )}
+
+            {/* Pagination Controls */}
+            {!isLoading && opportunities.length > 0 && (
+              <AdminPagination
+                currentPage={currentPage}
+                totalItems={opportunities.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setCurrentPage}
+                itemName="deals"
+              />
             )}
           </div>
         </div>
@@ -952,7 +979,7 @@ export const AdminPipelinePage: React.FC = () => {
                         </div>
                       </div>
                       <Link to={`/admin/crm/leads?leadId=${selectedOpp.lead.id}`}>
-                        <Button variant="outline" size="sm" className="py-1 px-2.5 text-xs h-auto">
+                        <Button variant="outline" size="sm" className="border-white/20 text-white hover:border-[#e57804] hover:bg-[#e57804]/15 py-1 px-2.5 text-xs h-auto transition-colors">
                           Open Lead Desk
                         </Button>
                       </Link>

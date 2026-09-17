@@ -37,6 +37,8 @@ import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { AdminPagination } from "@/components/admin/AdminPagination";
+import { ProductFilterSelect } from "@/components/admin/ProductFilterSelect";
 import { cn } from "@/lib/utils";
 import {
   AvailabilityException,
@@ -163,6 +165,16 @@ export const AdminSchedulingPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [productFilter, setProductFilter] = useState<string>("all");
   const [dateScopeFilter, setDateScopeFilter] = useState<string>("all");
+
+  // Pagination state
+  const PAGE_SIZE = 10;
+  const [bookingsPage, setBookingsPage] = useState(1);
+  const [invitationsPage, setInvitationsPage] = useState(1);
+
+  // Reset bookings pagination when filters change
+  useEffect(() => {
+    setBookingsPage(1);
+  }, [searchQuery, statusFilter, productFilter, dateScopeFilter]);
 
   // Loading & notification states
   const [isLoading, setIsLoading] = useState(false);
@@ -632,6 +644,18 @@ export const AdminSchedulingPage: React.FC = () => {
     });
   }, [bookings, statusFilter, productFilter, dateScopeFilter, searchQuery, lagosToday]);
 
+  // Paginated bookings slice
+  const paginatedBookings = useMemo(() => {
+    const start = (bookingsPage - 1) * PAGE_SIZE;
+    return filteredBookings.slice(start, start + PAGE_SIZE);
+  }, [filteredBookings, bookingsPage]);
+
+  // Paginated invitations slice
+  const paginatedInvitations = useMemo(() => {
+    const start = (invitationsPage - 1) * PAGE_SIZE;
+    return invitations.slice(start, start + PAGE_SIZE);
+  }, [invitations, invitationsPage]);
+
   const getDayName = (dow: number) => {
     const names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     return names[dow] || `Day ${dow}`;
@@ -766,14 +790,14 @@ export const AdminSchedulingPage: React.FC = () => {
                   {isLoading
                     ? "Authenticating..."
                     : isSupabaseConfigured()
-                    ? "Sign In with Supabase Identity"
+                    ? "Sign In with Secure Identity"
                     : "Unlock Scheduling Desk"}
                 </Button>
               </form>
 
               <p className="text-[11px] text-slate-500">
                 {isSupabaseConfigured()
-                  ? "Protected by PostgreSQL Row-Level Security (RLS) & Supabase Identity."
+                  ? "Protected by PostgreSQL Row-Level Security (RLS) & Secure Identity."
                   : "Local development fallback mode. Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for production."}
               </p>
             </div>
@@ -797,7 +821,7 @@ export const AdminSchedulingPage: React.FC = () => {
           <AdminNav currentTab="scheduling" />
 
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-6">
             <div>
               <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
                 <Badge variant="neon">Operations Desk</Badge>
@@ -806,8 +830,9 @@ export const AdminSchedulingPage: React.FC = () => {
                   Africa/Lagos (WAT)
                 </span>
                 {isSupabaseConfigured() ? (
-                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-[10px]">
-                    Supabase Connected
+                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-[10px] flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Secured Connection
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="border-amber-500/40 text-amber-400 text-[10px]">
@@ -815,7 +840,7 @@ export const AdminSchedulingPage: React.FC = () => {
                   </Badge>
                 )}
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white">
                 Executive Scheduling & Walkthrough Desk
               </h1>
             </div>
@@ -827,7 +852,7 @@ export const AdminSchedulingPage: React.FC = () => {
                 onClick={loadData}
                 disabled={isLoading}
                 leftIcon={<RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />}
-                className="border-white/15 text-white hover:bg-white/10"
+                className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-white/15 dark:text-white dark:hover:bg-white/10"
               >
                 Refresh
               </Button>
@@ -840,7 +865,7 @@ export const AdminSchedulingPage: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={handleSignOut}
-                className="border-white/15 text-slate-400 hover:text-white hover:bg-white/10"
+                className="border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:border-white/15 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/10"
               >
                 Lock Desk
               </Button>
@@ -881,15 +906,15 @@ export const AdminSchedulingPage: React.FC = () => {
           )}
 
           {/* Tab Navigation */}
-          <div className="flex items-center gap-2 border-b border-white/10 overflow-x-auto pb-1">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 overflow-x-auto pb-1">
             <button
               type="button"
               onClick={() => setActiveTab("bookings")}
               className={cn(
                 "px-4 py-2 rounded-xl text-xs font-mono font-medium transition-colors flex items-center gap-2 whitespace-nowrap",
                 activeTab === "bookings"
-                  ? "bg-[#e57804] text-white"
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                  ? "bg-[#e57804] text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
               )}
             >
               <Calendar className="w-3.5 h-3.5" />
@@ -901,8 +926,8 @@ export const AdminSchedulingPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-xl text-xs font-mono font-medium transition-colors flex items-center gap-2 whitespace-nowrap",
                 activeTab === "invitations"
-                  ? "bg-[#e57804] text-white"
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                  ? "bg-[#e57804] text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
               )}
             >
               <UserPlus className="w-3.5 h-3.5" />
@@ -914,8 +939,8 @@ export const AdminSchedulingPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-xl text-xs font-mono font-medium transition-colors flex items-center gap-2 whitespace-nowrap",
                 activeTab === "settings"
-                  ? "bg-[#e57804] text-white"
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                  ? "bg-[#e57804] text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
               )}
             >
               <Sliders className="w-3.5 h-3.5" />
@@ -927,8 +952,8 @@ export const AdminSchedulingPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-xl text-xs font-mono font-medium transition-colors flex items-center gap-2 whitespace-nowrap",
                 activeTab === "rules"
-                  ? "bg-[#e57804] text-white"
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                  ? "bg-[#e57804] text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
               )}
             >
               <Clock className="w-3.5 h-3.5" />
@@ -940,8 +965,8 @@ export const AdminSchedulingPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-xl text-xs font-mono font-medium transition-colors flex items-center gap-2 whitespace-nowrap",
                 activeTab === "exceptions"
-                  ? "bg-[#e57804] text-white"
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                  ? "bg-[#e57804] text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
               )}
             >
               <CalendarDays className="w-3.5 h-3.5" />
@@ -978,17 +1003,12 @@ export const AdminSchedulingPage: React.FC = () => {
 
                   {/* Product Filter Dropdown */}
                   <div className="md:col-span-3">
-                    <select
+                    <ProductFilterSelect
                       value={productFilter}
-                      onChange={(e) => setProductFilter(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
-                    >
-                      {PRODUCT_FILTER_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value} className="bg-[#081c38] text-white">
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setProductFilter}
+                      options={PRODUCT_FILTER_OPTIONS}
+                      placeholder="All Products & Solutions"
+                    />
                   </div>
 
                   {/* Date Horizon Filter Dropdown */}
@@ -1070,7 +1090,7 @@ export const AdminSchedulingPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredBookings.map((b) => (
+                  {paginatedBookings.map((b) => (
                     <div
                       key={b.id}
                       data-surface="dark"
@@ -1155,6 +1175,17 @@ export const AdminSchedulingPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              )}
+
+              {/* Bookings Pagination Controls */}
+              {!isLoading && filteredBookings.length > 0 && (
+                <AdminPagination
+                  currentPage={bookingsPage}
+                  totalItems={filteredBookings.length}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={setBookingsPage}
+                  itemName="reservations"
+                />
               )}
             </div>
           )}
@@ -1682,7 +1713,7 @@ export const AdminSchedulingPage: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
-                        {invitations.map((inv) => (
+                        {paginatedInvitations.map((inv) => (
                           <tr key={inv.id} className="hover:bg-white/[0.02] transition-colors">
                             <td className="p-3.5">
                               <div className="font-bold text-white">{inv.organization}</div>
@@ -1738,6 +1769,17 @@ export const AdminSchedulingPage: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
+                )}
+
+                {/* Invitations Pagination Controls */}
+                {!isLoading && invitations.length > 0 && (
+                  <AdminPagination
+                    currentPage={invitationsPage}
+                    totalItems={invitations.length}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={setInvitationsPage}
+                    itemName="invitations"
+                  />
                 )}
               </div>
             </div>

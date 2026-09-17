@@ -147,14 +147,14 @@ export default function AdminReportsPage() {
 
       <main className="container mx-auto px-4 py-8 max-w-7xl space-y-8">
         {/* Header Strip */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400">
                 <BarChart3 className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
                   Commercial Intelligence & Reports
                   {!isSupabaseConfigured() && (
                     <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10 text-xs">
@@ -162,7 +162,7 @@ export default function AdminReportsPage() {
                     </Badge>
                   )}
                 </h1>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   Audit-grade operational intelligence across lead capture, pipeline valuation, product demand, and bookings.
                 </p>
               </div>
@@ -175,7 +175,7 @@ export default function AdminReportsPage() {
               size="sm"
               onClick={fetchReport}
               disabled={loading}
-              className="border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-300"
+              className="border-slate-300 bg-white hover:bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:hover:bg-slate-800 dark:text-slate-300"
             >
               <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
               Refresh

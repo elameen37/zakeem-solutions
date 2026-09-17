@@ -31,6 +31,8 @@ import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { ProductFilterSelect } from "@/components/admin/ProductFilterSelect";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 import { CRMActivityStream } from "@/components/admin/CRMActivityStream";
 import { cn } from "@/lib/utils";
 import {
@@ -66,6 +68,14 @@ export const AdminLeadsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [formTypeFilter, setFormTypeFilter] = useState<FormTypeFilter>("all");
   const [productFilter, setProductFilter] = useState<string>("all");
+
+  // Pagination
+  const PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, formTypeFilter, productFilter]);
 
   // Lead Detail Drawer State
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -300,6 +310,12 @@ export const AdminLeadsPage: React.FC = () => {
     return { total, newCount, contactedCount, qualifiedCount, convertedCount, disqualifiedCount };
   }, [leads]);
 
+  // Paginated leads slice
+  const paginatedLeads = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return leads.slice(start, start + PAGE_SIZE);
+  }, [leads, currentPage]);
+
   // Helper for status badge styling
   const renderStatusBadge = (status: LeadStatus) => {
     switch (status) {
@@ -367,6 +383,14 @@ export const AdminLeadsPage: React.FC = () => {
     }
   };
 
+  const productOptions = useMemo(
+    () => [
+      { value: "all", label: "All Products" },
+      ...ZAKEEM_APPLICATIONS.map((app) => ({ value: app.slug, label: app.name })),
+    ],
+    []
+  );
+
   return (
     <>
       <SEO
@@ -381,7 +405,7 @@ export const AdminLeadsPage: React.FC = () => {
           <AdminNav currentTab="leads" />
 
           {/* Page Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-6">
             <div>
               <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
                 <Badge variant="neon">CRM Desk</Badge>
@@ -390,8 +414,9 @@ export const AdminLeadsPage: React.FC = () => {
                   Canonical Model Active
                 </span>
                 {isSupabaseConfigured() ? (
-                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-[10px]">
-                    Supabase Connected
+                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-[10px] flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Secured Connection
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="border-amber-500/40 text-amber-400 text-[10px]">
@@ -399,10 +424,10 @@ export const AdminLeadsPage: React.FC = () => {
                   </Badge>
                 )}
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white">
                 Inbound Leads & Qualification Desk
               </h1>
-              <p className="text-xs md:text-sm text-slate-400 mt-1 max-w-2xl">
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
                 Persistent B2B lead capture, commercial intent evaluation, and auditable status transitions.
               </p>
             </div>
@@ -414,7 +439,7 @@ export const AdminLeadsPage: React.FC = () => {
                 onClick={loadLeads}
                 disabled={isLoading}
                 leftIcon={<RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />}
-                className="border-white/15 text-white hover:bg-white/10"
+                className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-white/15 dark:text-white dark:hover:bg-white/10"
               >
                 Refresh
               </Button>
@@ -525,18 +550,12 @@ export const AdminLeadsPage: React.FC = () => {
 
               {/* Product Filter */}
               <div>
-                <select
+                <ProductFilterSelect
                   value={productFilter}
-                  onChange={(e) => setProductFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
-                >
-                  <option value="all">All Products</option>
-                  {ZAKEEM_APPLICATIONS.map((app) => (
-                    <option key={app.id} value={app.slug}>
-                      {app.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setProductFilter}
+                  options={productOptions}
+                  placeholder="All Products"
+                />
               </div>
             </div>
 
@@ -608,7 +627,7 @@ export const AdminLeadsPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {leads.map((lead) => {
+                    {paginatedLeads.map((lead) => {
                       const isSelected = selectedLeadId === lead.id;
                       return (
                         <tr
@@ -672,7 +691,7 @@ export const AdminLeadsPage: React.FC = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="border-white/10 hover:border-[#e57804]/40 hover:text-white py-1 px-2.5 text-xs h-auto"
+                              className="border-white/20 text-white hover:text-white hover:border-[#e57804] hover:bg-[#e57804]/15 py-1 px-2.5 text-xs h-auto transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleSelectLead(lead);
@@ -689,6 +708,15 @@ export const AdminLeadsPage: React.FC = () => {
                 </table>
               </div>
             )}
+
+            {/* Pagination Controls */}
+            <AdminPagination
+              currentPage={currentPage}
+              totalItems={leads.length}
+              pageSize={PAGE_SIZE}
+              onPageChange={setCurrentPage}
+              itemName="leads"
+            />
           </div>
         </div>
       </section>

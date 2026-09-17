@@ -233,6 +233,7 @@ export const AcceptInvitationPage: React.FC = () => {
         title="Accept Enterprise Invitation — Zakeem Solutions"
         description="Activate your authorized Zakeem Solutions enterprise client portal account."
         canonical="https://www.zakeemsolutions.com/accept-invite"
+        noindex={true}
       />
 
       <section className="pt-16 pb-24 border-b border-white/10 min-h-[85vh] flex items-center justify-center">

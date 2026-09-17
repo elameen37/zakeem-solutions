@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { CTASection } from "@/components/ui/CTASection";
 import { ZAKEEM_APPLICATIONS, ZakeemApplication } from "@/data/ecosystem";
+import { getSoftwareApplicationSchema } from "@/config/seo";
 
 export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -127,6 +128,11 @@ export const ProductDetailPage: React.FC = () => {
         title={product.seoTitle || `${product.name} — Zakeem Solutions`}
         description={product.seoDescription || product.description}
         canonical={`https://www.zakeemsolutions.com/products/${product.slug}`}
+        breadcrumbs={[
+          { name: "Products", path: "/products" },
+          { name: product.name, path: `/products/${product.slug}` }
+        ]}
+        schema={getSoftwareApplicationSchema(product)}
       />
 
       <section className="pt-12 pb-20 md:pt-16 md:pb-28 border-b border-white/10">

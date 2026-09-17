@@ -57,6 +57,7 @@ export const ResetPasswordPage: React.FC = () => {
         title="Set New Password — Zakeem Solutions"
         description="Establish your new secure password for the Zakeem Solutions client portal."
         canonical="https://www.zakeemsolutions.com/reset-password"
+        noindex={true}
       />
 
       <section className="pt-16 pb-24 border-b border-white/10 min-h-[85vh] flex items-center justify-center">

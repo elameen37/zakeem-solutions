@@ -130,6 +130,10 @@ export const ZakeemRealtyERPPage: React.FC = () => {
         title="Zakeem Realty ERP — Enterprise Real Estate Platform"
         description="Flagship enterprise ERP built for real estate developers, property managers, and land aggregators. Integrates property sales, GIS land subdivision, lease accounting, construction finance, and Zakky AI."
         canonical="https://www.zakeemsolutions.com/products/zakeem-realty-erp"
+        breadcrumbs={[
+          { name: "Products", path: "/products" },
+          { name: "Zakeem Realty ERP", path: "/products/zakeem-realty-erp" }
+        ]}
         schema={{
           "@type": "SoftwareApplication",
           name: "Zakeem Realty ERP",

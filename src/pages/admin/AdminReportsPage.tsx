@@ -141,6 +141,7 @@ export default function AdminReportsPage() {
         title="CRM Commercial Intelligence & Reports | Zakeem Solutions Admin"
         description="Comprehensive commercial reporting, lead funnel metrics, pipeline velocity, product demand, and scheduling intelligence."
         canonical="/admin/crm/reports"
+        noindex={true}
       />
 
       <AdminNav activeDesk="reports" />
@@ -154,7 +155,7 @@ export default function AdminReportsPage() {
                 <BarChart3 className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
                   Commercial Intelligence & Reports
                   {!isSupabaseConfigured() && (
                     <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10 text-xs">
@@ -162,7 +163,7 @@ export default function AdminReportsPage() {
                     </Badge>
                   )}
                 </h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-sm text-slate-400">
                   Audit-grade operational intelligence across lead capture, pipeline valuation, product demand, and bookings.
                 </p>
               </div>

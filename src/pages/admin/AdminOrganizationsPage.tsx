@@ -253,6 +253,7 @@ export default function AdminOrganizationsPage() {
         title="Accounts & Organizations | Zakeem Solutions Admin"
         description="Comprehensive directory of client organizations, enterprise accounts, and commercial relationships."
         canonical="/admin/crm/organizations"
+        noindex={true}
       />
 
       <AdminNav activeDesk="accounts" />
@@ -266,7 +267,7 @@ export default function AdminOrganizationsPage() {
                 <Building2 className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
                   Accounts & Organizations
                   {!isSupabaseConfigured() && (
                     <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10 text-xs">
@@ -274,7 +275,7 @@ export default function AdminOrganizationsPage() {
                     </Badge>
                   )}
                 </h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-sm text-slate-400">
                   Manage enterprise client profiles, track company hierarchies, and inspect commercial relationships.
                 </p>
               </div>

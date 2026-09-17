@@ -4,7 +4,11 @@ import { SEO } from "@/components/seo/SEO";
 export const PrivacyPage: React.FC = () => {
   return (
     <>
-      <SEO title="Privacy Policy — Zakeem Solutions" canonical="https://www.zakeemsolutions.com/privacy" />
+      <SEO
+        title="Privacy Policy | Zakeem Solutions"
+        description="Review the Zakeem Solutions enterprise privacy policy and data governance practices in compliance with the Nigeria Data Protection Act (NDPA) and GDPR."
+        canonical="https://www.zakeemsolutions.com/privacy"
+      />
       <section className="py-20 container mx-auto px-4 md:px-6 max-w-4xl">
         <h1 className="text-3xl font-bold text-slate-950 dark:text-white mb-6">Privacy Policy</h1>
         <div className="space-y-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">

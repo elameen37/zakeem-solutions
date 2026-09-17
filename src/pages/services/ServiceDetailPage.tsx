@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/Badge";
 import { CTASection } from "@/components/ui/CTASection";
 import { SERVICES } from "@/data/services";
 
+import { getServiceSchema } from "@/config/seo";
+
 export const ServiceDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const service = SERVICES.find((s) => s.slug === slug);
@@ -21,6 +23,11 @@ export const ServiceDetailPage: React.FC = () => {
         title={`${service.title} Practice — Zakeem Solutions`}
         description={service.description}
         canonical={`https://www.zakeemsolutions.com/services/${service.slug}`}
+        breadcrumbs={[
+          { name: "Services", path: "/services" },
+          { name: service.title, path: `/services/${service.slug}` }
+        ]}
+        schema={getServiceSchema(service)}
       />
 
       <section className="pt-12 pb-20 md:pt-16 md:pb-28 border-b border-white/10">

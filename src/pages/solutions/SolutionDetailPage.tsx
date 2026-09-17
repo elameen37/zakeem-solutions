@@ -21,6 +21,10 @@ export const SolutionDetailPage: React.FC = () => {
         title={`${solution.title} — Zakeem Solutions`}
         description={solution.description}
         canonical={`https://www.zakeemsolutions.com/solutions/${solution.slug}`}
+        breadcrumbs={[
+          { name: "Solutions", path: "/solutions" },
+          { name: solution.title, path: `/solutions/${solution.slug}` }
+        ]}
       />
 
       <section className="pt-12 pb-20 md:pt-16 md:pb-28 border-b border-white/10">

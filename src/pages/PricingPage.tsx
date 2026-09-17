@@ -11,6 +11,7 @@ import {
   BillingPeriod, CommercialProductCategory, 
   PRICING_FAQS 
 } from "@/data/pricing";
+import { getFAQPageSchema } from "@/config/seo";
 import { PricingHero } from "@/components/pricing/PricingHero";
 import { PurchasingPathNav, CommercialPath } from "@/components/pricing/PurchasingPathNav";
 import { CategoryFilter } from "@/components/pricing/CategoryFilter";
@@ -43,6 +44,7 @@ export const PricingPage: React.FC = () => {
         title="Enterprise Pricing & Multi-Product Architecture — Zakeem Solutions"
         description="Transparent, predictable enterprise software investment models. Review verified subscription tiers for Zakeem Realty ERP, multi-product business suites, and engineering retainers in Nigeria."
         canonical="https://www.zakeemsolutions.com/pricing"
+        schema={getFAQPageSchema(PRICING_FAQS)}
       />
 
       {/* 1. CONVERSION-FOCUSED HERO */}

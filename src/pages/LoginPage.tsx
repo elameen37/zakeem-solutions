@@ -184,6 +184,7 @@ export const LoginPage: React.FC = () => {
         title="Client & Administration Gateway — Zakeem Solutions"
         description="Secure gateway for client organizations, enterprise product portals, and authorized system administration."
         canonical="https://www.zakeemsolutions.com/login"
+        noindex={true}
       />
 
       <section className="pt-12 pb-20 md:pt-20 md:pb-28 border-b border-white/10 min-h-[85vh]">

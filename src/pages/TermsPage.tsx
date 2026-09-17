@@ -4,7 +4,11 @@ import { SEO } from "@/components/seo/SEO";
 export const TermsPage: React.FC = () => {
   return (
     <>
-      <SEO title="Terms of Service — Zakeem Solutions" canonical="https://www.zakeemsolutions.com/terms" />
+      <SEO
+        title="Terms of Service | Zakeem Solutions"
+        description="Review the terms and conditions governing the use of Zakeem Solutions platforms, digital architecture, and corporate web services."
+        canonical="https://www.zakeemsolutions.com/terms"
+      />
       <section className="py-20 container mx-auto px-4 md:px-6 max-w-4xl">
         <h1 className="text-3xl font-bold text-slate-950 dark:text-white mb-6">Terms of Service</h1>
         <div className="space-y-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">

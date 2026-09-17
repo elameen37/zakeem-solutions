@@ -16,6 +16,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
+import { getContactPageSchema } from "@/config/seo";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/Button";
 import { COMPANY_CONTACT, SOCIAL_LINKS } from "@/data/social";
@@ -232,8 +233,9 @@ export const ContactPage: React.FC = () => {
     <>
       <SEO
         title="Contact Enterprise Sales & Architecture — Zakeem Solutions"
-        description="Initiate an engagement with Zakeem Solutions enterprise sales and technical leadership."
+        description="Initiate an engagement with Zakeem Solutions enterprise sales and technical leadership in Abuja and Lagos, Nigeria."
         canonical="https://www.zakeemsolutions.com/contact"
+        schema={getContactPageSchema()}
       />
 
       <section className="pt-12 pb-20 md:pt-20 md:pb-28 border-b border-white/10">

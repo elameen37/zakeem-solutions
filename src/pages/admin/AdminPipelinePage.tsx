@@ -396,6 +396,7 @@ export const AdminPipelinePage: React.FC = () => {
         title="Commercial Opportunity Pipeline — Zakeem Solutions"
         description="Internal executive desk for sales pipeline management, enterprise deal tracking, and stage governance."
         canonical="https://www.zakeemsolutions.com/admin/crm/pipeline"
+        noindex={true}
       />
 
       <section className="pt-12 pb-24 border-b border-white/10 min-h-screen">

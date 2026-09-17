@@ -35,6 +35,7 @@ const AdminPipelinePage = React.lazy(() => import("@/pages/admin/AdminPipelinePa
 const AdminOrganizationsPage = React.lazy(() => import("@/pages/admin/AdminOrganizationsPage").then((m) => ({ default: m.default || m.AdminOrganizationsPage })));
 const AdminContactsPage = React.lazy(() => import("@/pages/admin/AdminContactsPage").then((m) => ({ default: m.default || m.AdminContactsPage })));
 const AdminReportsPage = React.lazy(() => import("@/pages/admin/AdminReportsPage").then((m) => ({ default: m.default || m.AdminReportsPage })));
+const NotFoundPage = React.lazy(() => import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
 // Minimal on-brand loading fallback for seamless route transitions
 const RouteLoadingFallback: React.FC = () => (
@@ -166,7 +167,7 @@ export const App: React.FC = () => {
               />
 
               {/* Fallback 404 route */}
-              <Route path="*" element={<HomePage />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
         </Layout>

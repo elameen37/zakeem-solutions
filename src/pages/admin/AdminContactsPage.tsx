@@ -216,6 +216,7 @@ export default function AdminContactsPage() {
         title="Contacts & Decision Makers | Zakeem Solutions Admin"
         description="Comprehensive directory of enterprise contacts, executive decision makers, and account stakeholders."
         canonical="/admin/crm/contacts"
+        noindex={true}
       />
 
       <AdminNav activeDesk="contacts" />
@@ -229,7 +230,7 @@ export default function AdminContactsPage() {
                 <Users className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
                   Contacts & Decision Makers
                   {!isSupabaseConfigured() && (
                     <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10 text-xs">
@@ -237,7 +238,7 @@ export default function AdminContactsPage() {
                     </Badge>
                   )}
                 </h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-sm text-slate-400">
                   Manage individual stakeholders, identify key decision makers, and monitor client communications.
                 </p>
               </div>

@@ -28,6 +28,7 @@ export const ClientPortalPage: React.FC = () => {
         title="Client Portal — Zakeem Solutions"
         description="Authenticated enterprise client portal for Zakeem Solutions platforms, technical advisory, and deployments."
         canonical="https://www.zakeemsolutions.com/portal"
+        noindex={true}
       />
 
       <section className="pt-12 pb-24 border-b border-white/10 min-h-[85vh]">

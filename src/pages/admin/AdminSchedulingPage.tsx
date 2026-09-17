@@ -710,6 +710,7 @@ export const AdminSchedulingPage: React.FC = () => {
           title="Executive Scheduling Desk — Zakeem Solutions"
           description="Internal management desk for executive appointment walkthroughs and availability parameters."
           canonical="https://www.zakeemsolutions.com/admin/scheduling"
+          noindex={true}
         />
 
         <section className="pt-20 pb-28 min-h-[75vh] flex items-center justify-center">
@@ -813,6 +814,7 @@ export const AdminSchedulingPage: React.FC = () => {
         title="Executive Scheduling Desk — Zakeem Solutions"
         description="Internal management desk for executive appointment walkthroughs and availability parameters."
         canonical="https://www.zakeemsolutions.com/admin/scheduling"
+        noindex={true}
       />
 
       <section className="pt-12 pb-24 border-b border-white/10 min-h-screen">

@@ -1,4 +1,11 @@
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /admin
+Disallow: /portal/
+Disallow: /portal
+Disallow: /accept-invite
+Disallow: /accept-invitation
+Disallow: /reset-password
 
 Sitemap: https://www.zakeemsolutions.com/sitemap.xml

@@ -397,6 +397,7 @@ export const AdminLeadsPage: React.FC = () => {
         title="CRM Inbound Leads Desk — Zakeem Solutions"
         description="Internal executive desk for inbound lead triage, qualification, and commercial deal conversion."
         canonical="https://www.zakeemsolutions.com/admin/crm/leads"
+        noindex={true}
       />
 
       <section className="pt-12 pb-24 border-b border-white/10 min-h-screen">

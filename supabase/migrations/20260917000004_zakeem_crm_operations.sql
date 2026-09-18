@@ -504,6 +504,8 @@ GRANT EXECUTE ON FUNCTION public.complete_crm_activity_atomic(UUID) TO service_r
 -- 9. EXTEND UPDATE_OPPORTUNITY_DETAILS_ATOMIC
 -- Supports expected_close_date, next_action, and next_action_due_date.
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.update_opportunity_details_atomic(UUID, TEXT, NUMERIC, DATE);
+
 CREATE OR REPLACE FUNCTION public.update_opportunity_details_atomic(
     p_opportunity_id UUID,
     p_title TEXT DEFAULT NULL,
@@ -558,10 +560,10 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.update_opportunity_details_atomic FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.update_opportunity_details_atomic FROM anon;
-GRANT EXECUTE ON FUNCTION public.update_opportunity_details_atomic TO authenticated;
-GRANT EXECUTE ON FUNCTION public.update_opportunity_details_atomic TO service_role;
+REVOKE EXECUTE ON FUNCTION public.update_opportunity_details_atomic(UUID, TEXT, NUMERIC, DATE, DATE, TEXT, DATE) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.update_opportunity_details_atomic(UUID, TEXT, NUMERIC, DATE, DATE, TEXT, DATE) FROM anon;
+GRANT EXECUTE ON FUNCTION public.update_opportunity_details_atomic(UUID, TEXT, NUMERIC, DATE, DATE, TEXT, DATE) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.update_opportunity_details_atomic(UUID, TEXT, NUMERIC, DATE, DATE, TEXT, DATE) TO service_role;
 
 -- ------------------------------------------------------------------------------
 -- 10. RPC: GET CRM FOLLOW-UP & WORKSPACE INTELLIGENCE

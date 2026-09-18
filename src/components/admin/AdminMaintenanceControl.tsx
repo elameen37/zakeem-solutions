@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -239,13 +240,15 @@ export const AdminMaintenanceControl: React.FC = () => {
       </div>
 
       {/* Confirmation Modal */}
-      {isModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="maintenance-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
-        >
+      {isModalOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="maintenance-modal-title"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+          >
           <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#07172e] shadow-2xl p-6 sm:p-7">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2.5">
@@ -361,7 +364,8 @@ export const AdminMaintenanceControl: React.FC = () => {
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

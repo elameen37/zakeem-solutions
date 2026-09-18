@@ -29,6 +29,8 @@ import {
   Award,
   ArrowRight,
   Edit3,
+  CalendarClock,
+  AlertCircle,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -36,6 +38,8 @@ import { Button } from "@/components/ui/Button";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { CRMActivityStream } from "@/components/admin/CRMActivityStream";
+import { CRMOwnerSelect } from "@/components/admin/CRMOwnerSelect";
+import { CRMActivityModal } from "@/components/admin/CRMActivityModal";
 import { cn } from "@/lib/utils";
 import {
   CRMOpportunity,
@@ -43,6 +47,7 @@ import {
   CRMActivity,
   OpportunityStage,
   VALID_OPPORTUNITY_TRANSITIONS,
+  AdminUserSummary,
 } from "@/types/crm";
 import {
   getAdminOpportunities,
@@ -50,6 +55,8 @@ import {
   updateOpportunityStage,
   updateOpportunityDetails,
   addCRMNote,
+  assignOpportunityOwner,
+  getAdminUsers,
 } from "@/lib/crmService";
 import { ZAKEEM_APPLICATIONS } from "@/data/ecosystem";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -124,6 +131,9 @@ export const AdminPipelinePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [stageFilter, setStageFilter] = useState<StageFilter>("all");
   const [productFilter, setProductFilter] = useState<string>("all");
+  const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [staleFilter, setStaleFilter] = useState<boolean>(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUserSummary[]>([]);
 
   // Pagination
   const PAGE_SIZE = 10;
@@ -131,12 +141,18 @@ export const AdminPipelinePage: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, stageFilter, productFilter]);
+  }, [searchQuery, stageFilter, productFilter, ownerFilter, staleFilter]);
 
   // Selected Opportunity Detail Drawer
   const [selectedOppId, setSelectedOppId] = useState<string | null>(null);
   const [selectedOpp, setSelectedOpp] = useState<CRMOpportunityDetail | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+
+  // Load admin users
+  useEffect(() => {
+    getAdminUsers().then((users) => setAdminUsers(users));
+  }, []);
 
   // Closed Lost Modal State
   const [showLostModal, setShowLostModal] = useState(false);
@@ -148,6 +164,9 @@ export const AdminPipelinePage: React.FC = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editValueNgn, setEditValueNgn] = useState<string>("");
   const [editCloseDate, setEditCloseDate] = useState<string>("");
+  const [editExpectedCloseDate, setEditExpectedCloseDate] = useState<string>("");
+  const [editNextAction, setEditNextAction] = useState<string>("");
+  const [editNextActionDueDate, setEditNextActionDueDate] = useState<string>("");
   const [isSavingDetails, setIsSavingDetails] = useState(false);
 
   // Internal Note State
@@ -163,6 +182,8 @@ export const AdminPipelinePage: React.FC = () => {
         stage: stageFilter === "all" ? undefined : stageFilter,
         product: productFilter === "all" ? undefined : productFilter,
         search: searchQuery.trim() || undefined,
+        ownerId: ownerFilter === "all" ? undefined : ownerFilter,
+        staleOnly: staleFilter || undefined,
       });
 
       if (res.success) {
@@ -175,7 +196,7 @@ export const AdminPipelinePage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [stageFilter, productFilter, searchQuery]);
+  }, [stageFilter, productFilter, searchQuery, ownerFilter, staleFilter]);
 
   useEffect(() => {
     loadOpportunities();
@@ -274,7 +295,27 @@ export const AdminPipelinePage: React.FC = () => {
     }
   };
 
-  // Save deal details (title, value, close date)
+  // Assign opportunity owner
+  const handleAssignOppOwner = async (newOwnerId: string | null) => {
+    if (!selectedOpp) return;
+    try {
+      const res = await assignOpportunityOwner(selectedOpp.id, newOwnerId);
+      if (res.success) {
+        setSuccessMessage(newOwnerId ? "Deal owner assigned." : "Deal unassigned.");
+        setTimeout(() => setSuccessMessage(null), 3500);
+        await loadOppDetails(selectedOpp.id);
+        await loadOpportunities();
+      } else {
+        setError(res.error || "Failed to assign deal owner.");
+        setTimeout(() => setError(null), 4000);
+      }
+    } catch {
+      setError("Error assigning deal owner.");
+      setTimeout(() => setError(null), 4000);
+    }
+  };
+
+  // Save deal details (title, value, close date, next action)
   const handleSaveDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOpp) return;
@@ -286,6 +327,9 @@ export const AdminPipelinePage: React.FC = () => {
         title: editTitle.trim() || undefined,
         dealValueNgn: parsedValue,
         closeDate: editCloseDate.trim() || null,
+        expectedCloseDate: editExpectedCloseDate.trim() || null,
+        nextAction: editNextAction.trim() || null,
+        nextActionDueDate: editNextActionDueDate.trim() || null,
       });
 
       if (res.success) {
@@ -310,6 +354,9 @@ export const AdminPipelinePage: React.FC = () => {
     setEditTitle(selectedOpp.title);
     setEditValueNgn(selectedOpp.dealValueNgn !== null && selectedOpp.dealValueNgn !== undefined ? String(selectedOpp.dealValueNgn) : "");
     setEditCloseDate(selectedOpp.closeDate || "");
+    setEditExpectedCloseDate(selectedOpp.expectedCloseDate || "");
+    setEditNextAction(selectedOpp.nextAction || "");
+    setEditNextActionDueDate(selectedOpp.nextActionDueDate || "");
     setShowEditModal(true);
   };
 
@@ -352,7 +399,9 @@ export const AdminPipelinePage: React.FC = () => {
     const negotiation = opportunities.filter((o) => o.stage === "negotiation").length;
     const won = opportunities.filter((o) => o.stage === "won").length;
     const lost = opportunities.filter((o) => o.stage === "lost").length;
-    return { total, open, proposal, negotiation, won, lost };
+    const unassigned = opportunities.filter((o) => !o.ownerId).length;
+    const stale = opportunities.filter((o) => Boolean(o.isStale || (o.ageingDays && o.ageingDays >= 14)) && o.stage !== "won" && o.stage !== "lost").length;
+    return { total, open, proposal, negotiation, won, lost, unassigned, stale };
   }, [opportunities]);
 
   // Paginated opportunities slice
@@ -508,7 +557,7 @@ export const AdminPipelinePage: React.FC = () => {
 
           {/* Search & Filter Controls */}
           <div data-surface="dark" className="p-4 rounded-2xl bg-[#081c38] border border-white/10 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {/* Search */}
               <div className="relative lg:col-span-2">
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -560,9 +609,26 @@ export const AdminPipelinePage: React.FC = () => {
                   ))}
                 </select>
               </div>
+
+              {/* Owner Filter */}
+              <div>
+                <select
+                  value={ownerFilter}
+                  onChange={(e) => setOwnerFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
+                >
+                  <option value="all">All Owners</option>
+                  <option value="unassigned">Unassigned Only</option>
+                  {adminUsers.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.fullName || u.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Stage Pill Tabs */}
+            {/* Stage Pill Tabs & Operational Quick Toggles */}
             <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-white/5 scrollbar-none">
               <span className="text-[10px] font-mono text-slate-400 uppercase mr-2 shrink-0 flex items-center gap-1">
                 <Filter className="w-3 h-3" /> Filter Stage:
@@ -598,6 +664,46 @@ export const AdminPipelinePage: React.FC = () => {
                   </button>
                 );
               })}
+
+              <div className="flex items-center gap-2 ml-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOwnerFilter(ownerFilter === "unassigned" ? "all" : "unassigned")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all shrink-0 flex items-center gap-1.5",
+                    ownerFilter === "unassigned"
+                      ? "bg-amber-500 text-slate-950 font-bold shadow"
+                      : "bg-[#06152b] text-amber-400 hover:text-amber-300 hover:bg-white/5 border border-amber-500/30"
+                  )}
+                >
+                  <span>Unassigned</span>
+                  <span className={cn(
+                    "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
+                    ownerFilter === "unassigned" ? "bg-black/30 text-slate-950" : "bg-amber-500/20 text-amber-300"
+                  )}>
+                    {metrics.unassigned}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStaleFilter(!staleFilter)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all shrink-0 flex items-center gap-1.5",
+                    staleFilter
+                      ? "bg-rose-600 text-white font-bold shadow"
+                      : "bg-[#06152b] text-rose-400 hover:text-rose-300 hover:bg-white/5 border border-rose-500/30"
+                  )}
+                >
+                  <span>Stale (&gt;14d)</span>
+                  <span className={cn(
+                    "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
+                    staleFilter ? "bg-black/30 text-white" : "bg-rose-500/20 text-rose-300"
+                  )}>
+                    {metrics.stale}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -632,6 +738,8 @@ export const AdminPipelinePage: React.FC = () => {
                       <th className="py-3 px-4">Account & Primary Contact</th>
                       <th className="py-3 px-4">Stage</th>
                       <th className="py-3 px-4">Commercial Value</th>
+                      <th className="py-3 px-4">Owner</th>
+                      <th className="py-3 px-4">Next Action / Ageing</th>
                       <th className="py-3 px-4">Target Close</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
@@ -695,6 +803,48 @@ export const AdminPipelinePage: React.FC = () => {
                             ) : (
                               <span className="text-slate-500 italic text-[11px]">
                                 Value pending
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Owner */}
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            {opp.owner?.fullName ? (
+                              <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-medium">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                                <span className="truncate max-w-[110px]">{opp.owner.fullName}</span>
+                              </div>
+                            ) : (
+                              <span className="text-[11px] font-mono text-slate-500 italic">Unassigned</span>
+                            )}
+                          </td>
+
+                          {/* Next Action / Ageing */}
+                          <td className="py-3.5 px-4">
+                            {opp.nextAction ? (
+                              <div>
+                                <div className="text-xs text-white truncate max-w-[160px] font-medium" title={opp.nextAction}>
+                                  {opp.nextAction}
+                                </div>
+                                {opp.nextActionDueDate && (
+                                  <div
+                                    className={cn(
+                                      "text-[10px] font-mono mt-0.5 flex items-center gap-1",
+                                      new Date(opp.nextActionDueDate).getTime() < Date.now() ? "text-rose-400 font-bold" : "text-slate-400"
+                                    )}
+                                  >
+                                    <Clock className="w-2.5 h-2.5" />
+                                    {new Date(opp.nextActionDueDate).getTime() < Date.now() ? "Overdue: " : "Due: "}
+                                    {formatDate(opp.nextActionDueDate)}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-[11px] font-mono text-slate-500 italic">No next action</span>
+                            )}
+                            {Boolean(opp.isStale || (opp.ageingDays && opp.ageingDays >= 14)) && opp.stage !== "won" && opp.stage !== "lost" && (
+                              <span className="inline-block mt-1 px-1.5 py-0.2 rounded text-[9px] font-mono uppercase bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                                Stale ({opp.ageingDays || 14}d)
                               </span>
                             )}
                           </td>
@@ -802,6 +952,28 @@ export const AdminPipelinePage: React.FC = () => {
               </button>
             </div>
 
+            {/* Commercial Operations & Owner Bar */}
+            <div className="p-3.5 bg-[#06152b] border-b border-white/10 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Owner:</span>
+                <CRMOwnerSelect
+                  currentOwnerId={selectedOpp.ownerId}
+                  currentOwnerName={selectedOpp.owner?.fullName}
+                  onSelectOwner={handleAssignOppOwner}
+                />
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowActivityModal(true)}
+                leftIcon={<CalendarClock className="w-3.5 h-3.5 text-[#e57804]" />}
+                className="border-white/15 text-white hover:bg-white/10 py-1 px-3 text-xs h-auto"
+              >
+                Schedule Follow-Up
+              </Button>
+            </div>
+
             {/* Stage Transition Toolbar */}
             <div className="p-4 bg-[#081c38]/90 border-b border-white/10">
               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -895,12 +1067,51 @@ export const AdminPipelinePage: React.FC = () => {
                   </div>
 
                   <div>
-                    <span className="text-slate-400 block text-[11px]">Target Close Date:</span>
+                    <span className="text-slate-400 block text-[11px]">Target Close:</span>
                     <span className="text-slate-300 font-mono">
                       {formatDate(selectedOpp.closeDate)}
                     </span>
                   </div>
+
+                  <div>
+                    <span className="text-slate-400 block text-[11px]">Expected Close:</span>
+                    <span className="text-slate-300 font-mono">
+                      {selectedOpp.expectedCloseDate ? formatDate(selectedOpp.expectedCloseDate) : "—"}
+                    </span>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <span className="text-slate-400 block text-[11px]">Next Action:</span>
+                    {selectedOpp.nextAction ? (
+                      <div className="text-white font-medium flex items-center gap-2 flex-wrap">
+                        <span>{selectedOpp.nextAction}</span>
+                        {selectedOpp.nextActionDueDate && (
+                          <span
+                            className={cn(
+                              "text-[10px] font-mono px-1.5 py-0.2 rounded border flex items-center gap-1",
+                              new Date(selectedOpp.nextActionDueDate).getTime() < Date.now()
+                                ? "bg-rose-500/15 text-rose-400 border-rose-500/30 font-bold"
+                                : "bg-white/5 text-slate-300 border-white/10"
+                            )}
+                          >
+                            <Clock className="w-2.5 h-2.5" />
+                            {new Date(selectedOpp.nextActionDueDate).getTime() < Date.now() ? "Overdue: " : "Due: "}
+                            {formatDate(selectedOpp.nextActionDueDate)}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-slate-500 italic">No next action set</span>
+                    )}
+                  </div>
                 </div>
+
+                {Boolean(selectedOpp.isStale || (selectedOpp.ageingDays && selectedOpp.ageingDays >= 14)) && selectedOpp.stage !== "won" && selectedOpp.stage !== "lost" && (
+                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span>Pipeline Ageing Alert: This deal has had no logged activity for <strong>{selectedOpp.ageingDays || 14} days</strong>. Schedule a follow-up or review stage qualification.</span>
+                  </div>
+                )}
               </div>
 
               {/* Relational Accounts & Contacts */}
@@ -1065,7 +1276,11 @@ export const AdminPipelinePage: React.FC = () => {
                 <CRMActivityStream
                   activities={selectedOpp.activities}
                   isLoading={isLoadingDetail}
+                  opportunityId={selectedOpp.id}
+                  organizationId={selectedOpp.organizationId}
+                  contactId={selectedOpp.contactId || undefined}
                   emptyMessage="No activity events recorded for this opportunity yet."
+                  onActivityCompleted={() => selectedOpp && loadOppDetails(selectedOpp.id)}
                 />
               </div>
             </div>
@@ -1201,6 +1416,43 @@ export const AdminPipelinePage: React.FC = () => {
                 />
               </div>
 
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                  Expected Close Date (Operational Target)
+                </label>
+                <input
+                  type="date"
+                  value={editExpectedCloseDate}
+                  onChange={(e) => setEditExpectedCloseDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804] font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                  Next Action Description
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Schedule commercial contract review with legal team"
+                  value={editNextAction}
+                  onChange={(e) => setEditNextAction(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                  Next Action Due Date
+                </label>
+                <input
+                  type="date"
+                  value={editNextActionDueDate}
+                  onChange={(e) => setEditNextActionDueDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804] font-mono"
+                />
+              </div>
+
               <div className="flex items-center justify-end gap-2.5 pt-2">
                 <Button
                   type="button"
@@ -1223,6 +1475,25 @@ export const AdminPipelinePage: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Schedule Activity / Follow-Up Modal */}
+      {selectedOpp && (
+        <CRMActivityModal
+          isOpen={showActivityModal}
+          onClose={() => setShowActivityModal(false)}
+          onSuccess={() => {
+            setShowActivityModal(false);
+            setSuccessMessage("Activity logged and follow-up scheduled.");
+            setTimeout(() => setSuccessMessage(null), 3500);
+            loadOppDetails(selectedOpp.id);
+            loadOpportunities();
+          }}
+          opportunityId={selectedOpp.id}
+          organizationId={selectedOpp.organizationId}
+          contactId={selectedOpp.contactId}
+          entityName={selectedOpp.title || selectedOpp.organization?.name}
+        />
       )}
     </>
   );

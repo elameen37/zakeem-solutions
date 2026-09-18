@@ -26,6 +26,7 @@ import {
   Tag,
   Globe,
   FileText,
+  CalendarClock,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -34,11 +35,14 @@ import { AdminNav } from "@/components/admin/AdminNav";
 import { ProductFilterSelect } from "@/components/admin/ProductFilterSelect";
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { CRMActivityStream } from "@/components/admin/CRMActivityStream";
+import { CRMOwnerSelect } from "@/components/admin/CRMOwnerSelect";
+import { CRMActivityModal } from "@/components/admin/CRMActivityModal";
 import { cn } from "@/lib/utils";
 import {
   CRMLead,
   CRMActivity,
   LeadStatus,
+  AdminUserSummary,
 } from "@/types/crm";
 import {
   getAdminLeads,
@@ -46,6 +50,8 @@ import {
   updateLeadStatus,
   convertLeadToOpportunity,
   addCRMNote,
+  assignLeadOwner,
+  getAdminUsers,
 } from "@/lib/crmService";
 import { ZAKEEM_APPLICATIONS } from "@/data/ecosystem";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -68,6 +74,8 @@ export const AdminLeadsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [formTypeFilter, setFormTypeFilter] = useState<FormTypeFilter>("all");
   const [productFilter, setProductFilter] = useState<string>("all");
+  const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [adminUsers, setAdminUsers] = useState<AdminUserSummary[]>([]);
 
   // Pagination
   const PAGE_SIZE = 10;
@@ -75,13 +83,19 @@ export const AdminLeadsPage: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, formTypeFilter, productFilter]);
+  }, [searchQuery, statusFilter, formTypeFilter, productFilter, ownerFilter]);
 
   // Lead Detail Drawer State
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<CRMLead | null>(null);
   const [leadActivities, setLeadActivities] = useState<CRMActivity[]>([]);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+
+  // Load admin users for filter dropdown
+  useEffect(() => {
+    getAdminUsers().then((users) => setAdminUsers(users));
+  }, []);
 
   // Disqualification Modal State
   const [showDisqualifyModal, setShowDisqualifyModal] = useState(false);
@@ -109,6 +123,7 @@ export const AdminLeadsPage: React.FC = () => {
         formType: formTypeFilter === "all" ? undefined : formTypeFilter,
         product: productFilter === "all" ? undefined : productFilter,
         search: searchQuery.trim() || undefined,
+        ownerId: ownerFilter === "all" ? undefined : ownerFilter,
       });
 
       if (res.success) {
@@ -121,7 +136,7 @@ export const AdminLeadsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter, formTypeFilter, productFilter, searchQuery]);
+  }, [statusFilter, formTypeFilter, productFilter, searchQuery, ownerFilter]);
 
   useEffect(() => {
     loadLeads();
@@ -206,6 +221,26 @@ export const AdminLeadsPage: React.FC = () => {
       }
     } catch {
       setError("Error during status transition.");
+      setTimeout(() => setError(null), 4000);
+    }
+  };
+
+  // Assign or reassign lead owner
+  const handleAssignLeadOwner = async (newOwnerId: string | null) => {
+    if (!selectedLead) return;
+    try {
+      const res = await assignLeadOwner(selectedLead.id, newOwnerId);
+      if (res.success) {
+        setSuccessMessage(newOwnerId ? "Lead owner assigned." : "Lead unassigned.");
+        setTimeout(() => setSuccessMessage(null), 3500);
+        await loadLeadDetails(selectedLead.id);
+        await loadLeads();
+      } else {
+        setError(res.error || "Failed to assign lead owner.");
+        setTimeout(() => setError(null), 4000);
+      }
+    } catch {
+      setError("An error occurred while updating lead ownership.");
       setTimeout(() => setError(null), 4000);
     }
   };
@@ -307,7 +342,8 @@ export const AdminLeadsPage: React.FC = () => {
     const qualifiedCount = leads.filter((l) => l.status === "qualified").length;
     const convertedCount = leads.filter((l) => l.status === "converted").length;
     const disqualifiedCount = leads.filter((l) => l.status === "disqualified").length;
-    return { total, newCount, contactedCount, qualifiedCount, convertedCount, disqualifiedCount };
+    const unassignedCount = leads.filter((l) => !l.ownerId).length;
+    return { total, newCount, contactedCount, qualifiedCount, convertedCount, disqualifiedCount, unassignedCount };
   }, [leads]);
 
   // Paginated leads slice
@@ -515,7 +551,7 @@ export const AdminLeadsPage: React.FC = () => {
           {/* Search & Filter Controls */}
           <div data-surface="dark" className="p-4 rounded-2xl bg-[#081c38] border border-white/10 space-y-4">
             {/* Top row: Search and dropdown filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {/* Search */}
               <div className="relative lg:col-span-2">
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -558,9 +594,26 @@ export const AdminLeadsPage: React.FC = () => {
                   placeholder="All Products"
                 />
               </div>
+
+              {/* Owner Filter */}
+              <div>
+                <select
+                  value={ownerFilter}
+                  onChange={(e) => setOwnerFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
+                >
+                  <option value="all">All Owners</option>
+                  <option value="unassigned">Unassigned Only</option>
+                  {adminUsers.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.fullName || u.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Bottom row: Status Filter Tabs */}
+            {/* Bottom row: Status Filter Tabs & Unassigned Toggle */}
             <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-white/5 scrollbar-none">
               <span className="text-[10px] font-mono text-slate-400 uppercase mr-2 shrink-0 flex items-center gap-1">
                 <Filter className="w-3 h-3" /> Status:
@@ -596,6 +649,29 @@ export const AdminLeadsPage: React.FC = () => {
                   </span>
                 </button>
               ))}
+
+              <button
+                type="button"
+                onClick={() => setOwnerFilter(ownerFilter === "unassigned" ? "all" : "unassigned")}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all shrink-0 flex items-center gap-1.5 ml-auto",
+                  ownerFilter === "unassigned"
+                    ? "bg-amber-500 text-slate-950 font-bold shadow"
+                    : "bg-[#06152b] text-amber-400 hover:text-amber-300 hover:bg-white/5 border border-amber-500/30"
+                )}
+              >
+                <span>Unassigned Leads</span>
+                <span
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
+                    ownerFilter === "unassigned"
+                      ? "bg-black/30 text-slate-950"
+                      : "bg-amber-500/20 text-amber-300"
+                  )}
+                >
+                  {metrics.unassignedCount}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -624,6 +700,7 @@ export const AdminLeadsPage: React.FC = () => {
                       <th className="py-3 px-4">Product Interest</th>
                       <th className="py-3 px-4">Form</th>
                       <th className="py-3 px-4">Lifecycle Status</th>
+                      <th className="py-3 px-4">Owner</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -685,6 +762,18 @@ export const AdminLeadsPage: React.FC = () => {
                           {/* Lifecycle Status */}
                           <td className="py-3.5 px-4 whitespace-nowrap">
                             {renderStatusBadge(lead.status)}
+                          </td>
+
+                          {/* Owner */}
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            {lead.owner?.fullName ? (
+                              <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-medium">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                                <span className="truncate max-w-[110px]">{lead.owner.fullName}</span>
+                              </div>
+                            ) : (
+                              <span className="text-[11px] font-mono text-slate-500 italic">Unassigned</span>
+                            )}
                           </td>
 
                           {/* Actions */}
@@ -763,6 +852,28 @@ export const AdminLeadsPage: React.FC = () => {
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            {/* Commercial Operations & Owner Bar */}
+            <div className="p-3.5 bg-[#06152b] border-b border-white/10 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Owner:</span>
+                <CRMOwnerSelect
+                  currentOwnerId={selectedLead.ownerId}
+                  currentOwnerName={selectedLead.owner?.fullName}
+                  onSelectOwner={handleAssignLeadOwner}
+                />
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowActivityModal(true)}
+                leftIcon={<CalendarClock className="w-3.5 h-3.5 text-[#e57804]" />}
+                className="border-white/15 text-white hover:bg-white/10 py-1 px-3 text-xs h-auto"
+              >
+                Schedule Follow-Up
+              </Button>
             </div>
 
             {/* Lifecycle Transition Action Bar */}
@@ -1152,7 +1263,11 @@ export const AdminLeadsPage: React.FC = () => {
                 <CRMActivityStream
                   activities={leadActivities}
                   isLoading={isLoadingDetail}
+                  leadId={selectedLead.id}
+                  organizationId={selectedLead.organizationId || undefined}
+                  contactId={selectedLead.contactId || undefined}
                   emptyMessage="No activity events recorded for this lead yet."
+                  onActivityCompleted={() => selectedLead && loadLeadDetails(selectedLead.id)}
                 />
               </div>
             </div>
@@ -1359,6 +1474,24 @@ export const AdminLeadsPage: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Schedule Activity / Follow-Up Modal */}
+      {selectedLead && (
+        <CRMActivityModal
+          isOpen={showActivityModal}
+          onClose={() => setShowActivityModal(false)}
+          onSuccess={() => {
+            setShowActivityModal(false);
+            setSuccessMessage("Activity logged and follow-up scheduled.");
+            setTimeout(() => setSuccessMessage(null), 3500);
+            loadLeadDetails(selectedLead.id);
+          }}
+          leadId={selectedLead.id}
+          organizationId={selectedLead.organizationId}
+          contactId={selectedLead.contactId}
+          entityName={selectedLead.organization?.name || selectedLead.contact?.fullName || selectedLead.referenceId}
+        />
       )}
     </>
   );

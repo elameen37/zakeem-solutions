@@ -6,8 +6,11 @@
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import {
   AccountContactMetrics,
+  ActivityStatus,
+  AdminUserSummary,
   AttributionMetric,
   CRMActivity,
+  CRMActivityType,
   CRMCommercialReport,
   CRMContact,
   CRMContactDetail,
@@ -18,6 +21,8 @@ import {
   CRMOrganizationDetail,
   CRMStats,
   ExecutiveCRMSummary,
+  FollowUpIntelligence,
+  FollowUpItem,
   LeadFunnelMetrics,
   LeadStatus,
   OpportunityStage,
@@ -28,7 +33,10 @@ import {
   ReportDateRangeFilter,
   ReportDateRangeOption,
   SchedulingReportMetrics,
+  StaleOpportunityItem,
   TrendDataPoint,
+  UnassignedLeadItem,
+  UnassignedOpportunityItem,
   VALID_LEAD_TRANSITIONS,
   VALID_OPPORTUNITY_TRANSITIONS,
 } from "@/types/crm";
@@ -42,6 +50,7 @@ const STORAGE_KEYS = {
   OPPORTUNITIES: "zakeem_crm_opportunities",
   ACTIVITIES: "zakeem_crm_activities",
   BOOKINGS: "zakeem_bookings",
+  ADMIN_USERS: "zakeem_crm_admin_users",
 };
 
 function getStored<T>(key: string, defaultVal: T[]): T[] {
@@ -79,6 +88,157 @@ function emitAnalyticsEvent(name: string, detail: Record<string, unknown>): void
 }
 
 // -----------------------------------------------------------------------------
+// PHASE 27: ADMIN USERS & OWNERSHIP RESOLUTION
+// -----------------------------------------------------------------------------
+
+let adminUsersCache: AdminUserSummary[] | null = null;
+let adminUsersCacheTime = 0;
+
+export async function getAdminUsers(forceRefresh = false): Promise<AdminUserSummary[]> {
+  const now = Date.now();
+  if (!forceRefresh && adminUsersCache && now - adminUsersCacheTime < 60000) {
+    return adminUsersCache;
+  }
+
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (client) {
+      try {
+        const { data, error } = await client
+          .from("profiles")
+          .select("id, full_name, role, organization")
+          .eq("role", "admin")
+          .order("full_name", { ascending: true });
+
+        if (error) {
+          console.error("Failed to query admin profiles from database:", error.message);
+          return [];
+        }
+
+        adminUsersCache = (data || []).map((p: any) => ({
+          id: p.id,
+          fullName: p.full_name || "Admin Staff",
+          role: p.role,
+          organization: p.organization || null,
+        }));
+        adminUsersCacheTime = now;
+        return adminUsersCache;
+      } catch (err: any) {
+        console.error("Error querying admin profiles:", err?.message);
+        return [];
+      }
+    }
+  }
+
+  const stored = getStored<AdminUserSummary>(STORAGE_KEYS.ADMIN_USERS, [
+    { id: "admin-primary", fullName: "Admin Operations Desk", role: "admin", email: "admin@zakeemsolutions.com", organization: "Zakeem Solutions" }
+  ]);
+  adminUsersCache = stored;
+  return stored;
+}
+
+export async function assignLeadOwner(
+  leadId: string,
+  ownerId: string | null
+): Promise<{ success: boolean; error?: string; ownerName?: string }> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const { data, error } = await client.rpc("assign_lead_owner_atomic", {
+        p_lead_id: leadId,
+        p_new_owner_id: ownerId,
+      });
+
+      if (error) {
+        const { error: updErr } = await client
+          .from("crm_leads")
+          .update({ owner_id: ownerId, updated_at: new Date().toISOString() })
+          .eq("id", leadId);
+        if (updErr) return { success: false, error: updErr.message };
+
+        emitAnalyticsEvent("crm:lead_owner_assigned", { leadId, ownerId });
+        return { success: true };
+      }
+
+      if (data && data.success === false) {
+        return { success: false, error: data.error };
+      }
+
+      emitAnalyticsEvent("crm:lead_owner_assigned", { leadId, ownerId, ownerName: data?.owner_name });
+      return { success: true, ownerName: data?.owner_name };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to assign lead owner." };
+    }
+  }
+
+  const list = getStored<CRMLead>(STORAGE_KEYS.LEADS, []);
+  const idx = list.findIndex((l) => l.id === leadId);
+  if (idx < 0) return { success: false, error: "Lead not found." };
+  list[idx].ownerId = ownerId;
+  list[idx].updatedAt = new Date().toISOString();
+  setStored(STORAGE_KEYS.LEADS, list);
+  emitAnalyticsEvent("crm:lead_owner_assigned", { leadId, ownerId });
+  return { success: true };
+}
+
+export async function assignOpportunityOwner(
+  opportunityId: string,
+  ownerId: string | null
+): Promise<{ success: boolean; error?: string; ownerName?: string }> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const { data, error } = await client.rpc("assign_opportunity_owner_atomic", {
+        p_opportunity_id: opportunityId,
+        p_new_owner_id: ownerId,
+      });
+
+      if (error) {
+        const { error: updErr } = await client
+          .from("crm_opportunities")
+          .update({
+            owner_id: ownerId,
+            last_activity_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", opportunityId);
+        if (updErr) return { success: false, error: updErr.message };
+
+        emitAnalyticsEvent("crm:opportunity_owner_assigned", { opportunityId, ownerId });
+        return { success: true };
+      }
+
+      if (data && data.success === false) {
+        return { success: false, error: data.error };
+      }
+
+      emitAnalyticsEvent("crm:opportunity_owner_assigned", { opportunityId, ownerId, ownerName: data?.owner_name });
+      return { success: true, ownerName: data?.owner_name };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to assign opportunity owner." };
+    }
+  }
+
+  const opps = getStored<CRMOpportunity>(STORAGE_KEYS.OPPORTUNITIES, []);
+  const idx = opps.findIndex((o) => o.id === opportunityId);
+  if (idx < 0) return { success: false, error: "Opportunity not found." };
+  opps[idx].ownerId = ownerId;
+  opps[idx].lastActivityAt = new Date().toISOString();
+  opps[idx].updatedAt = new Date().toISOString();
+  setStored(STORAGE_KEYS.OPPORTUNITIES, opps);
+  emitAnalyticsEvent("crm:opportunity_owner_assigned", { opportunityId, ownerId });
+  return { success: true };
+}
+
+// -----------------------------------------------------------------------------
 // LEADS RETRIEVAL & MANAGEMENT
 // -----------------------------------------------------------------------------
 
@@ -87,7 +247,10 @@ export async function getAdminLeads(filters?: {
   formType?: string;
   product?: string;
   search?: string;
+  ownerId?: string | "unassigned" | "all";
 }): Promise<{ success: boolean; leads: CRMLead[]; error?: string }> {
+  const adminUsers = await getAdminUsers();
+
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
     if (!client) {
@@ -98,7 +261,7 @@ export async function getAdminLeads(filters?: {
       let query = client
         .from("crm_leads")
         .select(`
-          id, reference_id, organization_id, contact_id, form_type, status,
+          id, reference_id, organization_id, contact_id, owner_id, form_type, status,
           product_interest, tier, suite, billing, deployment, inquiry_category,
           notes, attribution, disqualification_reason, converted_at, created_at, updated_at,
           organization:crm_organizations(id, name, slug, domain, industry, status, created_at, updated_at),
@@ -115,6 +278,13 @@ export async function getAdminLeads(filters?: {
       if (filters?.product) {
         query = query.eq("product_interest", filters.product);
       }
+      if (filters?.ownerId && filters.ownerId !== "all") {
+        if (filters.ownerId === "unassigned") {
+          query = query.is("owner_id", null);
+        } else {
+          query = query.eq("owner_id", filters.ownerId);
+        }
+      }
 
       const { data, error } = await query;
       if (error) {
@@ -127,6 +297,8 @@ export async function getAdminLeads(filters?: {
         referenceId: row.reference_id,
         organizationId: row.organization_id,
         contactId: row.contact_id,
+        ownerId: row.owner_id || null,
+        owner: row.owner_id ? adminUsers.find((u) => u.id === row.owner_id) || null : null,
         formType: row.form_type,
         status: row.status,
         productInterest: row.product_interest,
@@ -231,7 +403,7 @@ export async function getLeadDetails(
       const { data: row, error: leadErr } = await client
         .from("crm_leads")
         .select(`
-          id, reference_id, organization_id, contact_id, form_type, status,
+          id, reference_id, organization_id, contact_id, owner_id, form_type, status,
           product_interest, tier, suite, billing, deployment, inquiry_category,
           notes, attribution, disqualification_reason, converted_at, created_at, updated_at,
           organization:crm_organizations(id, name, slug, domain, industry, company_size, status, created_at, updated_at),
@@ -243,6 +415,8 @@ export async function getLeadDetails(
       if (leadErr || !row) {
         return { success: false, activities: [], error: leadErr?.message || "Lead not found." };
       }
+
+      const adminUsers = await getAdminUsers();
 
       // 2. Fetch associated booking (if any)
       const { data: bookingRow } = await client
@@ -274,7 +448,7 @@ export async function getLeadDetails(
       // 5. Fetch associated activities
       const { data: actRows } = await client
         .from("crm_activities")
-        .select("id, activity_type, organization_id, contact_id, lead_id, booking_id, opportunity_id, actor_id, title, description, metadata, created_at")
+        .select("id, activity_type, organization_id, contact_id, lead_id, booking_id, opportunity_id, actor_id, assigned_to, due_date, completed_at, status, title, description, metadata, created_at")
         .or(`lead_id.eq.${leadId},contact_id.eq.${row.contact_id || '00000000-0000-0000-0000-000000000000'}`)
         .order("created_at", { ascending: false })
         .limit(40);
@@ -285,6 +459,8 @@ export async function getLeadDetails(
         referenceId: row.reference_id,
         organizationId: row.organization_id,
         contactId: row.contact_id,
+        ownerId: row.owner_id || null,
+        owner: row.owner_id ? adminUsers.find((u) => u.id === row.owner_id) || null : null,
         formType: row.form_type,
         status: row.status,
         productInterest: row.product_interest,
@@ -364,6 +540,11 @@ export async function getLeadDetails(
         bookingId: a.booking_id,
         opportunityId: a.opportunity_id,
         actorId: a.actor_id,
+        assignedTo: a.assigned_to || null,
+        assignee: a.assigned_to ? adminUsers.find((u) => u.id === a.assigned_to) || null : null,
+        dueDate: a.due_date || null,
+        completedAt: a.completed_at || null,
+        status: (a.status || (a.due_date ? "pending" : "completed")) as ActivityStatus,
         title: a.title,
         description: a.description,
         metadata: a.metadata || {},
@@ -547,6 +728,7 @@ export async function updateLeadStatus(
     leadId: list[idx].id,
     title: `Lead status transitioned to ${newStatus}`,
     description: reason ? `Reason: ${reason.trim()}` : undefined,
+    status: "completed",
     metadata: { previous_status: current, new_status: newStatus },
     createdAt: new Date().toISOString(),
   });
@@ -1138,6 +1320,7 @@ export async function getContactDetails(contactId: string): Promise<{
         actorId: a.actor_id,
         title: a.title,
         description: a.description,
+        status: (a.status || "completed") as ActivityStatus,
         metadata: a.metadata || {},
         createdAt: a.created_at,
       }));
@@ -1204,11 +1387,15 @@ export async function getAdminOpportunities(filters?: {
   product?: string;
   organizationId?: string;
   search?: string;
+  ownerId?: string | "unassigned" | "all";
+  staleOnly?: boolean;
 }): Promise<{
   success: boolean;
   opportunities: CRMOpportunity[];
   error?: string;
 }> {
+  const adminUsers = await getAdminUsers();
+
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
     if (!client) {
@@ -1220,7 +1407,8 @@ export async function getAdminOpportunities(filters?: {
         .from("crm_opportunities")
         .select(`
           id, organization_id, contact_id, lead_id, title, primary_product, stage,
-          deal_value_ngn, close_date, loss_reason, created_at, updated_at,
+          deal_value_ngn, close_date, expected_close_date, next_action, next_action_due_date,
+          last_activity_at, loss_reason, owner_id, created_at, updated_at,
           organization:crm_organizations(id, name, slug, domain, status, created_at, updated_at),
           contact:crm_contacts(id, email, full_name, phone, job_title, created_at, updated_at)
         `)
@@ -1234,6 +1422,13 @@ export async function getAdminOpportunities(filters?: {
       }
       if (filters?.organizationId) {
         query = query.eq("organization_id", filters.organizationId);
+      }
+      if (filters?.ownerId && filters.ownerId !== "all") {
+        if (filters.ownerId === "unassigned") {
+          query = query.is("owner_id", null);
+        } else {
+          query = query.eq("owner_id", filters.ownerId);
+        }
       }
 
       const { data, error } = await query;
@@ -1252,7 +1447,14 @@ export async function getAdminOpportunities(filters?: {
         stage: row.stage,
         dealValueNgn: row.deal_value_ngn ? Number(row.deal_value_ngn) : null,
         closeDate: row.close_date,
+        expectedCloseDate: row.expected_close_date || null,
+        nextAction: row.next_action || null,
+        nextActionDueDate: row.next_action_due_date || null,
+        lastActivityAt: row.last_activity_at || row.updated_at || row.created_at,
+        ageingDays: Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000),
         lossReason: row.loss_reason,
+        ownerId: row.owner_id || null,
+        owner: row.owner_id ? adminUsers.find((u) => u.id === row.owner_id) || null : null,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         organization: row.organization
@@ -1281,6 +1483,16 @@ export async function getAdminOpportunities(filters?: {
           : null,
       }));
 
+      if (filters?.staleOnly) {
+        const fourteenDaysAgo = Date.now() - 14 * 86400000;
+        opps = opps.filter(
+          (o) =>
+            o.stage !== "won" &&
+            o.stage !== "lost" &&
+            new Date(o.lastActivityAt || o.updatedAt).getTime() < fourteenDaysAgo
+        );
+      }
+
       if (filters?.search && filters.search.trim()) {
         const q = filters.search.toLowerCase().trim();
         opps = opps.filter(
@@ -1302,6 +1514,13 @@ export async function getAdminOpportunities(filters?: {
   if (filters?.stage) opps = opps.filter((o) => o.stage === filters.stage);
   if (filters?.product) opps = opps.filter((o) => o.primaryProduct === filters.product);
   if (filters?.organizationId) opps = opps.filter((o) => o.organizationId === filters.organizationId);
+  if (filters?.ownerId && filters.ownerId !== "all") {
+    if (filters.ownerId === "unassigned") {
+      opps = opps.filter((o) => !o.ownerId);
+    } else {
+      opps = opps.filter((o) => o.ownerId === filters.ownerId);
+    }
+  }
   if (filters?.search && filters.search.trim()) {
     const q = filters.search.toLowerCase().trim();
     opps = opps.filter(
@@ -1320,6 +1539,8 @@ export async function getOpportunityDetails(opportunityId: string): Promise<{
   opportunity?: CRMOpportunityDetail;
   error?: string;
 }> {
+  const adminUsers = await getAdminUsers();
+
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
     if (!client) {
@@ -1331,7 +1552,8 @@ export async function getOpportunityDetails(opportunityId: string): Promise<{
         .from("crm_opportunities")
         .select(`
           id, organization_id, contact_id, lead_id, title, primary_product, stage,
-          deal_value_ngn, close_date, loss_reason, created_at, updated_at,
+          deal_value_ngn, close_date, expected_close_date, next_action, next_action_due_date,
+          last_activity_at, loss_reason, owner_id, created_at, updated_at,
           organization:crm_organizations(id, name, slug, domain, industry, company_size, status, created_at, updated_at),
           contact:crm_contacts(id, organization_id, email, full_name, phone, job_title, is_primary, created_at, updated_at),
           lead:crm_leads(id, reference_id, form_type, status, product_interest, tier, notes, created_at)
@@ -1370,7 +1592,7 @@ export async function getOpportunityDetails(opportunityId: string): Promise<{
       // Fetch activities for this opportunity or lead
       const { data: actRows } = await client
         .from("crm_activities")
-        .select("id, activity_type, organization_id, contact_id, lead_id, booking_id, opportunity_id, actor_id, title, description, metadata, created_at")
+        .select("id, activity_type, organization_id, contact_id, lead_id, booking_id, opportunity_id, actor_id, assigned_to, due_date, completed_at, status, title, description, metadata, created_at")
         .or(`opportunity_id.eq.${opportunityId},lead_id.eq.${row.lead_id || '00000000-0000-0000-0000-000000000000'}`)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -1385,6 +1607,11 @@ export async function getOpportunityDetails(opportunityId: string): Promise<{
         bookingId: a.booking_id,
         opportunityId: a.opportunity_id,
         actorId: a.actor_id,
+        assignedTo: a.assigned_to || null,
+        assignee: a.assigned_to ? adminUsers.find((u) => u.id === a.assigned_to) || null : null,
+        dueDate: a.due_date || null,
+        completedAt: a.completed_at || null,
+        status: (a.status || (a.due_date ? "pending" : "completed")) as ActivityStatus,
         title: a.title,
         description: a.description,
         metadata: a.metadata || {},
@@ -1401,7 +1628,14 @@ export async function getOpportunityDetails(opportunityId: string): Promise<{
         stage: row.stage,
         dealValueNgn: row.deal_value_ngn ? Number(row.deal_value_ngn) : null,
         closeDate: row.close_date,
+        expectedCloseDate: row.expected_close_date || null,
+        nextAction: row.next_action || null,
+        nextActionDueDate: row.next_action_due_date || null,
+        lastActivityAt: row.last_activity_at || row.updated_at || row.created_at,
+        ageingDays: Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000),
         lossReason: row.loss_reason,
+        ownerId: row.owner_id || null,
+        owner: row.owner_id ? adminUsers.find((u) => u.id === row.owner_id) || null : null,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         organization: row.organization
@@ -1441,7 +1675,7 @@ export async function getOpportunityDetails(opportunityId: string): Promise<{
               notes: (row as any).lead.notes,
               attribution: {},
               createdAt: (row as any).lead.created_at,
-              updatedAt: (row as any).lead.created_at,
+              updatedAt: (row as any).lead.updated_at || (row as any).lead.created_at,
             }
           : null,
         booking: bookingData,
@@ -1598,6 +1832,7 @@ export async function updateOpportunityStage(
     opportunityId,
     title: `Deal stage updated: ${currentStage} → ${newStage}`,
     description: newStage === "lost" && lossReason ? `Loss reason: ${lossReason.trim()}` : undefined,
+    status: "completed",
     metadata: { previous_stage: currentStage, new_stage: newStage, loss_reason: lossReason?.trim() },
     createdAt: new Date().toISOString(),
   });
@@ -1609,7 +1844,14 @@ export async function updateOpportunityStage(
 
 export async function updateOpportunityDetails(
   opportunityId: string,
-  updates: { title?: string; dealValueNgn?: number | null; closeDate?: string | null }
+  updates: {
+    title?: string;
+    dealValueNgn?: number | null;
+    closeDate?: string | null;
+    expectedCloseDate?: string | null;
+    nextAction?: string | null;
+    nextActionDueDate?: string | null;
+  }
 ): Promise<{ success: boolean; error?: string }> {
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
@@ -1618,7 +1860,27 @@ export async function updateOpportunityDetails(
     }
 
     try {
+      // 1. Try atomic RPC
+      const { data: rpcData, error: rpcErr } = await client.rpc("update_opportunity_details_atomic", {
+        p_opportunity_id: opportunityId,
+        p_title: typeof updates.title === "string" ? updates.title.trim() : null,
+        p_deal_value_ngn: updates.dealValueNgn !== undefined ? updates.dealValueNgn : null,
+        p_close_date: updates.closeDate !== undefined ? updates.closeDate : null,
+        p_expected_close_date: updates.expectedCloseDate !== undefined ? updates.expectedCloseDate : null,
+        p_next_action: typeof updates.nextAction === "string" ? updates.nextAction.trim() : (updates.nextAction ?? null),
+        p_next_action_due_date: updates.nextActionDueDate !== undefined ? updates.nextActionDueDate : null,
+      });
+
+      if (!rpcErr && rpcData) {
+        if (rpcData.success === false) {
+          return { success: false, error: rpcData.error };
+        }
+        return { success: true };
+      }
+
+      // 2. Direct fallback
       const payload: Record<string, unknown> = {
+        last_activity_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
       if (updates.title !== undefined && updates.title.trim()) {
@@ -1629,6 +1891,15 @@ export async function updateOpportunityDetails(
       }
       if (updates.closeDate !== undefined) {
         payload.close_date = updates.closeDate;
+      }
+      if (updates.expectedCloseDate !== undefined) {
+        payload.expected_close_date = updates.expectedCloseDate;
+      }
+      if (updates.nextAction !== undefined) {
+        payload.next_action = updates.nextAction ? updates.nextAction.trim() : null;
+      }
+      if (updates.nextActionDueDate !== undefined) {
+        payload.next_action_due_date = updates.nextActionDueDate;
       }
 
       const { error } = await client
@@ -1654,6 +1925,10 @@ export async function updateOpportunityDetails(
     title: updates.title?.trim() || opps[idx].title,
     dealValueNgn: updates.dealValueNgn !== undefined ? updates.dealValueNgn : opps[idx].dealValueNgn,
     closeDate: updates.closeDate !== undefined ? updates.closeDate : opps[idx].closeDate,
+    expectedCloseDate: updates.expectedCloseDate !== undefined ? updates.expectedCloseDate : opps[idx].expectedCloseDate,
+    nextAction: updates.nextAction !== undefined ? updates.nextAction?.trim() || null : opps[idx].nextAction,
+    nextActionDueDate: updates.nextActionDueDate !== undefined ? updates.nextActionDueDate : opps[idx].nextActionDueDate,
+    lastActivityAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
   setStored(STORAGE_KEYS.OPPORTUNITIES, opps);
@@ -1669,8 +1944,12 @@ export async function getAdminActivities(filters?: {
   contactId?: string;
   leadId?: string;
   opportunityId?: string;
+  status?: ActivityStatus;
+  assignedTo?: string;
   limit?: number;
 }): Promise<{ success: boolean; activities: CRMActivity[]; error?: string }> {
+  const adminUsers = await getAdminUsers();
+
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
     if (!client) {
@@ -1680,7 +1959,7 @@ export async function getAdminActivities(filters?: {
     try {
       let query = client
         .from("crm_activities")
-        .select("id, activity_type, organization_id, contact_id, lead_id, booking_id, opportunity_id, actor_id, title, description, metadata, created_at")
+        .select("id, activity_type, organization_id, contact_id, lead_id, booking_id, opportunity_id, actor_id, assigned_to, due_date, completed_at, status, title, description, metadata, created_at")
         .order("created_at", { ascending: false })
         .limit(filters?.limit || 50);
 
@@ -1695,6 +1974,12 @@ export async function getAdminActivities(filters?: {
       }
       if (filters?.opportunityId) {
         query = query.eq("opportunity_id", filters.opportunityId);
+      }
+      if (filters?.status) {
+        query = query.eq("status", filters.status);
+      }
+      if (filters?.assignedTo) {
+        query = query.eq("assigned_to", filters.assignedTo);
       }
 
       const { data, error } = await query;
@@ -1712,6 +1997,11 @@ export async function getAdminActivities(filters?: {
         bookingId: row.booking_id,
         opportunityId: row.opportunity_id,
         actorId: row.actor_id,
+        assignedTo: row.assigned_to || null,
+        assignee: row.assigned_to ? adminUsers.find((u) => u.id === row.assigned_to) || null : null,
+        dueDate: row.due_date || null,
+        completedAt: row.completed_at || null,
+        status: (row.status || (row.due_date ? "pending" : "completed")) as ActivityStatus,
         title: row.title,
         description: row.description,
         metadata: row.metadata || {},
@@ -1724,8 +2014,364 @@ export async function getAdminActivities(filters?: {
     }
   }
 
-  return { success: true, activities: getStored<CRMActivity>(STORAGE_KEYS.ACTIVITIES, []) };
+  const allActs = getStored<CRMActivity>(STORAGE_KEYS.ACTIVITIES, []);
+  let filtered = allActs;
+  if (filters?.organizationId) filtered = filtered.filter((a) => a.organizationId === filters.organizationId);
+  if (filters?.contactId) filtered = filtered.filter((a) => a.contactId === filters.contactId);
+  if (filters?.leadId) filtered = filtered.filter((a) => a.leadId === filters.leadId);
+  if (filters?.opportunityId) filtered = filtered.filter((a) => a.opportunityId === filters.opportunityId);
+  if (filters?.status) filtered = filtered.filter((a) => a.status === filters.status);
+  return { success: true, activities: filtered.slice(0, filters?.limit || 50) };
 }
+
+export async function createCRMActivity(params: {
+  activityType: CRMActivityType;
+  title: string;
+  description?: string | null;
+  organizationId?: string | null;
+  contactId?: string | null;
+  leadId?: string | null;
+  opportunityId?: string | null;
+  bookingId?: string | null;
+  dueDate?: string | null;
+  assignedTo?: string | null;
+  status?: ActivityStatus;
+  metadata?: Record<string, unknown>;
+}): Promise<{ success: boolean; activityId?: string; error?: string }> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const { data, error } = await client.rpc("create_crm_activity_atomic", {
+        p_activity_type: params.activityType,
+        p_title: params.title,
+        p_description: params.description || null,
+        p_organization_id: params.organizationId || null,
+        p_contact_id: params.contactId || null,
+        p_lead_id: params.leadId || null,
+        p_opportunity_id: params.opportunityId || null,
+        p_booking_id: params.bookingId || null,
+        p_due_date: params.dueDate || null,
+        p_assigned_to: params.assignedTo || null,
+        p_status: params.status || (params.dueDate ? "pending" : "completed"),
+        p_metadata: params.metadata || {},
+      });
+
+      if (error) {
+        // Direct fallback insert
+        const { data: insData, error: insErr } = await client
+          .from("crm_activities")
+          .insert({
+            activity_type: params.activityType,
+            organization_id: params.organizationId || null,
+            contact_id: params.contactId || null,
+            lead_id: params.leadId || null,
+            opportunity_id: params.opportunityId || null,
+            booking_id: params.bookingId || null,
+            title: params.title,
+            description: params.description || null,
+            due_date: params.dueDate || null,
+            assigned_to: params.assignedTo || null,
+            status: params.status || (params.dueDate ? "pending" : "completed"),
+            completed_at: (!params.status || params.status === "completed") ? new Date().toISOString() : null,
+            metadata: params.metadata || {},
+          })
+          .select("id")
+          .single();
+
+        if (insErr) return { success: false, error: insErr.message };
+
+        if (params.opportunityId) {
+          await client
+            .from("crm_opportunities")
+            .update({ last_activity_at: new Date().toISOString() })
+            .eq("id", params.opportunityId);
+        }
+
+        emitAnalyticsEvent("crm:activity_created", { activityType: params.activityType, title: params.title });
+        return { success: true, activityId: insData?.id };
+      }
+
+      if (data && data.success === false) {
+        return { success: false, error: data.error };
+      }
+
+      emitAnalyticsEvent("crm:activity_created", { activityType: params.activityType, title: params.title });
+      return { success: true, activityId: data?.activity_id };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to create activity." };
+    }
+  }
+
+  const acts = getStored<CRMActivity>(STORAGE_KEYS.ACTIVITIES, []);
+  const actId = `act-${Date.now()}`;
+  acts.unshift({
+    id: actId,
+    activityType: params.activityType,
+    title: params.title,
+    description: params.description || null,
+    organizationId: params.organizationId || null,
+    contactId: params.contactId || null,
+    leadId: params.leadId || null,
+    opportunityId: params.opportunityId || null,
+    bookingId: params.bookingId || null,
+    dueDate: params.dueDate || null,
+    assignedTo: params.assignedTo || null,
+    status: params.status || (params.dueDate ? "pending" : "completed"),
+    completedAt: (!params.status || params.status === "completed") ? new Date().toISOString() : null,
+    metadata: params.metadata || {},
+    createdAt: new Date().toISOString(),
+  });
+  setStored(STORAGE_KEYS.ACTIVITIES, acts);
+  emitAnalyticsEvent("crm:activity_created", { activityType: params.activityType, title: params.title });
+  return { success: true, activityId: actId };
+}
+
+export async function completeCRMActivity(activityId: string): Promise<{ success: boolean; error?: string }> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const { data, error } = await client.rpc("complete_crm_activity_atomic", {
+        p_activity_id: activityId,
+      });
+
+      if (error) {
+        const { error: updErr } = await client
+          .from("crm_activities")
+          .update({
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", activityId);
+
+        if (updErr) return { success: false, error: updErr.message };
+        emitAnalyticsEvent("crm:activity_completed", { activityId });
+        return { success: true };
+      }
+
+      if (data && data.success === false) {
+        return { success: false, error: data.error };
+      }
+
+      emitAnalyticsEvent("crm:activity_completed", { activityId });
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to complete activity." };
+    }
+  }
+
+  const acts = getStored<CRMActivity>(STORAGE_KEYS.ACTIVITIES, []);
+  const idx = acts.findIndex((a) => a.id === activityId);
+  if (idx >= 0) {
+    acts[idx].status = "completed";
+    acts[idx].completedAt = new Date().toISOString();
+    setStored(STORAGE_KEYS.ACTIVITIES, acts);
+  }
+  emitAnalyticsEvent("crm:activity_completed", { activityId });
+  return { success: true };
+}
+
+export async function getFollowUpIntelligence(): Promise<{
+  success: boolean;
+  data?: FollowUpIntelligence;
+  error?: string;
+}> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const { data: rpcData, error: rpcErr } = await client.rpc("get_crm_follow_up_intelligence_atomic");
+      if (!rpcErr && rpcData && rpcData.success) {
+        return {
+          success: true,
+          data: {
+            counts: rpcData.counts || {
+              overdueFollowUps: 0,
+              todayFollowUps: 0,
+              upcomingFollowUps: 0,
+              staleOpportunities: 0,
+              unassignedLeads: 0,
+              unassignedOpportunities: 0,
+            },
+            overdueFollowUps: rpcData.overdueFollowUps || [],
+            todayFollowUps: rpcData.todayFollowUps || [],
+            upcomingFollowUps: rpcData.upcomingFollowUps || [],
+            staleOpportunities: rpcData.staleOpportunities || [],
+            unassignedLeads: rpcData.unassignedLeads || [],
+            unassignedOpportunities: rpcData.unassignedOpportunities || [],
+          },
+        };
+      }
+
+      // Direct fallback
+      const now = new Date();
+      const todayStr = now.toISOString().split("T")[0];
+
+      const [pendingRes, oppsRes, leadsRes] = await Promise.all([
+        client
+          .from("crm_activities")
+          .select("id, activity_type, title, description, due_date, status, assigned_to, lead_id, opportunity_id, contact_id, organization_id, created_at")
+          .eq("status", "pending")
+          .not("due_date", "is", null)
+          .order("due_date", { ascending: true }),
+        client
+          .from("crm_opportunities")
+          .select("id, title, stage, primary_product, deal_value_ngn, owner_id, last_activity_at, updated_at, created_at, organization:crm_organizations(name)")
+          .not("stage", "in", '("won","lost")')
+          .order("created_at", { ascending: false }),
+        client
+          .from("crm_leads")
+          .select("id, reference_id, status, product_interest, owner_id, created_at, organization:crm_organizations(name), contact:crm_contacts(full_name)")
+          .not("status", "in", '("converted","disqualified")')
+          .order("created_at", { ascending: false }),
+      ]);
+
+      if (pendingRes.error || oppsRes.error || leadsRes.error) {
+        const errorMsg =
+          pendingRes.error?.message ||
+          oppsRes.error?.message ||
+          leadsRes.error?.message ||
+          "Database query failed.";
+        return { success: false, error: errorMsg };
+      }
+
+      const pendingActs = pendingRes.data || [];
+      const openOpps = oppsRes.data || [];
+      const openLeads = leadsRes.data || [];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const overdue: FollowUpItem[] = [];
+      const today: FollowUpItem[] = [];
+      const upcoming: FollowUpItem[] = [];
+
+      pendingActs.forEach((act: any) => {
+        const item: FollowUpItem = {
+          id: act.id,
+          activityType: act.activity_type,
+          title: act.title,
+          description: act.description,
+          dueDate: act.due_date,
+          status: act.status,
+          assignedTo: act.assigned_to,
+          leadId: act.lead_id,
+          opportunityId: act.opportunity_id,
+          contactId: act.contact_id,
+          createdAt: act.created_at,
+        };
+        const dueDate = new Date(act.due_date);
+        const dateStr = act.due_date.split("T")[0];
+        if (dateStr === todayStr) {
+          today.push(item);
+        } else if (dueDate < now) {
+          overdue.push(item);
+        } else {
+          upcoming.push(item);
+        }
+      });
+
+      const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000);
+      const staleOpportunities: StaleOpportunityItem[] = openOpps
+        .filter((o: any) => {
+          const lastAct = new Date(o.last_activity_at || o.updated_at || o.created_at);
+          return lastAct < fourteenDaysAgo;
+        })
+        .map((o: any) => {
+          const lastAct = new Date(o.last_activity_at || o.updated_at || o.created_at);
+          const daysInactive = Math.floor((Date.now() - lastAct.getTime()) / 86400000);
+          return {
+            id: o.id,
+            title: o.title,
+            stage: o.stage,
+            dealValueNgn: o.deal_value_ngn ? Number(o.deal_value_ngn) : null,
+            primaryProduct: o.primary_product,
+            ownerId: o.owner_id,
+            organizationName: (o.organization as any)?.name,
+            lastActivityAt: lastAct.toISOString(),
+            daysInactive,
+            createdAt: o.created_at,
+          };
+        });
+
+      const unassignedLeads: UnassignedLeadItem[] = openLeads
+        .filter((l: any) => !l.owner_id)
+        .map((l: any) => ({
+          id: l.id,
+          referenceId: l.reference_id,
+          status: l.status,
+          productInterest: l.product_interest,
+          organizationName: (l.organization as any)?.name,
+          contactName: (l.contact as any)?.full_name,
+          createdAt: l.created_at,
+        }));
+
+      const unassignedOpportunities: UnassignedOpportunityItem[] = openOpps
+        .filter((o: any) => !o.owner_id)
+        .map((o: any) => ({
+          id: o.id,
+          title: o.title,
+          stage: o.stage,
+          dealValueNgn: o.deal_value_ngn ? Number(o.deal_value_ngn) : null,
+          primaryProduct: o.primary_product,
+          organizationName: (o.organization as any)?.name,
+          createdAt: o.created_at,
+        }));
+
+      return {
+        success: true,
+        data: {
+          counts: {
+            overdueFollowUps: overdue.length,
+            todayFollowUps: today.length,
+            upcomingFollowUps: upcoming.length,
+            staleOpportunities: staleOpportunities.length,
+            unassignedLeads: unassignedLeads.length,
+            unassignedOpportunities: unassignedOpportunities.length,
+          },
+          overdueFollowUps: overdue,
+          todayFollowUps: today,
+          upcomingFollowUps: upcoming,
+          staleOpportunities,
+          unassignedLeads,
+          unassignedOpportunities,
+        },
+      };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to load follow-up intelligence." };
+    }
+  }
+
+  // Local storage mock
+  return {
+    success: true,
+    data: {
+      counts: {
+        overdueFollowUps: 0,
+        todayFollowUps: 0,
+        upcomingFollowUps: 0,
+        staleOpportunities: 0,
+        unassignedLeads: 0,
+        unassignedOpportunities: 0,
+      },
+      overdueFollowUps: [],
+      todayFollowUps: [],
+      upcomingFollowUps: [],
+      staleOpportunities: [],
+      unassignedLeads: [],
+      unassignedOpportunities: [],
+    },
+  };
+}
+
 
 export async function addCRMNote(params: {
   organizationId?: string;
@@ -1772,6 +2418,7 @@ export async function addCRMNote(params: {
     opportunityId: params.opportunityId,
     title: params.title.trim(),
     description: params.notes.trim(),
+    status: "completed",
     metadata: {},
     createdAt: new Date().toISOString(),
   });

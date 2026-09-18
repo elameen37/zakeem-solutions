@@ -30,6 +30,7 @@ const SupportPage = React.lazy(() => import("@/pages/SupportPage").then((m) => (
 const PrivacyPage = React.lazy(() => import("@/pages/PrivacyPage").then((m) => ({ default: m.PrivacyPage })));
 const TermsPage = React.lazy(() => import("@/pages/TermsPage").then((m) => ({ default: m.TermsPage })));
 const AdminSchedulingPage = React.lazy(() => import("@/pages/admin/AdminSchedulingPage").then((m) => ({ default: m.AdminSchedulingPage })));
+const AdminOperationsPage = React.lazy(() => import("@/pages/admin/AdminOperationsPage").then((m) => ({ default: m.default || m.AdminOperationsPage })));
 const AdminLeadsPage = React.lazy(() => import("@/pages/admin/AdminLeadsPage").then((m) => ({ default: m.default || m.AdminLeadsPage })));
 const AdminPipelinePage = React.lazy(() => import("@/pages/admin/AdminPipelinePage").then((m) => ({ default: m.default || m.AdminPipelinePage })));
 const AdminOrganizationsPage = React.lazy(() => import("@/pages/admin/AdminOrganizationsPage").then((m) => ({ default: m.default || m.AdminOrganizationsPage })));
@@ -114,6 +115,22 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <Navigate to="/admin/scheduling?tab=invitations" replace />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/crm/operations"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminOperationsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/operations"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminOperationsPage />
                   </ProtectedRoute>
                 }
               />

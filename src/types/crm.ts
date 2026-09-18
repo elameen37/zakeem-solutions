@@ -78,6 +78,14 @@ export interface CRMLeadInvitationSummary {
   acceptedAt?: string | null;
 }
 
+export interface AdminUserSummary {
+  id: string;
+  fullName: string;
+  role: string;
+  email?: string | null;
+  organization?: string | null;
+}
+
 export interface CRMLead {
   id: string;
   referenceId: string; // Format: ZK-YYYYMM-XXXX
@@ -97,6 +105,8 @@ export interface CRMLead {
   attribution: Record<string, unknown>;
   disqualificationReason?: string | null;
   convertedAt?: string | null;
+  ownerId?: string | null;
+  owner?: AdminUserSummary | null;
   createdAt: string;
   updatedAt: string;
   // Associated entities (when resolved)
@@ -142,6 +152,14 @@ export interface CRMOpportunity {
   dealValueNgn?: number | null;
   closeDate?: string | null;
   lossReason?: string | null;
+  ownerId?: string | null;
+  owner?: AdminUserSummary | null;
+  expectedCloseDate?: string | null;
+  nextAction?: string | null;
+  nextActionDueDate?: string | null;
+  lastActivityAt?: string | null;
+  ageingDays?: number;
+  isStale?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -181,7 +199,16 @@ export type CRMActivityType =
   | "invitation_accepted"
   | "invitation_revoked"
   | "note_added"
-  | "email_sent";
+  | "email_sent"
+  | "call"
+  | "meeting"
+  | "follow_up"
+  | "demo"
+  | "proposal"
+  | "negotiation"
+  | "owner_assigned";
+
+export type ActivityStatus = "pending" | "completed" | "cancelled";
 
 export interface CRMActivity {
   id: string;
@@ -194,6 +221,11 @@ export interface CRMActivity {
   bookingId?: string | null;
   opportunityId?: string | null;
   actorId?: string | null;
+  assignedTo?: string | null;
+  assignee?: AdminUserSummary | null;
+  dueDate?: string | null;
+  completedAt?: string | null;
+  status?: ActivityStatus;
   title: string;
   description?: string | null;
   metadata: Record<string, unknown>;
@@ -327,4 +359,77 @@ export interface CRMCommercialReport {
     rangeLabel: string;
     timestampBasis: string;
   };
+}
+
+// -----------------------------------------------------------------------------
+// PHASE 27: OPERATIONAL INTELLIGENCE & FOLLOW-UP TYPES
+// -----------------------------------------------------------------------------
+
+export interface FollowUpItem {
+  id: string;
+  activityType: CRMActivityType;
+  title: string;
+  description?: string | null;
+  dueDate: string;
+  status: ActivityStatus;
+  assignedTo?: string | null;
+  assigneeName?: string | null;
+  leadId?: string | null;
+  opportunityId?: string | null;
+  opportunityTitle?: string | null;
+  contactId?: string | null;
+  contactName?: string | null;
+  organizationName?: string | null;
+  createdAt: string;
+}
+
+export interface StaleOpportunityItem {
+  id: string;
+  title: string;
+  stage: OpportunityStage;
+  dealValueNgn?: number | null;
+  primaryProduct: string;
+  ownerId?: string | null;
+  ownerName?: string | null;
+  organizationName?: string | null;
+  lastActivityAt: string;
+  daysInactive: number;
+  createdAt: string;
+}
+
+export interface UnassignedLeadItem {
+  id: string;
+  referenceId: string;
+  status: LeadStatus;
+  productInterest?: string | null;
+  organizationName?: string | null;
+  contactName?: string | null;
+  createdAt: string;
+}
+
+export interface UnassignedOpportunityItem {
+  id: string;
+  title: string;
+  stage: OpportunityStage;
+  dealValueNgn?: number | null;
+  primaryProduct: string;
+  organizationName?: string | null;
+  createdAt: string;
+}
+
+export interface FollowUpIntelligence {
+  counts: {
+    overdueFollowUps: number;
+    todayFollowUps: number;
+    upcomingFollowUps: number;
+    staleOpportunities: number;
+    unassignedLeads: number;
+    unassignedOpportunities: number;
+  };
+  overdueFollowUps: FollowUpItem[];
+  todayFollowUps: FollowUpItem[];
+  upcomingFollowUps: FollowUpItem[];
+  staleOpportunities: StaleOpportunityItem[];
+  unassignedLeads: UnassignedLeadItem[];
+  unassignedOpportunities: UnassignedOpportunityItem[];
 }

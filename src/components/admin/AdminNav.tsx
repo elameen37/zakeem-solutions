@@ -8,12 +8,13 @@ import {
   Contact,
   BarChart3,
   ExternalLink,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AdminNavProps {
-  currentTab?: "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "reports";
-  activeDesk?: "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "pipeline" | "accounts" | "reports";
+  currentTab?: "operations" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "reports";
+  activeDesk?: "operations" | "workspace" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "pipeline" | "accounts" | "reports";
 }
 
 export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) => {
@@ -21,6 +22,7 @@ export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) =>
   const path = location.pathname;
 
   const active = activeDesk || currentTab;
+  const isOperations = active === "operations" || active === "workspace" || path === "/admin/crm/operations" || path.startsWith("/admin/crm/operations");
   const isLeads = active === "leads" || path.startsWith("/admin/crm/leads");
   const isScheduling = active === "scheduling" || path.startsWith("/admin/scheduling");
   const isPipeline = active === "opportunities" || active === "pipeline" || path.startsWith("/admin/crm/pipeline");
@@ -33,6 +35,20 @@ export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) =>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         {/* Core CRM & Operations Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
+          {/* Operations Commercial Workspace */}
+          <Link
+            to="/admin/crm/operations"
+            className={cn(
+              "px-3.5 py-2 rounded-xl text-xs font-mono font-medium transition-all flex items-center gap-2 whitespace-nowrap",
+              isOperations
+                ? "bg-[#e57804] text-white shadow-lg shadow-[#e57804]/20"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
+            )}
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>Operations Desk</span>
+          </Link>
+
           {/* Leads Desk */}
           <Link
             to="/admin/crm/leads"

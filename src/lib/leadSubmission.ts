@@ -9,6 +9,7 @@ import {
   SubmissionResult,
 } from "@/types/lead";
 import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
+import { isAnalyticsConsentGranted } from "./cookieConsent";
 
 let lastSubmissionTimestamp = 0;
 const SUBMISSION_COOLDOWN_MS = 5000;
@@ -197,8 +198,8 @@ export async function submitLead(
     }
   }
 
-  // 7. Dispatch custom DOM event for analytics / Google Tag Manager / PostHog
-  if (typeof window !== "undefined") {
+  // 7. Dispatch custom DOM event for analytics / telemetry (gated by cookie consent)
+  if (typeof window !== "undefined" && isAnalyticsConsentGranted()) {
     const event = new CustomEvent("zakeem:lead_capture", {
       bubbles: true,
       detail: {

@@ -6,6 +6,7 @@ import {
 import { FOOTER_NAVIGATION } from "@/data/navigation";
 import { SOCIAL_LINKS, COMPANY_CONTACT } from "@/data/social";
 import { Button } from "@/components/ui/Button";
+import { openCookiePreferences } from "@/lib/cookieConsent";
 import { cn } from "@/lib/utils";
 
 const XIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -217,7 +218,7 @@ export const Footer: React.FC = () => {
             © {new Date().getFullYear()} Zakeem Solutions. All rights reserved.
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6">
             <Link to="/privacy" className="hover:text-white transition-colors">
               Privacy Policy
             </Link>
@@ -227,6 +228,14 @@ export const Footer: React.FC = () => {
             <Link to="/support" className="hover:text-white transition-colors">
               Support Center
             </Link>
+            <button
+              type="button"
+              onClick={openCookiePreferences}
+              className="hover:text-white transition-colors cursor-pointer text-left focus:outline-none focus:underline"
+              aria-label="Manage cookie and privacy preferences"
+            >
+              Cookie Preferences
+            </button>
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@
  */
 
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
+import { isAnalyticsConsentGranted } from "@/lib/cookieConsent";
 import {
   AccountContactMetrics,
   ActivityStatus,
@@ -73,7 +74,7 @@ function setStored<T>(key: string, data: T[]): void {
 }
 
 function emitAnalyticsEvent(name: string, detail: Record<string, unknown>): void {
-  if (typeof window !== "undefined") {
+  if (typeof window !== "undefined" && isAnalyticsConsentGranted()) {
     try {
       window.dispatchEvent(
         new CustomEvent(name, {

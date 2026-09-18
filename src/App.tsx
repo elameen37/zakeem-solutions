@@ -4,6 +4,7 @@ import { Layout } from "@/components/layout/Layout";
 import { HomePage } from "@/pages/HomePage";
 
 import { AuthProvider } from "@/context/AuthContext";
+import { MaintenanceProvider } from "@/context/MaintenanceContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Lazy-loaded non-critical route pages for optimized initial payload
@@ -36,6 +37,7 @@ const AdminPipelinePage = React.lazy(() => import("@/pages/admin/AdminPipelinePa
 const AdminOrganizationsPage = React.lazy(() => import("@/pages/admin/AdminOrganizationsPage").then((m) => ({ default: m.default || m.AdminOrganizationsPage })));
 const AdminContactsPage = React.lazy(() => import("@/pages/admin/AdminContactsPage").then((m) => ({ default: m.default || m.AdminContactsPage })));
 const AdminReportsPage = React.lazy(() => import("@/pages/admin/AdminReportsPage").then((m) => ({ default: m.default || m.AdminReportsPage })));
+const AdminSettingsPage = React.lazy(() => import("@/pages/admin/AdminSettingsPage").then((m) => ({ default: m.default || m.AdminSettingsPage })));
 const NotFoundPage = React.lazy(() => import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
 // Minimal on-brand loading fallback for seamless route transitions
@@ -54,9 +56,10 @@ export const App: React.FC = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Layout>
-          <Suspense fallback={<RouteLoadingFallback />}>
-            <Routes>
+        <MaintenanceProvider>
+          <Layout>
+            <Suspense fallback={<RouteLoadingFallback />}>
+              <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/about" element={<AboutPage />} />
 
@@ -182,12 +185,21 @@ export const App: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/settings"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminSettingsPage />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Fallback 404 route */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
         </Layout>
+        </MaintenanceProvider>
       </AuthProvider>
     </BrowserRouter>
   );

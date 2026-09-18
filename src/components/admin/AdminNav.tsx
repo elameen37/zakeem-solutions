@@ -9,12 +9,13 @@ import {
   BarChart3,
   ExternalLink,
   Activity,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AdminNavProps {
-  currentTab?: "operations" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "reports";
-  activeDesk?: "operations" | "workspace" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "pipeline" | "accounts" | "reports";
+  currentTab?: "operations" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "reports" | "settings";
+  activeDesk?: "operations" | "workspace" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "pipeline" | "accounts" | "reports" | "settings";
 }
 
 export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) => {
@@ -29,6 +30,7 @@ export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) =>
   const isOrgs = active === "organizations" || active === "accounts" || path.startsWith("/admin/crm/organizations");
   const isContacts = active === "contacts" || path.startsWith("/admin/crm/contacts");
   const isReports = active === "reports" || path.startsWith("/admin/crm/reports");
+  const isSettings = active === "settings" || path.startsWith("/admin/settings");
 
   return (
     <nav aria-label="Admin Suite Navigation" className="border border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-[#06152b]/60 backdrop-blur-md rounded-2xl p-2 mb-6 shadow-xs dark:shadow-none">
@@ -132,6 +134,20 @@ export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) =>
           >
             <BarChart3 className="w-3.5 h-3.5" />
             <span>Reports</span>
+          </Link>
+
+          {/* Platform Settings & Maintenance */}
+          <Link
+            to="/admin/settings"
+            className={cn(
+              "px-3.5 py-2 rounded-xl text-xs font-mono font-medium transition-all flex items-center gap-2 whitespace-nowrap",
+              isSettings
+                ? "bg-[#e57804] text-white shadow-lg shadow-[#e57804]/20"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
+            )}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Settings</span>
           </Link>
         </div>
 

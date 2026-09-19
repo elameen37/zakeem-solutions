@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   Building2, ShieldCheck, CheckCircle2, ArrowRight, ExternalLink, KeyRound, 
@@ -11,9 +11,20 @@ import { Badge } from "@/components/ui/Badge";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { CTASection } from "@/components/ui/CTASection";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import { trackProductView } from "@/lib/analytics";
 
 export const ZakeemRealtyERPPage: React.FC = () => {
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
+
+  useEffect(() => {
+    trackProductView({
+      id: "realty-erp",
+      name: "Zakeem Realty ERP",
+      slug: "zakeem-realty-erp",
+      category: "Flagship Enterprise ERP",
+      status: "Production Ready",
+    });
+  }, []);
 
   const modules = [
     {

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/Badge";
 import { CTASection } from "@/components/ui/CTASection";
 import { ZAKEEM_APPLICATIONS, ZakeemApplication } from "@/data/ecosystem";
 import { getSoftwareApplicationSchema } from "@/config/seo";
+import { trackProductView } from "@/lib/analytics";
 
 export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -36,6 +37,14 @@ export const ProductDetailPage: React.FC = () => {
           },
         })
       );
+
+      trackProductView({
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        category: product.category,
+        status: product.status,
+      });
     }
   }, [product]);
 

@@ -36,6 +36,7 @@ import {
 } from "@/lib/leadValidation";
 import { submitLead, generateLeadReferenceId } from "@/lib/leadSubmission";
 import { LeadSubmissionPayload, SubmissionResult } from "@/types/lead";
+import { trackContactFormSubmit } from "@/lib/analytics";
 
 const XIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg viewBox="0 0 24 24" className={cn("fill-current", className)} aria-hidden="true">
@@ -201,6 +202,7 @@ export const ContactPage: React.FC = () => {
     setIsSubmitting(false);
 
     if (result.success) {
+      trackContactFormSubmit({ category, contextSummary });
       setSubmittedData({
         fullName: fullName.trim(),
         workEmail: workEmail.trim(),

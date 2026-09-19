@@ -10,6 +10,7 @@ import {
 } from "@/types/lead";
 import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
 import { isAnalyticsConsentGranted } from "./cookieConsent";
+import { trackLeadFormSubmit } from "./analytics";
 
 let lastSubmissionTimestamp = 0;
 const SUBMISSION_COOLDOWN_MS = 5000;
@@ -225,6 +226,17 @@ export async function submitLead(
       },
     });
     window.dispatchEvent(event);
+
+    // Track confirmed lead form submission in GA4 (PII-free)
+    trackLeadFormSubmit({
+      formType: payload.commercial.formType,
+      product: payload.commercial.product,
+      tier: payload.commercial.tier,
+      suite: payload.commercial.suite,
+      billing: payload.commercial.billing,
+      deployment: payload.commercial.deployment,
+      service: payload.commercial.service,
+    });
   }
 
   return {

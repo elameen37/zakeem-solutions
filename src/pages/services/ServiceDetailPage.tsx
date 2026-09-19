@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, ArrowRight, Code2, Terminal } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
@@ -6,12 +6,22 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { CTASection } from "@/components/ui/CTASection";
 import { SERVICES } from "@/data/services";
-
 import { getServiceSchema } from "@/config/seo";
+import { trackServiceView } from "@/lib/analytics";
 
 export const ServiceDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const service = SERVICES.find((s) => s.slug === slug);
+
+  useEffect(() => {
+    if (service) {
+      trackServiceView({
+        slug: service.slug,
+        title: service.title,
+        category: service.engagementModel,
+      });
+    }
+  }, [service]);
 
   if (!service) {
     return <Navigate to="/services" replace />;

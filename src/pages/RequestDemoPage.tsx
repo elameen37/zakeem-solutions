@@ -29,6 +29,7 @@ import {
 } from "@/lib/leadValidation";
 import { submitLead, generateLeadReferenceId } from "@/lib/leadSubmission";
 import { LeadSubmissionPayload } from "@/types/lead";
+import { trackDemoRequest } from "@/lib/analytics";
 import { Booking, TimeSlot } from "@/types/scheduling";
 import {
   createBookingReservation,
@@ -289,6 +290,13 @@ export const RequestDemoPage: React.FC = () => {
           },
         })
       );
+
+      // Track confirmed demo booking request in GA4 (PII-free)
+      trackDemoRequest({
+        product: interest,
+        deployment: deploymentType,
+        bookingDate: selectedDate,
+      });
     }
 
     setIsSubmitting(false);

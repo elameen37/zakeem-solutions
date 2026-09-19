@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 
-type AuthTab = "client" | "admin" | "create_account";
+type AuthTab = "client" | "create_account";
 type LoginMode = "signin" | "forgot_password";
 
 function extractInvitationToken(input: string): string {
@@ -65,7 +65,8 @@ export const LoginPage: React.FC = () => {
     ).toLowerCase();
 
     if (tabParam === "admin") {
-      setActiveTab("admin");
+      navigate("/zakeem-admin3100", { replace: true });
+      return;
     } else if (
       tabParam === "signup" ||
       tabParam === "create-account" ||
@@ -78,19 +79,19 @@ export const LoginPage: React.FC = () => {
     } else {
       setActiveTab("client");
     }
-  }, [searchParams]);
+  }, [searchParams, navigate]);
 
-  // If already authenticated, redirect to appropriate destination
+  // If already authenticated as client, redirect to client portal
   useEffect(() => {
     if (isAuthenticated) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const from = (location.state as any)?.from?.pathname;
-      if (from && from !== "/login") {
-        navigate(from, { replace: true });
-      } else if (isAdmin) {
-        navigate("/admin", { replace: true });
-      } else {
-        navigate("/portal", { replace: true });
+      if (!isAdmin) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const from = (location.state as any)?.from?.pathname;
+        if (from && from !== "/login" && !from.startsWith("/admin")) {
+          navigate(from, { replace: true });
+        } else {
+          navigate("/portal", { replace: true });
+        }
       }
     }
   }, [isAuthenticated, isAdmin, navigate, location]);
@@ -114,23 +115,16 @@ export const LoginPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const res = await signIn(email.trim(), password);
+      const res = await signIn(email.trim(), password, "client");
       if (res.success) {
-        // Enforce role expectations based on the active sign-in gate
-        if (activeTab === "admin") {
-          if (res.role === "admin") {
-            navigate("/admin", { replace: true });
-          } else {
-            // Explicit admin authorization check failed
-            await signOut();
-            setAuthError(
-              "Administrative access denied. Your authenticated account does not possess systems administrator privileges. If you are an enterprise client, please switch to Client Sign In."
-            );
-          }
-        } else {
-          // Client tab: redirect to client portal
-          navigate("/portal", { replace: true });
+        if (res.role === "admin") {
+          await signOut();
+          setAuthError(
+            "Access restricted: Administrator accounts cannot sign in through the Client Portal. Please use the authorized administration URL."
+          );
+          return;
         }
+        navigate("/portal", { replace: true });
       } else {
         setAuthError(res.error || "Authentication failed. Please verify your credentials.");
       }
@@ -198,7 +192,7 @@ export const LoginPage: React.FC = () => {
               Zakeem Identity & Access Gateway
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              Sign in to your client portal, access system administration desks, or activate your account via enterprise invitation.
+              Sign in to your client portal or activate your account via enterprise invitation.
             </p>
           </div>
 
@@ -209,7 +203,7 @@ export const LoginPage: React.FC = () => {
                 data-surface="dark"
                 className="p-7 sm:p-9 rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl space-y-6"
               >
-                {/* 3-Way Segmented Tab Switcher */}
+                {/* 2-Way Segmented Tab Switcher */}
                 <div className="flex p-1 rounded-2xl bg-[#06152b] border border-white/10 gap-1">
                   <button
                     type="button"
@@ -222,18 +216,6 @@ export const LoginPage: React.FC = () => {
                   >
                     <Lock className="w-3.5 h-3.5" />
                     <span>Client Sign In</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTabChange("admin")}
-                    className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      activeTab === "admin"
-                        ? "bg-[#e57804] text-white shadow-md shadow-[#e57804]/20"
-                        : "text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Admin Sign In</span>
                   </button>
                   <button
                     type="button"
@@ -380,146 +362,7 @@ export const LoginPage: React.FC = () => {
                   </>
                 )}
 
-                {/* TAB 2: ADMIN SIGN IN */}
-                {activeTab === "admin" && (
-                  <>
-                    {mode === "signin" ? (
-                      <>
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-8 h-8 rounded-lg bg-[#e57804]/20 border border-[#e57804]/30 flex items-center justify-center text-[#e57804]">
-                              <ShieldCheck className="w-4 h-4" />
-                            </div>
-                            <Badge variant="neon">Administrator Sign In</Badge>
-                          </div>
-                          <h2 className="text-xl font-bold text-white">Systems Administration Gateway</h2>
-                          <p className="text-xs text-slate-300 mt-1">
-                            Restricted to authorized systems administrators and technical operations personnel.
-                          </p>
-                        </div>
-
-                        {/* Explicit Admin Authorization Notice */}
-                        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs flex items-start gap-2.5">
-                          <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                          <span className="leading-relaxed text-[11px]">
-                            Administrator authorization is cryptographically verified via server-side RBAC claims. Public self-registration is disabled.
-                          </span>
-                        </div>
-
-                        <form onSubmit={handleSignInSubmit} className="space-y-4" noValidate>
-                          <div>
-                            <label htmlFor="admin-email" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
-                              Administrator Email
-                            </label>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                <Mail className="w-4 h-4" />
-                              </div>
-                              <input
-                                id="admin-email"
-                                type="email"
-                                required
-                                autoComplete="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="admin@zakeemsolutions.com"
-                                aria-invalid={authError ? "true" : "false"}
-                                className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804] transition-colors"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <label htmlFor="admin-password" className="block text-xs font-mono uppercase text-slate-400">
-                                Password
-                              </label>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMode("forgot_password");
-                                  setAuthError(null);
-                                  setResetSuccess(false);
-                                }}
-                                className="text-[11px] text-[#e57804] hover:underline cursor-pointer"
-                              >
-                                Forgot password?
-                              </button>
-                            </div>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                <KeyRound className="w-4 h-4" />
-                              </div>
-                              <input
-                                id="admin-password"
-                                type={showPassword ? "text" : "password"}
-                                required
-                                autoComplete="current-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••••••"
-                                aria-invalid={authError ? "true" : "false"}
-                                className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804] transition-colors"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                aria-label={showPassword ? "Hide password" : "Show password"}
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white transition-colors cursor-pointer"
-                              >
-                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-                            </div>
-                          </div>
-
-                          {authError && (
-                            <div
-                              role="alert"
-                              aria-live="assertive"
-                              className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5 animate-in fade-in duration-200"
-                            >
-                              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                              <span>{authError}</span>
-                            </div>
-                          )}
-
-                          <Button
-                            variant="primary"
-                            size="md"
-                            type="submit"
-                            className="w-full mt-2 bg-[#e57804] hover:bg-[#cf6b03] text-white"
-                            disabled={isSubmitting}
-                          >
-                            {isSubmitting ? (
-                              <span className="flex items-center justify-center gap-2">
-                                <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                Verifying Admin Authorization...
-                              </span>
-                            ) : (
-                              "Authenticate Administrator"
-                            )}
-                          </Button>
-                        </form>
-                      </>
-                    ) : (
-                      <ForgotPasswordSection
-                        email={email}
-                        setEmail={setEmail}
-                        authError={authError}
-                        resetSuccess={resetSuccess}
-                        isSubmitting={isSubmitting}
-                        onReset={handleResetSubmit}
-                        onBack={() => {
-                          setMode("signin");
-                          setAuthError(null);
-                          setResetSuccess(false);
-                        }}
-                      />
-                    )}
-                  </>
-                )}
-
-                {/* TAB 3: CREATE ACCOUNT (INVITATION-CONTROLLED) */}
+                {/* TAB 2: CREATE ACCOUNT (INVITATION-CONTROLLED) */}
                 {activeTab === "create_account" && (
                   <div className="space-y-6 animate-in fade-in duration-200">
                     <div>

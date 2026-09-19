@@ -38,6 +38,7 @@ const AdminOrganizationsPage = React.lazy(() => import("@/pages/admin/AdminOrgan
 const AdminContactsPage = React.lazy(() => import("@/pages/admin/AdminContactsPage").then((m) => ({ default: m.default || m.AdminContactsPage })));
 const AdminReportsPage = React.lazy(() => import("@/pages/admin/AdminReportsPage").then((m) => ({ default: m.default || m.AdminReportsPage })));
 const AdminSettingsPage = React.lazy(() => import("@/pages/admin/AdminSettingsPage").then((m) => ({ default: m.default || m.AdminSettingsPage })));
+const AdminLoginPage = React.lazy(() => import("@/pages/admin/AdminLoginPage").then((m) => ({ default: m.AdminLoginPage })));
 const NotFoundPage = React.lazy(() => import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
 // Minimal on-brand loading fallback for seamless route transitions
@@ -89,6 +90,7 @@ export const App: React.FC = () => {
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/request-demo" element={<RequestDemoPage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/zakeem-admin3100" element={<AdminLoginPage />} />
               <Route path="/accept-invite" element={<AcceptInvitationPage />} />
               <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />

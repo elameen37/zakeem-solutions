@@ -28,9 +28,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     );
   }
 
-  // 2. Redirect unauthenticated visitors to /login, preserving attempted URL
+  // 2. Redirect unauthenticated visitors, routing admin access to /zakeem-admin3100
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const redirectTarget = requiredRole === "admin" ? "/zakeem-admin3100" : "/login";
+    return <Navigate to={redirectTarget} state={{ from: location }} replace />;
   }
 
   // 3. Strict Role-Based Access Control

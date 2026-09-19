@@ -24,8 +24,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [pathname]);
 
   // Intercept all public & client routes when maintenance mode is active
-  // Retain /login and /reset-password so administrators can authenticate
-  if (isMaintenanceActive && pathname !== "/login" && pathname !== "/reset-password") {
+  // Retain /login, /zakeem-admin3100, and /reset-password so administrators can authenticate
+  if (
+    isMaintenanceActive &&
+    pathname !== "/login" &&
+    pathname !== "/zakeem-admin3100" &&
+    pathname !== "/reset-password"
+  ) {
     return <MaintenancePage />;
   }
 

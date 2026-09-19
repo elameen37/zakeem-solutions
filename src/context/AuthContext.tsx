@@ -157,7 +157,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [handleSessionResolution]);
 
   const signIn = useCallback(
-    async (email: string, password: string): Promise<{ success: boolean; error?: string; role?: UserRole }> => {
+    async (
+      email: string,
+      password: string,
+      allowedRole?: UserRole
+    ): Promise<{ success: boolean; error?: string; role?: UserRole }> => {
       // 1. Production Mode: Supabase Auth
       if (isSupabaseConfigured()) {
         const client = getSupabaseClient();
@@ -187,6 +191,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userProfile = await fetchProfile(activeUser);
           const resolvedRole = resolveExplicitRole(activeUser, userProfile?.role);
 
+          // Role enforcement check: If the login portal restricts roles
+          if (allowedRole && resolvedRole !== allowedRole) {
+            await client.auth.signOut();
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            setRole(null);
+
+            if (allowedRole === "client" && resolvedRole === "admin") {
+              return {
+                success: false,
+                error: "Access restricted: Administrator accounts cannot sign in through the Client Portal. Please use the authorized administration URL.",
+              };
+            }
+
+            if (allowedRole === "admin" && resolvedRole !== "admin") {
+              return {
+                success: false,
+                error: "Administrative access denied. Your authenticated account does not possess systems administrator privileges.",
+              };
+            }
+          }
+
           setUser(activeUser);
           setSession(data.session);
           setProfile(userProfile);
@@ -210,6 +237,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 2. Local Development Fallback Mode (unconfigured Supabase credentials)
       if (password.trim() === "zakeem-executive" || password.trim().length >= 8) {
         const devRole: UserRole = email.includes("admin") || password.trim() === "zakeem-executive" ? "admin" : "client";
+
+        if (allowedRole && devRole !== allowedRole) {
+          if (allowedRole === "client" && devRole === "admin") {
+            return {
+              success: false,
+              error: "Access restricted: Administrator accounts cannot sign in through the Client Portal. Please use the authorized administration URL.",
+            };
+          }
+          if (allowedRole === "admin" && devRole !== "admin") {
+            return {
+              success: false,
+              error: "Administrative access denied. Your authenticated account does not possess systems administrator privileges.",
+            };
+          }
+        }
+
         setLocalDevRole(devRole);
         setRole(devRole);
         if (typeof window !== "undefined") {

@@ -84,7 +84,7 @@ export interface AuthState {
 }
 
 export interface AuthContextValue extends AuthState {
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string; role?: UserRole }>;
+  signIn: (email: string, password: string, allowedRole?: UserRole) => Promise<{ success: boolean; error?: string; role?: UserRole }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;

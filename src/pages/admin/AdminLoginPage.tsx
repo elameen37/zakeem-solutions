@@ -20,7 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 type LoginMode = "signin" | "forgot_password";
 
 export const AdminLoginPage: React.FC = () => {
-  const { isAuthenticated, isAdmin, signIn, signOut, resetPassword } = useAuth();
+  const { isAuthenticated, isAdmin, loading, signIn, signOut, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -32,20 +32,18 @@ export const AdminLoginPage: React.FC = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState(false);
 
-  // If already authenticated as administrator, redirect to admin operations desk
+  // If already authenticated as administrator, redirect to admin operations desk (on initial load only, not while submitting)
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isSubmitting && !loading && isAuthenticated && isAdmin) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const from = (location.state as any)?.from?.pathname;
-      if (from && from !== "/zakeem-admin3100" && from !== "/login") {
+      if (from && from.startsWith("/admin")) {
         navigate(from, { replace: true });
-      } else if (isAdmin) {
-        navigate("/admin", { replace: true });
       } else {
-        navigate("/portal", { replace: true });
+        navigate("/admin", { replace: true });
       }
     }
-  }, [isAuthenticated, isAdmin, navigate, location]);
+  }, [isAuthenticated, isAdmin, loading, isSubmitting, navigate, location]);
 
   const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

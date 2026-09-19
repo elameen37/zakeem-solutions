@@ -37,7 +37,7 @@ function extractInvitationToken(input: string): string {
 }
 
 export const LoginPage: React.FC = () => {
-  const { isAuthenticated, isAdmin, signIn, signOut, resetPassword } = useAuth();
+  const { isAuthenticated, isAdmin, loading, signIn, signOut, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -81,20 +81,18 @@ export const LoginPage: React.FC = () => {
     }
   }, [searchParams, navigate]);
 
-  // If already authenticated as client, redirect to client portal
+  // If already authenticated as client, redirect to client portal on initial mount (never while submitting)
   useEffect(() => {
-    if (isAuthenticated) {
-      if (!isAdmin) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const from = (location.state as any)?.from?.pathname;
-        if (from && from !== "/login" && !from.startsWith("/admin")) {
-          navigate(from, { replace: true });
-        } else {
-          navigate("/portal", { replace: true });
-        }
+    if (!isSubmitting && !loading && isAuthenticated && !isAdmin) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const from = (location.state as any)?.from?.pathname;
+      if (from && from !== "/login" && !from.startsWith("/admin")) {
+        navigate(from, { replace: true });
+      } else {
+        navigate("/portal", { replace: true });
       }
     }
-  }, [isAuthenticated, isAdmin, navigate, location]);
+  }, [isAuthenticated, isAdmin, loading, isSubmitting, navigate, location]);
 
   const handleTabChange = (tab: AuthTab) => {
     setActiveTab(tab);

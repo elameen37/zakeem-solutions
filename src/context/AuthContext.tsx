@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import { AuthContextValue, UserProfile, UserRole } from "@/types/auth";
@@ -49,6 +49,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
 
+  // Ref to track role requirement during active login to prevent unauthorized session flashing
+  const pendingAllowedRoleRef = useRef<UserRole | null>(null);
+
   const fetchProfile = useCallback(async (activeUser: User): Promise<UserProfile | null> => {
     if (!isSupabaseConfigured()) return null;
     const client = getSupabaseClient();
@@ -87,13 +90,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     async (currentSession: Session | null) => {
       if (currentSession?.user) {
         const activeUser = currentSession.user;
+        const userProfile = await fetchProfile(activeUser);
+        const resolvedRole = resolveExplicitRole(activeUser, userProfile?.role);
+
+        // If an explicit role constraint is currently being enforced (e.g. client login or admin login)
+        if (pendingAllowedRoleRef.current && resolvedRole !== pendingAllowedRoleRef.current) {
+          // Do NOT populate React state with an unauthorized session.
+          // This completely prevents premature isAuthenticated=true state or route flashing.
+          return;
+        }
+
+        // Atomic update of user, session, profile, and role
         setUser(activeUser);
         setSession(currentSession);
-
-        const userProfile = await fetchProfile(activeUser);
         setProfile(userProfile);
-
-        const resolvedRole = resolveExplicitRole(activeUser, userProfile?.role);
         setRole(resolvedRole);
       } else {
         setUser(null);
@@ -162,51 +172,102 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password: string,
       allowedRole?: UserRole
     ): Promise<{ success: boolean; error?: string; role?: UserRole }> => {
-      // 1. Production Mode: Supabase Auth
-      if (isSupabaseConfigured()) {
-        const client = getSupabaseClient();
-        if (!client) {
-          return { success: false, error: "Database client is unavailable." };
-        }
+      pendingAllowedRoleRef.current = allowedRole || null;
 
-        const { data, error } = await client.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-
-        if (error) {
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("client-login-failed", {
-                bubbles: true,
-                detail: { email: email.trim(), error: error.message },
-              })
-            );
+      try {
+        // 1. Production Mode: Supabase Auth
+        if (isSupabaseConfigured()) {
+          const client = getSupabaseClient();
+          if (!client) {
+            return { success: false, error: "Database client is unavailable." };
           }
-          return { success: false, error: error.message || "Invalid authentication credentials." };
+
+          const { data, error } = await client.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
+
+          if (error) {
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent("client-login-failed", {
+                  bubbles: true,
+                  detail: { email: email.trim(), error: error.message },
+                })
+              );
+            }
+            return {
+              success: false,
+              error:
+                error.message === "Invalid login credentials"
+                  ? "Invalid email or password. Please verify your credentials and try again."
+                  : error.message || "Invalid authentication credentials.",
+            };
+          }
+
+          if (data.session?.user) {
+            const activeUser = data.session.user;
+            const userProfile = await fetchProfile(activeUser);
+            const resolvedRole = resolveExplicitRole(activeUser, userProfile?.role);
+
+            // Role enforcement check: If the login portal restricts roles
+            if (allowedRole && resolvedRole !== allowedRole) {
+              await client.auth.signOut();
+              setUser(null);
+              setSession(null);
+              setProfile(null);
+              setRole(null);
+
+              if (allowedRole === "client" && resolvedRole === "admin") {
+                return {
+                  success: false,
+                  error: "Access restricted: Administrator accounts cannot sign in through the Client Portal. Please use the authorized administration URL.",
+                };
+              }
+
+              if (allowedRole === "admin" && resolvedRole !== "admin") {
+                return {
+                  success: false,
+                  error: "Administrative access denied. Your authenticated account does not possess systems administrator privileges.",
+                };
+              }
+            }
+
+            setUser(activeUser);
+            setSession(data.session);
+            setProfile(userProfile);
+            setRole(resolvedRole);
+
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent("client-login-success", {
+                  bubbles: true,
+                  detail: { userId: activeUser.id, role: resolvedRole },
+                })
+              );
+            }
+
+            return { success: true, role: resolvedRole || "client" };
+          }
+
+          return { success: false, error: "Unable to establish user session." };
         }
 
-        if (data.session?.user) {
-          const activeUser = data.session.user;
-          const userProfile = await fetchProfile(activeUser);
-          const resolvedRole = resolveExplicitRole(activeUser, userProfile?.role);
+        // 2. Local Development Fallback Mode (unconfigured Supabase credentials)
+        const isMasterAdmin = password.trim() === "zakeem-executive";
+        const isMasterClient = password.trim() === "zakeem-client" && !email.includes("admin");
 
-          // Role enforcement check: If the login portal restricts roles
-          if (allowedRole && resolvedRole !== allowedRole) {
-            await client.auth.signOut();
-            setUser(null);
-            setSession(null);
-            setProfile(null);
-            setRole(null);
+        if (isMasterAdmin || isMasterClient) {
+          const devRole: UserRole = isMasterAdmin ? "admin" : "client";
 
-            if (allowedRole === "client" && resolvedRole === "admin") {
+          if (allowedRole && devRole !== allowedRole) {
+            if (allowedRole === "client" && devRole === "admin") {
               return {
                 success: false,
                 error: "Access restricted: Administrator accounts cannot sign in through the Client Portal. Please use the authorized administration URL.",
               };
             }
-
-            if (allowedRole === "admin" && resolvedRole !== "admin") {
+            if (allowedRole === "admin" && devRole !== "admin") {
               return {
                 success: false,
                 error: "Administrative access denied. Your authenticated account does not possess systems administrator privileges.",
@@ -214,69 +275,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
 
-          setUser(activeUser);
-          setSession(data.session);
-          setProfile(userProfile);
-          setRole(resolvedRole);
-
+          setLocalDevRole(devRole);
+          setRole(devRole);
           if (typeof window !== "undefined") {
+            localStorage.setItem("zakeem_local_auth_role", devRole);
             window.dispatchEvent(
               new CustomEvent("client-login-success", {
                 bubbles: true,
-                detail: { userId: activeUser.id, role: resolvedRole },
+                detail: { userId: "local-dev-user", role: devRole },
               })
             );
           }
-
-          return { success: true, role: resolvedRole || "client" };
+          return { success: true, role: devRole };
         }
 
-        return { success: false, error: "Unable to establish user session." };
-      }
-
-      // 2. Local Development Fallback Mode (unconfigured Supabase credentials)
-      if (password.trim() === "zakeem-executive" || password.trim().length >= 8) {
-        const devRole: UserRole = email.includes("admin") || password.trim() === "zakeem-executive" ? "admin" : "client";
-
-        if (allowedRole && devRole !== allowedRole) {
-          if (allowedRole === "client" && devRole === "admin") {
-            return {
-              success: false,
-              error: "Access restricted: Administrator accounts cannot sign in through the Client Portal. Please use the authorized administration URL.",
-            };
-          }
-          if (allowedRole === "admin" && devRole !== "admin") {
-            return {
-              success: false,
-              error: "Administrative access denied. Your authenticated account does not possess systems administrator privileges.",
-            };
-          }
-        }
-
-        setLocalDevRole(devRole);
-        setRole(devRole);
         if (typeof window !== "undefined") {
-          localStorage.setItem("zakeem_local_auth_role", devRole);
           window.dispatchEvent(
-            new CustomEvent("client-login-success", {
+            new CustomEvent("client-login-failed", {
               bubbles: true,
-              detail: { userId: "local-dev-user", role: devRole },
+              detail: { email, error: "Invalid credentials" },
             })
           );
         }
-        return { success: true, role: devRole };
-      }
 
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("client-login-failed", {
-            bubbles: true,
-            detail: { email, error: "Invalid local passkey" },
-          })
-        );
+        return { success: false, error: "Invalid email or password. Please verify your credentials and try again." };
+      } finally {
+        pendingAllowedRoleRef.current = null;
       }
-
-      return { success: false, error: "Invalid credentials. Provide a valid local passkey (min 8 characters)." };
     },
     [fetchProfile]
   );

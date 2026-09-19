@@ -131,3 +131,5 @@ supabase/.temp/
 .DS_Store
 Thumbs.db
 *.local
+scratch/
+

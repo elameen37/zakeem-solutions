@@ -310,7 +310,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isSupabaseConfigured()) {
       const client = getSupabaseClient();
       if (client) {
-        await client.auth.signOut();
+        try {
+          await client.auth.signOut();
+        } catch (err) {
+          console.warn("[Auth] Supabase signOut interrupted by network, proceeding with local purge:", err);
+        }
       }
     }
 
@@ -342,13 +346,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: "Database client is unavailable." };
       }
 
-      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
-      const { error } = await client.auth.resetPasswordForEmail(trimmedEmail, {
-        redirectTo,
-      });
+      try {
+        const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
+        const { error } = await client.auth.resetPasswordForEmail(trimmedEmail, {
+          redirectTo,
+        });
 
-      if (error) {
-        return { success: false, error: error.message };
+        if (error) {
+          return { success: false, error: error.message };
+        }
+      } catch (err) {
+        return { success: false, error: "Network error occurred while requesting password reset. Please try again." };
       }
 
       if (typeof window !== "undefined") {
@@ -386,12 +394,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: "Database client is unavailable." };
       }
 
-      const { error } = await client.auth.updateUser({
-        password: newPassword,
-      });
+      try {
+        const { error } = await client.auth.updateUser({
+          password: newPassword,
+        });
 
-      if (error) {
-        return { success: false, error: error.message };
+        if (error) {
+          return { success: false, error: error.message };
+        }
+      } catch (err) {
+        return { success: false, error: "Network error occurred while updating password. Please try again." };
       }
 
       return { success: true };

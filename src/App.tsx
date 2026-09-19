@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { MaintenanceProvider } from "@/context/MaintenanceContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 // Lazy-loaded non-critical route pages for optimized initial payload
 const AboutPage = React.lazy(() => import("@/pages/AboutPage").then((m) => ({ default: m.AboutPage })));
@@ -57,9 +58,10 @@ const RouteLoadingFallback: React.FC = () => (
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AnalyticsTracker />
-      <AuthProvider>
-        <MaintenanceProvider>
+      <ErrorBoundary>
+        <AnalyticsTracker />
+        <AuthProvider>
+          <MaintenanceProvider>
           <Layout>
             <Suspense fallback={<RouteLoadingFallback />}>
               <Routes>
@@ -205,6 +207,7 @@ export const App: React.FC = () => {
         </Layout>
         </MaintenanceProvider>
       </AuthProvider>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 };

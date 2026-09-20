@@ -171,6 +171,12 @@ export const MAIN_NAVIGATION: NavItem[] = [
         href: "/insights",
         description: "Architecture whitepapers, engineering perspectives, and technical briefs.",
         icon: "BookOpen"
+      },
+      {
+        label: "Careers & Fellowship",
+        href: "/careers",
+        description: "Join our engineering pods, fellowship cohorts, and research labs.",
+        icon: "Briefcase"
       }
     ]
   }

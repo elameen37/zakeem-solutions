@@ -7,9 +7,10 @@ import { useTheme } from "../../context/ThemeContext";
 
 export const OPEN_SEARCH_EVENT = "zakeem:open-global-search";
 
-export function openGlobalSearch(): void {
+export function openGlobalSearch(initialQuery?: unknown): void {
+  const query = typeof initialQuery === "string" ? initialQuery : undefined;
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(OPEN_SEARCH_EVENT));
+    window.dispatchEvent(new CustomEvent(OPEN_SEARCH_EVENT, { detail: { query } }));
   }
 }
 
@@ -102,8 +103,12 @@ export const GlobalSearchModal: React.FC = () => {
       }
     };
 
-    const handleCustomOpen = () => {
+    const handleCustomOpen = (e: Event) => {
       previouslyFocusedElement.current = document.activeElement as HTMLElement | null;
+      const customEvent = e as CustomEvent<{ query?: string }>;
+      if (customEvent?.detail?.query !== undefined) {
+        setQuery(customEvent.detail.query);
+      }
       setIsOpen(true);
     };
 

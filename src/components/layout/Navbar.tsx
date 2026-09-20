@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { 
   ChevronDown, Menu, X, ArrowRight, Building2, BrainCircuit, Workflow, ShieldCheck,
   Building, Landmark, Home, Coins, Activity, Zap, Code2, Bot, Layers, Cloud, Shield, Compass, Search, Scale, BookOpen,
-  Linkedin, Facebook, Instagram, Youtube, Globe, LogOut, Fuel, UserCheck, CalendarDays
+  Linkedin, Facebook, Instagram, Youtube, Globe, LogOut, Fuel, UserCheck, CalendarDays, Briefcase
 } from "lucide-react";
 import { MAIN_NAVIGATION } from "@/data/navigation";
 import { SOCIAL_LINKS } from "@/data/social";
@@ -54,11 +54,19 @@ export const Navbar: React.FC = () => {
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const wasOpenRef = useRef(false);
 
-  // Close menus on route change
+  // Expandable search state on desktop navbar
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Close menus and search on route change
   useEffect(() => {
     wasOpenRef.current = false;
     setIsOpen(false);
     setActiveDropdown(null);
+    setIsSearchExpanded(false);
+    setSearchQuery("");
   }, [location.pathname]);
 
   // Handle scroll styling
@@ -70,16 +78,26 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Handle outside click to close dropdown
+  // Handle outside click to close dropdown or collapsed search
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setActiveDropdown(null);
       }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsSearchExpanded(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Auto-focus search input when expanded
+  useEffect(() => {
+    if (isSearchExpanded) {
+      searchInputRef.current?.focus();
+    }
+  }, [isSearchExpanded]);
 
   // Handle body scroll lock, Escape key, focus trapping & restoration when mobile menu is open
   useEffect(() => {
@@ -171,6 +189,7 @@ export const Navbar: React.FC = () => {
       case "Fuel": return <Fuel className={iconClass} />;
       case "UserCheck": return <UserCheck className={iconClass} />;
       case "CalendarDays": return <CalendarDays className={iconClass} />;
+      case "Briefcase": return <Briefcase className={iconClass} />;
       default: return <Layers className={iconClass} />;
     }
   };
@@ -338,30 +357,103 @@ export const Navbar: React.FC = () => {
 
           {/* CTA Actions */}
           <div className="hidden lg:flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={openGlobalSearch}
-              className={cn(
-                "flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border transition-all",
-                isDark
-                  ? "text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
-                  : "text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 border-slate-200 shadow-sm"
+            {/* Desktop Search Toggle / Expandable Input */}
+            <div ref={searchContainerRef} className="relative flex items-center">
+              {!isSearchExpanded ? (
+                <button
+                  type="button"
+                  onClick={() => setIsSearchExpanded(true)}
+                  className={cn(
+                    "relative min-w-[44px] min-h-[44px] p-2.5 flex items-center justify-center rounded-lg border transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-[#e57804]",
+                    isDark
+                      ? "text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
+                      : "text-slate-600 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 border-slate-200 shadow-sm"
+                  )}
+                  aria-label="Search site"
+                  title="Search site (⌘K)"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              ) : (
+                <div
+                  className={cn(
+                    "relative min-h-[44px] flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-200 w-52 xl:w-64 animate-in fade-in zoom-in-95",
+                    isDark
+                      ? "bg-[#06152b]/95 border-white/20 text-white shadow-xl shadow-black/50"
+                      : "bg-white border-slate-300 text-slate-900 shadow-md"
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (searchQuery.trim()) {
+                        openGlobalSearch(searchQuery.trim());
+                        setIsSearchExpanded(false);
+                      } else {
+                        searchInputRef.current?.focus();
+                      }
+                    }}
+                    className="text-slate-400 hover:text-[#e57804] transition-colors shrink-0"
+                    aria-label="Search"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                  </button>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (searchQuery.trim()) {
+                          openGlobalSearch(searchQuery.trim());
+                        } else {
+                          openGlobalSearch();
+                        }
+                        setIsSearchExpanded(false);
+                      } else if (e.key === "Escape") {
+                        e.preventDefault();
+                        setIsSearchExpanded(false);
+                      }
+                    }}
+                    placeholder="Search site..."
+                    className={cn(
+                      "w-full bg-transparent text-xs focus:outline-none placeholder:text-slate-400",
+                      isDark ? "text-white placeholder:text-slate-500" : "text-slate-900 placeholder:text-slate-400"
+                    )}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className={cn(
+                        "p-0.5 rounded text-slate-400 hover:text-white shrink-0",
+                        !isDark && "hover:text-slate-900"
+                      )}
+                      aria-label="Clear search"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSearchExpanded(false);
+                      setSearchQuery("");
+                    }}
+                    className={cn(
+                      "p-0.5 rounded text-slate-400 hover:text-white shrink-0",
+                      !isDark && "hover:text-slate-900"
+                    )}
+                    aria-label="Close search"
+                    title="Close search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               )}
-              aria-label="Search site (Cmd/Ctrl + K)"
-            >
-              <Search className={cn("w-3.5 h-3.5", isDark ? "text-slate-400" : "text-slate-500")} />
-              <span className="font-medium">Search</span>
-              <kbd
-                className={cn(
-                  "text-[10px] font-mono px-1.5 py-0.5 rounded border",
-                  isDark
-                    ? "bg-black/40 text-slate-400 border-white/10"
-                    : "bg-white text-slate-600 border-slate-300 shadow-2xs"
-                )}
-              >
-                ⌘K
-              </kbd>
-            </button>
+            </div>
             <ThemeToggle />
             {isAuthenticated ? (
               <div className="flex items-center gap-1.5">
@@ -415,7 +507,7 @@ export const Navbar: React.FC = () => {
           <div className="flex lg:hidden items-center gap-1.5">
             <button
               type="button"
-              onClick={openGlobalSearch}
+              onClick={() => openGlobalSearch()}
               className={cn(
                 "min-w-[44px] min-h-[44px] p-2.5 flex items-center justify-center rounded-lg transition-colors",
                 isDark

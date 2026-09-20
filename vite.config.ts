@@ -34,6 +34,9 @@ export default defineConfig({
             if (normalized.includes("/node_modules/lucide-react/")) {
               return "vendor-icons";
             }
+            if (normalized.includes("/node_modules/@supabase/")) {
+              return "vendor-supabase";
+            }
           }
         },
       },

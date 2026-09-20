@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertOctagon, RefreshCw, Home } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { recordAuditEvent } from "@/lib/auditTelemetry";
 
 export interface ErrorBoundaryProps {
   children: ReactNode;
@@ -31,6 +32,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.setState({ errorInfo });
+
+    recordAuditEvent({
+      eventType: "application.unexpected_error",
+      entityType: "application",
+      errorCategory: "UNEXPECTED",
+      metadata: {
+        errorName: error.name || "RuntimeError",
+        errorMessage: error.message ? error.message.substring(0, 200) : "Unknown component error",
+        pathname: typeof window !== "undefined" ? window.location.pathname : "/",
+      },
+    });
+
     // In dev / audit environments, log to console for debugging
     if (import.meta.env.DEV) {
       console.error("[ErrorBoundary caught component crash]:", error, errorInfo);

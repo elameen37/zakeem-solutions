@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { verifyInvitation, acceptInvitation } from "@/lib/invitationService";
 import { useAuth } from "@/context/AuthContext";
 import { InvitationVerificationResult } from "@/types/auth";
+import { recordAuditEvent } from "@/lib/auditTelemetry";
 
 function extractInvitationToken(input: string): string {
   const trimmed = input.trim();
@@ -183,6 +184,15 @@ export const AcceptInvitationPage: React.FC = () => {
 
       if (res.success) {
         setActivationSuccess(true);
+
+        recordAuditEvent({
+          eventType: "auth.invitation.accepted",
+          entityType: "invitation",
+          metadata: {
+            organization: verification.organization,
+          },
+        });
+
         // Automatically sign in the client
         const signInRes = await signIn(verification.email, password);
         if (signInRes.success) {

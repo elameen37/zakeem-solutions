@@ -25,6 +25,7 @@ import {
   generateBookingReferenceId,
 } from "./schedulingEngine";
 import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
+import { recordAuditEvent } from "./auditTelemetry";
 
 export { isSupabaseConfigured };
 
@@ -235,24 +236,49 @@ export async function createBookingReservation(
         });
 
         if (error) {
-          const message = error.message || error.details || "";
+          const message = error.message || "";
           const isRace =
             message.toLowerCase().includes("no longer available") ||
             message.toLowerCase().includes("conflict") ||
             message.toLowerCase().includes("overlap");
+
+          if (isRace) {
+            recordAuditEvent({
+              eventType: "booking.conflict",
+              entityType: "booking",
+              errorCategory: "CONFLICT",
+              metadata: {
+                product: request.product,
+                bookingDate: request.bookingDate,
+                startTime: request.startTime,
+              },
+            });
+          }
 
           return {
             success: false,
             isRaceCollision: isRace,
             error: isRace
               ? "This time was just taken. Please select another available time."
-              : message || "Booking could not be finalized. Please try another slot.",
+              : "Booking could not be finalized. Please try another slot or contact our advisory desk.",
           };
         }
 
         if (data) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const result = data as any;
+
+          recordAuditEvent({
+            eventType: "booking.created",
+            entityType: "booking",
+            entityId: result.booking_id,
+            metadata: {
+              referenceId: result.reference_id,
+              product: request.product,
+              deployment: request.deployment,
+            },
+          });
+
           const newBooking: Booking = {
             id: result.booking_id,
             referenceId: result.reference_id,

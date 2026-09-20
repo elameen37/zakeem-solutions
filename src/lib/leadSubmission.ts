@@ -11,6 +11,7 @@ import {
 import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
 import { isAnalyticsConsentGranted } from "./cookieConsent";
 import { trackLeadFormSubmit } from "./analytics";
+import { recordAuditEvent } from "./auditTelemetry";
 
 let lastSubmissionTimestamp = 0;
 const SUBMISSION_COOLDOWN_MS = 5000;
@@ -198,6 +199,19 @@ export async function submitLead(
       };
     }
   }
+
+  // 6.5 Record safe audit telemetry
+  recordAuditEvent({
+    eventType: "crm.lead.created",
+    entityType: "lead",
+    entityId: returnedLeadId,
+    metadata: {
+      formType: payload.commercial.formType,
+      product: payload.commercial.product,
+      tier: payload.commercial.tier,
+      hasAttribution: Boolean(payload.attribution.utmSource || payload.attribution.referrer),
+    },
+  });
 
   // 7. Dispatch custom DOM event for analytics / telemetry (gated by cookie consent)
   if (typeof window !== "undefined" && isAnalyticsConsentGranted()) {

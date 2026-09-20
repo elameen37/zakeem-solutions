@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import { AuthContextValue, UserProfile, UserRole } from "@/types/auth";
+import { recordAuditEvent } from "@/lib/auditTelemetry";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -188,6 +189,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
 
           if (error) {
+            recordAuditEvent({
+              eventType: allowedRole === "admin" ? "auth.admin_login.failure" : "auth.login.failure",
+              entityType: "user",
+              actorRole: "anonymous",
+              errorCategory: "AUTHENTICATION",
+              metadata: { reason: "invalid_credentials" },
+            });
+
             if (typeof window !== "undefined") {
               window.dispatchEvent(
                 new CustomEvent("client-login-failed", {
@@ -218,6 +227,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setProfile(null);
               setRole(null);
 
+              recordAuditEvent({
+                eventType: allowedRole === "admin" ? "auth.admin_login.failure" : "auth.login.failure",
+                entityType: "user",
+                actorRole: "anonymous",
+                errorCategory: "AUTHORIZATION",
+                metadata: { reason: "role_mismatch", attemptedRole: allowedRole },
+              });
+
               if (allowedRole === "client" && resolvedRole === "admin") {
                 return {
                   success: false,
@@ -238,6 +255,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setProfile(userProfile);
             setRole(resolvedRole);
 
+            recordAuditEvent({
+              eventType: resolvedRole === "admin" ? "auth.admin_login.success" : "auth.login.success",
+              entityType: "user",
+              entityId: activeUser.id,
+              actorId: activeUser.id,
+              actorRole: resolvedRole || "client",
+              metadata: { emailDomain: activeUser.email?.split("@")[1] || "unknown" },
+            });
+
             if (typeof window !== "undefined") {
               window.dispatchEvent(
                 new CustomEvent("client-login-success", {
@@ -250,6 +276,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return { success: true, role: resolvedRole || "client" };
           }
 
+          recordAuditEvent({
+            eventType: allowedRole === "admin" ? "auth.admin_login.failure" : "auth.login.failure",
+            entityType: "user",
+            actorRole: "anonymous",
+            errorCategory: "SERVER",
+            metadata: { reason: "session_establishment_failed" },
+          });
+
           return { success: false, error: "Unable to establish user session." };
         }
 
@@ -261,6 +295,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const devRole: UserRole = isMasterAdmin ? "admin" : "client";
 
           if (allowedRole && devRole !== allowedRole) {
+            recordAuditEvent({
+              eventType: allowedRole === "admin" ? "auth.admin_login.failure" : "auth.login.failure",
+              entityType: "user",
+              actorRole: "anonymous",
+              errorCategory: "AUTHORIZATION",
+              metadata: { reason: "role_mismatch", attemptedRole: allowedRole, mode: "local-development" },
+            });
+
             if (allowedRole === "client" && devRole === "admin") {
               return {
                 success: false,
@@ -277,6 +319,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           setLocalDevRole(devRole);
           setRole(devRole);
+
+          recordAuditEvent({
+            eventType: devRole === "admin" ? "auth.admin_login.success" : "auth.login.success",
+            entityType: "user",
+            entityId: "local-dev-user",
+            actorRole: devRole,
+            metadata: { mode: "local-development" },
+          });
+
           if (typeof window !== "undefined") {
             localStorage.setItem("zakeem_local_auth_role", devRole);
             window.dispatchEvent(
@@ -288,6 +339,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           return { success: true, role: devRole };
         }
+
+        recordAuditEvent({
+          eventType: allowedRole === "admin" ? "auth.admin_login.failure" : "auth.login.failure",
+          entityType: "user",
+          actorRole: "anonymous",
+          errorCategory: "AUTHENTICATION",
+          metadata: { reason: "invalid_credentials", mode: "local-development" },
+        });
 
         if (typeof window !== "undefined") {
           window.dispatchEvent(
@@ -307,6 +366,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const signOut = useCallback(async () => {
+    const currentUserId = user?.id || null;
+    const currentRole = role || "anonymous";
+
     if (isSupabaseConfigured()) {
       const client = getSupabaseClient();
       if (client) {
@@ -327,18 +389,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     }
 
+    recordAuditEvent({
+      eventType: "auth.signout",
+      entityType: "user",
+      entityId: currentUserId,
+      actorId: currentUserId,
+      actorRole: currentRole,
+    });
+
     setLocalDevRole(null);
     setUser(null);
     setSession(null);
     setProfile(null);
     setRole(null);
-  }, []);
+  }, [user, role]);
 
   const resetPassword = useCallback(async (email: string): Promise<{ success: boolean; error?: string }> => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
       return { success: false, error: "Please provide a valid work email address." };
     }
+
+    recordAuditEvent({
+      eventType: "auth.password_reset.requested",
+      entityType: "user",
+      actorRole: "anonymous",
+      metadata: { emailDomain: trimmedEmail.split("@")[1] || "unknown" },
+    });
 
     if (isSupabaseConfigured()) {
       const client = getSupabaseClient();
@@ -406,12 +483,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: "Network error occurred while updating password. Please try again." };
       }
 
+      recordAuditEvent({
+        eventType: "auth.password_reset.completed",
+        entityType: "user",
+        entityId: user?.id || null,
+        actorId: user?.id || null,
+        actorRole: role || "client",
+      });
+
       return { success: true };
     }
 
+    recordAuditEvent({
+      eventType: "auth.password_reset.completed",
+      entityType: "user",
+      entityId: user?.id || null,
+      actorId: user?.id || null,
+      actorRole: role || "client",
+      metadata: { mode: "local-development" },
+    });
+
     // Local development fallback simulation
     return { success: true };
-  }, []);
+  }, [user, role]);
 
   const isAuthenticated = useMemo(() => {
     if (isSupabaseConfigured()) {

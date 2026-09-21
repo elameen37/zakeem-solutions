@@ -185,7 +185,7 @@ export const Footer: React.FC = () => {
               ))}
               {FOOTER_NAVIGATION.resources.map((item) => (
                 <li key={item.label}>
-                  <Link to={item.href} className="text-slate-300 hover:text-white transition-colors">
+                  <Link to={item.href} rel={item.rel} className="text-slate-300 hover:text-white transition-colors">
                     {item.label}
                   </Link>
                 </li>

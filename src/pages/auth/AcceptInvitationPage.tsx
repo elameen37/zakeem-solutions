@@ -307,7 +307,7 @@ export const AcceptInvitationPage: React.FC = () => {
                     <label htmlFor="existing-acc-pwd" className="block text-xs font-mono uppercase text-slate-400">
                       Password
                     </label>
-                    <Link to="/reset-password" className="text-[11px] text-[#e57804] hover:underline">
+                    <Link to="/reset-password" rel="nofollow" className="text-[11px] text-[#e57804] hover:underline">
                       Forgot password?
                     </Link>
                   </div>

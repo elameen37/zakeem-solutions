@@ -54,7 +54,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
               </div>
 
               <div className="pt-2 flex flex-col gap-2.5">
-                <Button variant="primary" size="md" href="/portal" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                <Button variant="primary" size="md" href="/portal" rel="nofollow" rightIcon={<ArrowRight className="w-4 h-4" />}>
                   Go to Client Portal
                 </Button>
                 <Button variant="ghost" size="sm" href="/" leftIcon={<ArrowLeft className="w-4 h-4" />}>

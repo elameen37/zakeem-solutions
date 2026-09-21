@@ -3,12 +3,14 @@ export interface NavItem {
   href: string;
   description?: string;
   badge?: string;
+  rel?: string;
   children?: {
     label: string;
     href: string;
     description: string;
     icon?: string;
     badge?: string;
+    rel?: string;
   }[];
 }
 
@@ -223,7 +225,7 @@ export const FOOTER_NAVIGATION = {
   resources: [
     { label: "Insights & Whitepapers", href: "/insights" },
     { label: "Client Support Portal", href: "/support" },
-    { label: "Login", href: "/login" },
+    { label: "Login", href: "/login", rel: "nofollow" },
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" }
   ]

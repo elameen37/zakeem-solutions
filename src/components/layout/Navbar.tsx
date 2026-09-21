@@ -459,6 +459,7 @@ export const Navbar: React.FC = () => {
               <div className="flex items-center gap-1.5">
                 <Link
                   to={isAdmin ? "/admin/scheduling" : "/portal"}
+                  rel="nofollow"
                   className={cn(
                     "text-xs font-mono font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border",
                     isDark
@@ -488,6 +489,7 @@ export const Navbar: React.FC = () => {
             ) : (
               <Link
                 to="/login"
+                rel="nofollow"
                 className={cn(
                   "text-xs font-mono font-medium px-3 py-2 rounded-lg transition-colors",
                   isDark
@@ -611,6 +613,7 @@ export const Navbar: React.FC = () => {
                     variant="outline"
                     size="md"
                     href={isAdmin ? "/admin/scheduling" : "/portal"}
+                    rel="nofollow"
                     onClick={() => setIsOpen(false)}
                     className="w-full border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
                   >
@@ -633,6 +636,7 @@ export const Navbar: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   href="/login"
+                  rel="nofollow"
                   onClick={() => setIsOpen(false)}
                   className="w-full text-slate-300 hover:text-white hover:bg-white/5"
                 >

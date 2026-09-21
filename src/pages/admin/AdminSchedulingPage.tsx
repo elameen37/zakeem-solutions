@@ -171,10 +171,43 @@ export const AdminSchedulingPage: React.FC = () => {
   const [bookingsPage, setBookingsPage] = useState(1);
   const [invitationsPage, setInvitationsPage] = useState(1);
 
+  // Invitations Filtering & Search state
+  const [invitationsSearchQuery, setInvitationsSearchQuery] = useState("");
+  const [invitationsStatusFilter, setInvitationsStatusFilter] = useState<string>("all");
+
   // Reset bookings pagination when filters change
   useEffect(() => {
     setBookingsPage(1);
   }, [searchQuery, statusFilter, productFilter, dateScopeFilter]);
+
+  // Reset invitations pagination when filters change
+  useEffect(() => {
+    setInvitationsPage(1);
+  }, [invitationsSearchQuery, invitationsStatusFilter]);
+
+  // Auto-populate invitation form from URL params (e.g. from CRM contacts desk)
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    const emailParam = searchParams.get("email");
+    const nameParam = searchParams.get("name");
+    const orgParam = searchParams.get("org");
+    const leadIdParam = searchParams.get("leadId");
+    const contactIdParam = searchParams.get("contactId");
+    const orgIdParam = searchParams.get("orgId");
+    const bookingIdParam = searchParams.get("bookingId");
+
+    if (emailParam) setInviteEmail(emailParam);
+    if (nameParam) setInviteName(nameParam);
+    if (orgParam) setInviteOrg(orgParam);
+    if (leadIdParam) setInviteLeadId(leadIdParam);
+    if (contactIdParam) setInviteContactId(contactIdParam);
+    if (orgIdParam) setInviteOrgId(orgIdParam);
+    if (bookingIdParam) setInviteBookingId(bookingIdParam);
+
+    if (tabParam === "invitations" && (emailParam || nameParam || orgParam)) {
+      setShowInviteModal(true);
+    }
+  }, [searchParams]);
 
   // Loading & notification states
   const [isLoading, setIsLoading] = useState(false);
@@ -603,6 +636,19 @@ export const AdminSchedulingPage: React.FC = () => {
     setTimeout(() => setCopySuccess(false), 3000);
   };
 
+  const handleReissueInvite = (inv: ClientInvitation) => {
+    setInviteEmail(inv.email);
+    setInviteOrg(inv.organization);
+    setInviteName(inv.fullName);
+    setInviteLeadId(inv.leadId || "");
+    setInviteOrgId(inv.organizationId);
+    setInviteContactId(inv.contactId);
+    setInviteExpiresInDays(7);
+    setCreatedInviteToken(null);
+    setCreatedInvitationData(null);
+    setShowInviteModal(true);
+  };
+
   // Multi-field filtered bookings
   const filteredBookings = useMemo(() => {
     return bookings.filter((b) => {
@@ -650,11 +696,32 @@ export const AdminSchedulingPage: React.FC = () => {
     return filteredBookings.slice(start, start + PAGE_SIZE);
   }, [filteredBookings, bookingsPage]);
 
+  // Multi-field filtered invitations
+  const filteredInvitations = useMemo(() => {
+    return invitations.filter((inv) => {
+      if (invitationsStatusFilter !== "all" && inv.status !== invitationsStatusFilter) {
+        return false;
+      }
+      if (invitationsSearchQuery.trim()) {
+        const q = invitationsSearchQuery.toLowerCase().trim();
+        const matchesEmail = inv.email.toLowerCase().includes(q);
+        const matchesName = inv.fullName.toLowerCase().includes(q);
+        const matchesOrg = inv.organization.toLowerCase().includes(q);
+        const matchesLead = (inv.leadId || "").toLowerCase().includes(q);
+        const matchesInvitedBy = (inv.invitedBy || "").toLowerCase().includes(q);
+        if (!matchesEmail && !matchesName && !matchesOrg && !matchesLead && !matchesInvitedBy) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [invitations, invitationsStatusFilter, invitationsSearchQuery]);
+
   // Paginated invitations slice
   const paginatedInvitations = useMemo(() => {
     const start = (invitationsPage - 1) * PAGE_SIZE;
-    return invitations.slice(start, start + PAGE_SIZE);
-  }, [invitations, invitationsPage]);
+    return filteredInvitations.slice(start, start + PAGE_SIZE);
+  }, [filteredInvitations, invitationsPage]);
 
   const getDayName = (dow: number) => {
     const names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -1683,23 +1750,65 @@ export const AdminSchedulingPage: React.FC = () => {
 
               {/* Invitations Table */}
               <div data-surface="dark" className="rounded-2xl bg-[#081c38] border border-white/10 overflow-hidden">
-                <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                  <span className="text-xs font-bold text-white font-mono uppercase">
-                    Authorized Client Onboarding Registry ({invitations.length})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={loadData}
-                    className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors"
-                  >
-                    <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
-                    Refresh
-                  </button>
+                <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white font-mono uppercase">
+                      Authorized Client Onboarding Registry ({filteredInvitations.length})
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {/* Search Input */}
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search email, org, name..."
+                        value={invitationsSearchQuery}
+                        onChange={(e) => setInvitationsSearchQuery(e.target.value)}
+                        className="pl-8 pr-3 py-1.5 rounded-lg bg-[#06152b] border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#e57804] w-48 sm:w-60"
+                      />
+                      {invitationsSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setInvitationsSearchQuery("")}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Status Filter */}
+                    <select
+                      value={invitationsStatusFilter}
+                      onChange={(e) => setInvitationsStatusFilter(e.target.value)}
+                      aria-label="Filter invitations by status"
+                      className="px-2.5 py-1.5 rounded-lg bg-[#06152b] border border-white/10 text-xs text-white focus:outline-none focus:border-[#e57804]"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="pending">Pending Activation</option>
+                      <option value="accepted">Accepted & Provisioned</option>
+                      <option value="expired">Expired</option>
+                      <option value="revoked">Revoked</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={loadData}
+                      className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors ml-1"
+                    >
+                      <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
+                      Refresh
+                    </button>
+                  </div>
                 </div>
 
-                {invitations.length === 0 ? (
+                {filteredInvitations.length === 0 ? (
                   <div className="p-8 text-center text-slate-400 text-xs italic">
-                    No client invitations have been issued yet. Click "+ Invite Client" above to initiate onboarding.
+                    {invitations.length === 0
+                      ? "No client invitations have been issued yet. Click \"+ Invite Client\" above to initiate onboarding."
+                      : "No invitations match the selected search and filter criteria."}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -1710,7 +1819,8 @@ export const AdminSchedulingPage: React.FC = () => {
                           <th className="p-3.5">Email</th>
                           <th className="p-3.5">Status</th>
                           <th className="p-3.5">Lead Reference</th>
-                          <th className="p-3.5">Expires</th>
+                          <th className="p-3.5">Issued On</th>
+                          <th className="p-3.5">Expires / Accepted</th>
                           <th className="p-3.5 text-right">Actions</th>
                         </tr>
                       </thead>
@@ -1748,21 +1858,51 @@ export const AdminSchedulingPage: React.FC = () => {
                               {inv.leadId || "—"}
                             </td>
                             <td className="p-3.5 font-mono text-[11px] text-slate-400">
-                              {new Date(inv.expiresAt).toLocaleDateString("en-GB", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              })}
+                              {inv.createdAt
+                                ? new Date(inv.createdAt).toLocaleDateString("en-GB", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                  })
+                                : "—"}
                             </td>
-                            <td className="p-3.5 text-right">
+                            <td className="p-3.5 font-mono text-[11px] text-slate-400">
+                              {inv.status === "accepted" && inv.acceptedAt ? (
+                                <span className="text-emerald-400">
+                                  {new Date(inv.acceptedAt).toLocaleDateString("en-GB", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              ) : (
+                                <span>
+                                  {new Date(inv.expiresAt).toLocaleDateString("en-GB", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5 text-right space-x-2">
                               {inv.status === "pending" && (
                                 <button
                                   type="button"
                                   onClick={() => handleRevokeInvite(inv.id)}
                                   disabled={isRevokingId === inv.id}
-                                  className="text-[11px] text-rose-400 hover:text-rose-300 hover:underline disabled:opacity-50"
+                                  className="text-[11px] text-rose-400 hover:text-rose-300 hover:underline disabled:opacity-50 cursor-pointer"
                                 >
                                   {isRevokingId === inv.id ? "Revoking..." : "Revoke"}
+                                </button>
+                              )}
+                              {(inv.status === "expired" || inv.status === "revoked") && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleReissueInvite(inv)}
+                                  className="text-[11px] text-[#e57804] hover:text-[#ff8906] hover:underline cursor-pointer"
+                                >
+                                  Reissue
                                 </button>
                               )}
                             </td>
@@ -1774,10 +1914,10 @@ export const AdminSchedulingPage: React.FC = () => {
                 )}
 
                 {/* Invitations Pagination Controls */}
-                {!isLoading && invitations.length > 0 && (
+                {!isLoading && filteredInvitations.length > 0 && (
                   <AdminPagination
                     currentPage={invitationsPage}
-                    totalItems={invitations.length}
+                    totalItems={filteredInvitations.length}
                     pageSize={PAGE_SIZE}
                     onPageChange={setInvitationsPage}
                     itemName="invitations"

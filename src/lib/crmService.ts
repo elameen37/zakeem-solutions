@@ -1145,6 +1145,163 @@ export async function getOrganizationDetails(orgId: string): Promise<{
   };
 }
 
+export async function createAdminOrganization(payload: {
+  name: string;
+  domain?: string | null;
+  industry?: string | null;
+  companySize?: string | null;
+  status?: OrganizationStatus;
+}): Promise<{
+  success: boolean;
+  organization?: CRMOrganization;
+  error?: string;
+}> {
+  const trimmedName = payload.name.trim();
+  if (!trimmedName) {
+    return { success: false, error: "Organization name is required." };
+  }
+
+  const baseSlug = trimmedName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  const slug = `${baseSlug || "org"}-${Math.random().toString(36).substring(2, 7)}`;
+
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const dbPayload = {
+        name: trimmedName,
+        slug,
+        domain: payload.domain?.trim().toLowerCase() || null,
+        industry: payload.industry?.trim() || null,
+        company_size: payload.companySize?.trim() || null,
+        status: payload.status || "prospect",
+      };
+
+      const { data, error } = await client
+        .from("crm_organizations")
+        .insert(dbPayload)
+        .select("id, name, slug, domain, industry, company_size, status, created_at, updated_at")
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      const org: CRMOrganization = {
+        id: data.id,
+        name: data.name,
+        slug: data.slug,
+        domain: data.domain,
+        industry: data.industry,
+        companySize: data.company_size,
+        status: data.status,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+
+      // Record administrative activity audit log
+      try {
+        await client.from("crm_activities").insert({
+          activity_type: "note_added",
+          organization_id: org.id,
+          title: `Account Created: ${org.name}`,
+          description: `Enterprise account provisioned by solutions administrator.`,
+          status: "completed",
+          metadata: { initial_status: org.status, domain: org.domain },
+        });
+      } catch {
+        // Non-blocking audit
+      }
+
+      emitAnalyticsEvent("crm:organization_created", { orgId: org.id, name: org.name });
+      return { success: true, organization: org };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to create organization." };
+    }
+  }
+
+  // Local fallback
+  const orgs = getStored<CRMOrganization>(STORAGE_KEYS.ORGANIZATIONS, []);
+  const newOrg: CRMOrganization = {
+    id: `local-org-${Date.now()}`,
+    name: trimmedName,
+    slug,
+    domain: payload.domain?.trim().toLowerCase() || null,
+    industry: payload.industry?.trim() || null,
+    companySize: payload.companySize?.trim() || null,
+    status: payload.status || "prospect",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  setStored(STORAGE_KEYS.ORGANIZATIONS, [newOrg, ...orgs]);
+  return { success: true, organization: newOrg };
+}
+
+export async function updateAdminOrganization(
+  orgId: string,
+  updates: Partial<CRMOrganization>
+): Promise<{ success: boolean; organization?: CRMOrganization; error?: string }> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const dbPayload: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (updates.name !== undefined) dbPayload.name = updates.name.trim();
+      if (updates.domain !== undefined) dbPayload.domain = updates.domain?.trim().toLowerCase() || null;
+      if (updates.industry !== undefined) dbPayload.industry = updates.industry?.trim() || null;
+      if (updates.companySize !== undefined) dbPayload.company_size = updates.companySize?.trim() || null;
+      if (updates.status !== undefined) dbPayload.status = updates.status;
+
+      const { data, error } = await client
+        .from("crm_organizations")
+        .update(dbPayload)
+        .eq("id", orgId)
+        .select("id, name, slug, domain, industry, company_size, status, created_at, updated_at")
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      const org: CRMOrganization = {
+        id: data.id,
+        name: data.name,
+        slug: data.slug,
+        domain: data.domain,
+        industry: data.industry,
+        companySize: data.company_size,
+        status: data.status,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+
+      return { success: true, organization: org };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to update organization." };
+    }
+  }
+
+  // Local fallback
+  const orgs = getStored<CRMOrganization>(STORAGE_KEYS.ORGANIZATIONS, []);
+  const target = orgs.find((o) => o.id === orgId);
+  if (!target) return { success: false, error: "Organization not found." };
+  Object.assign(target, updates, { updatedAt: new Date().toISOString() });
+  setStored(STORAGE_KEYS.ORGANIZATIONS, orgs);
+  return { success: true, organization: target };
+}
+
 // -----------------------------------------------------------------------------
 // CONTACTS & DECISION MAKERS
 // -----------------------------------------------------------------------------
@@ -1377,6 +1534,196 @@ export async function getContactDetails(contactId: string): Promise<{
     },
     activities: allActs.filter((a) => a.contactId === contactId),
   };
+}
+
+export async function createAdminContact(payload: {
+  organizationId?: string | null;
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  jobTitle?: string | null;
+  isPrimary?: boolean;
+}): Promise<{
+  success: boolean;
+  contact?: CRMContact;
+  error?: string;
+}> {
+  const trimmedName = payload.fullName.trim();
+  const trimmedEmail = payload.email.trim().toLowerCase();
+
+  if (!trimmedName) {
+    return { success: false, error: "Contact full name is required." };
+  }
+  if (!trimmedEmail) {
+    return { success: false, error: "Contact email is required." };
+  }
+
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const dbPayload = {
+        organization_id: payload.organizationId || null,
+        full_name: trimmedName,
+        email: trimmedEmail,
+        phone: payload.phone?.trim() || null,
+        job_title: payload.jobTitle?.trim() || null,
+        is_primary: Boolean(payload.isPrimary),
+      };
+
+      const { data, error } = await client
+        .from("crm_contacts")
+        .insert(dbPayload)
+        .select(`
+          id, organization_id, email, full_name, phone, job_title, profile_id, is_primary, created_at, updated_at,
+          organization:crm_organizations(id, name, slug, domain, industry, status, created_at, updated_at)
+        `)
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      const contact: CRMContact = {
+        id: data.id,
+        organizationId: data.organization_id,
+        email: data.email,
+        fullName: data.full_name,
+        phone: data.phone,
+        jobTitle: data.job_title,
+        profileId: data.profile_id,
+        isPrimary: Boolean(data.is_primary),
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        organization: (data as any).organization
+          ? {
+              id: (data as any).organization.id,
+              name: (data as any).organization.name,
+              slug: (data as any).organization.slug,
+              domain: (data as any).organization.domain,
+              industry: (data as any).organization.industry,
+              status: (data as any).organization.status,
+              createdAt: (data as any).organization.created_at,
+              updatedAt: (data as any).organization.updated_at,
+            }
+          : null,
+      };
+
+      // Record administrative activity audit log
+      try {
+        await client.from("crm_activities").insert({
+          activity_type: "note_added",
+          organization_id: contact.organizationId || null,
+          contact_id: contact.id,
+          title: `Contact Created: ${contact.fullName}`,
+          description: `Enterprise stakeholder contact created by solutions administrator.`,
+          status: "completed",
+          metadata: { email: contact.email, is_primary: contact.isPrimary },
+        });
+      } catch {
+        // Non-blocking audit
+      }
+
+      emitAnalyticsEvent("crm:contact_created", { contactId: contact.id, email: contact.email });
+      return { success: true, contact };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to create contact." };
+    }
+  }
+
+  // Local fallback
+  const contacts = getStored<CRMContact>(STORAGE_KEYS.CONTACTS, []);
+  const newContact: CRMContact = {
+    id: `local-contact-${Date.now()}`,
+    organizationId: payload.organizationId || null,
+    fullName: trimmedName,
+    email: trimmedEmail,
+    phone: payload.phone?.trim() || null,
+    jobTitle: payload.jobTitle?.trim() || null,
+    profileId: null,
+    isPrimary: Boolean(payload.isPrimary),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  setStored(STORAGE_KEYS.CONTACTS, [newContact, ...contacts]);
+  return { success: true, contact: newContact };
+}
+
+export async function updateAdminContact(
+  contactId: string,
+  updates: Partial<CRMContact>
+): Promise<{ success: boolean; contact?: CRMContact; error?: string }> {
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { success: false, error: "Database client unavailable." };
+    }
+
+    try {
+      const dbPayload: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (updates.fullName !== undefined) dbPayload.full_name = updates.fullName.trim();
+      if (updates.phone !== undefined) dbPayload.phone = updates.phone?.trim() || null;
+      if (updates.jobTitle !== undefined) dbPayload.job_title = updates.jobTitle?.trim() || null;
+      if (updates.isPrimary !== undefined) dbPayload.is_primary = Boolean(updates.isPrimary);
+      if (updates.organizationId !== undefined) dbPayload.organization_id = updates.organizationId || null;
+
+      const { data, error } = await client
+        .from("crm_contacts")
+        .update(dbPayload)
+        .eq("id", contactId)
+        .select(`
+          id, organization_id, email, full_name, phone, job_title, profile_id, is_primary, created_at, updated_at,
+          organization:crm_organizations(id, name, slug, domain, industry, status, created_at, updated_at)
+        `)
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      const contact: CRMContact = {
+        id: data.id,
+        organizationId: data.organization_id,
+        email: data.email,
+        fullName: data.full_name,
+        phone: data.phone,
+        jobTitle: data.job_title,
+        profileId: data.profile_id,
+        isPrimary: Boolean(data.is_primary),
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        organization: (data as any).organization
+          ? {
+              id: (data as any).organization.id,
+              name: (data as any).organization.name,
+              slug: (data as any).organization.slug,
+              domain: (data as any).organization.domain,
+              industry: (data as any).organization.industry,
+              status: (data as any).organization.status,
+              createdAt: (data as any).organization.created_at,
+              updatedAt: (data as any).organization.updated_at,
+            }
+          : null,
+      };
+
+      return { success: true, contact };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to update contact." };
+    }
+  }
+
+  // Local fallback
+  const contacts = getStored<CRMContact>(STORAGE_KEYS.CONTACTS, []);
+  const target = contacts.find((c) => c.id === contactId);
+  if (!target) return { success: false, error: "Contact not found." };
+  Object.assign(target, updates, { updatedAt: new Date().toISOString() });
+  setStored(STORAGE_KEYS.CONTACTS, contacts);
+  return { success: true, contact: target };
 }
 
 // -----------------------------------------------------------------------------

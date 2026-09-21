@@ -27,6 +27,7 @@ import {
   Briefcase,
   Shield,
   ArrowRight,
+  Plus,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -47,6 +48,8 @@ import {
   getAdminOrganizations,
   getOrganizationDetails,
   addCRMNote,
+  createAdminOrganization,
+  updateAdminOrganization,
 } from "@/lib/crmService";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
@@ -122,6 +125,20 @@ export default function AdminOrganizationsPage() {
   const [submittingNote, setSubmittingNote] = useState(false);
   const [noteSuccess, setNoteSuccess] = useState(false);
   const [activityRefreshTrigger, setActivityRefreshTrigger] = useState(0);
+
+  // Create Account Modal State
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newOrgName, setNewOrgName] = useState("");
+  const [newOrgDomain, setNewOrgDomain] = useState("");
+  const [newOrgIndustry, setNewOrgIndustry] = useState("");
+  const [newOrgCompanySize, setNewOrgCompanySize] = useState("");
+  const [newOrgStatus, setNewOrgStatus] = useState<OrganizationStatus>("prospect");
+  const [isCreatingOrg, setIsCreatingOrg] = useState(false);
+  const [createOrgError, setCreateOrgError] = useState<string | null>(null);
+
+  // Status update in drawer state
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [statusUpdateSuccess, setStatusUpdateSuccess] = useState(false);
 
   // Synchronize URL param with selectedOrgId
   useEffect(() => {
@@ -223,6 +240,57 @@ export default function AdminOrganizationsPage() {
     }
   };
 
+  const handleCreateOrganization = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOrgName.trim()) return;
+    setIsCreatingOrg(true);
+    setCreateOrgError(null);
+    try {
+      const res = await createAdminOrganization({
+        name: newOrgName.trim(),
+        domain: newOrgDomain.trim() || undefined,
+        industry: newOrgIndustry.trim() || undefined,
+        companySize: newOrgCompanySize.trim() || undefined,
+        status: newOrgStatus,
+      });
+
+      if (res.success && res.organization) {
+        setShowCreateModal(false);
+        setNewOrgName("");
+        setNewOrgDomain("");
+        setNewOrgIndustry("");
+        setNewOrgCompanySize("");
+        setNewOrgStatus("prospect");
+        await fetchOrganizations();
+        handleSelectOrg(res.organization.id);
+      } else {
+        setCreateOrgError(res.error || "Failed to create account.");
+      }
+    } catch (err: any) {
+      setCreateOrgError(err?.message || "An unexpected error occurred while creating account.");
+    } finally {
+      setIsCreatingOrg(false);
+    }
+  };
+
+  const handleUpdateOrgStatus = async (newStatus: OrganizationStatus) => {
+    if (!selectedOrgId || !detailOrg) return;
+    setIsUpdatingStatus(true);
+    try {
+      const res = await updateAdminOrganization(selectedOrgId, { status: newStatus });
+      if (res.success) {
+        setStatusUpdateSuccess(true);
+        setTimeout(() => setStatusUpdateSuccess(false), 3000);
+        await fetchDetails(selectedOrgId);
+        await fetchOrganizations();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   // Extract unique industries for filter
   const uniqueIndustries = useMemo(() => {
     const set = new Set<string>();
@@ -284,6 +352,17 @@ export default function AdminOrganizationsPage() {
 
           <div className="flex items-center gap-3">
             <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setShowCreateModal(true);
+                setCreateOrgError(null);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              Create Account
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               onClick={fetchOrganizations}
@@ -295,6 +374,140 @@ export default function AdminOrganizationsPage() {
             </Button>
           </div>
         </div>
+
+        {/* Create Account Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2 text-white font-bold text-base">
+                  <Building2 className="w-5 h-5 text-brand-400" />
+                  <span>Register Enterprise Account</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {createOrgError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{createOrgError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleCreateOrganization} className="space-y-3.5 text-xs">
+                <div>
+                  <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                    Organization / Company Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Zenith Bank PLC"
+                    value={newOrgName}
+                    onChange={(e) => setNewOrgName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-500 text-xs"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                      Web Domain
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="zenithbank.com"
+                      value={newOrgDomain}
+                      onChange={(e) => setNewOrgDomain(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-500 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                      Industry Sector
+                    </label>
+                    <select
+                      value={newOrgIndustry}
+                      onChange={(e) => setNewOrgIndustry(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-brand-500 text-xs"
+                    >
+                      <option value="">General Commercial</option>
+                      <option value="Financial Services">Financial Services & Banking</option>
+                      <option value="Real Estate & Property">Real Estate & Property</option>
+                      <option value="Energy & Oil/Gas">Energy & Oil / Gas</option>
+                      <option value="Public Sector & Legal">Public Sector & Legal</option>
+                      <option value="Healthcare">Healthcare & Life Sciences</option>
+                      <option value="Technology & Media">Technology & Digital Media</option>
+                      <option value="Retail & Consumer Goods">Commercial Retail & FMCG</option>
+                      <option value="Logistics & Supply Chain">Logistics & Supply Chain</option>
+                      <option value="Other">Other Enterprise Sector</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                      Initial Commercial Status
+                    </label>
+                    <select
+                      value={newOrgStatus}
+                      onChange={(e) => setNewOrgStatus(e.target.value as OrganizationStatus)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-brand-500 text-xs"
+                    >
+                      <option value="lead">Inbound Lead</option>
+                      <option value="prospect">Qualified Prospect</option>
+                      <option value="customer">Active Client</option>
+                      <option value="partner">Strategic Partner</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                      Company Scale / Tier
+                    </label>
+                    <select
+                      value={newOrgCompanySize}
+                      onChange={(e) => setNewOrgCompanySize(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-brand-500 text-xs"
+                    >
+                      <option value="startup">Startup / Growth Stage</option>
+                      <option value="smb">SMB / Commercial Mid-Tier</option>
+                      <option value="mid_market">Mid-Market Enterprise</option>
+                      <option value="enterprise">Tier-1 Enterprise / Multicorp</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-3 flex justify-end gap-2 border-t border-slate-800">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    type="submit"
+                    disabled={isCreatingOrg}
+                  >
+                    {isCreatingOrg ? "Creating Account..." : "Create Account"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* KPI Strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
@@ -584,6 +797,29 @@ export default function AdminOrganizationsPage() {
                       {detailOrg.domain}
                       <ExternalLink className="w-3 h-3 ml-0.5" />
                     </a>
+                  )}
+
+                  {detailOrg?.status && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] text-slate-500 font-mono uppercase">Lifecycle:</span>
+                      <select
+                        value={detailOrg.status}
+                        onChange={(e) => handleUpdateOrgStatus(e.target.value as OrganizationStatus)}
+                        disabled={isUpdatingStatus}
+                        className="px-2 py-0.5 rounded bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-500"
+                      >
+                        <option value="lead">Inbound Lead</option>
+                        <option value="prospect">Qualified Prospect</option>
+                        <option value="customer">Active Client</option>
+                        <option value="partner">Strategic Partner</option>
+                        <option value="churned">Former / Churned</option>
+                      </select>
+                      {statusUpdateSuccess && (
+                        <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-mono">
+                          <CheckCircle2 className="w-3 h-3" /> Updated
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

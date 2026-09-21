@@ -10,12 +10,13 @@ import {
   ExternalLink,
   Activity,
   Settings,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AdminNavProps {
-  currentTab?: "operations" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "reports" | "settings";
-  activeDesk?: "operations" | "workspace" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "pipeline" | "accounts" | "reports" | "settings";
+  currentTab?: "operations" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "invitations" | "reports" | "settings";
+  activeDesk?: "operations" | "workspace" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "invitations" | "pipeline" | "accounts" | "reports" | "settings";
 }
 
 export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) => {
@@ -25,7 +26,8 @@ export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) =>
   const active = activeDesk || currentTab;
   const isOperations = active === "operations" || active === "workspace" || path === "/admin/crm/operations" || path.startsWith("/admin/crm/operations");
   const isLeads = active === "leads" || path.startsWith("/admin/crm/leads");
-  const isScheduling = active === "scheduling" || path.startsWith("/admin/scheduling");
+  const isInvitations = active === "invitations" || path === "/admin/invitations" || (path.startsWith("/admin/scheduling") && location.search.includes("tab=invitations"));
+  const isScheduling = (active === "scheduling" && !location.search.includes("tab=invitations")) || (path.startsWith("/admin/scheduling") && !location.search.includes("tab=invitations"));
   const isPipeline = active === "opportunities" || active === "pipeline" || path.startsWith("/admin/crm/pipeline");
   const isOrgs = active === "organizations" || active === "accounts" || path.startsWith("/admin/crm/organizations");
   const isContacts = active === "contacts" || path.startsWith("/admin/crm/contacts");
@@ -120,6 +122,20 @@ export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) =>
           >
             <Calendar className="w-3.5 h-3.5" />
             <span>Scheduling</span>
+          </Link>
+
+          {/* Client Account Invitations */}
+          <Link
+            to="/admin/invitations"
+            className={cn(
+              "px-3.5 py-2 rounded-xl text-xs font-mono font-medium transition-all flex items-center gap-2 whitespace-nowrap",
+              isInvitations
+                ? "bg-[#e57804] text-white shadow-lg shadow-[#e57804]/20"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
+            )}
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Invitations</span>
           </Link>
 
           {/* Commercial Intelligence & Reports */}

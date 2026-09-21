@@ -22,6 +22,7 @@ import {
   Award,
   FileText,
   UserPlus,
+  Plus,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -40,6 +41,8 @@ import {
   getContactDetails,
   getAdminOrganizations,
   addCRMNote,
+  createAdminContact,
+  updateAdminContact,
 } from "@/lib/crmService";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
@@ -79,6 +82,17 @@ export default function AdminContactsPage() {
   const [submittingNote, setSubmittingNote] = useState(false);
   const [noteSuccess, setNoteSuccess] = useState(false);
   const [activityRefreshTrigger, setActivityRefreshTrigger] = useState(0);
+
+  // Create Contact Modal State
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newContactOrgId, setNewContactOrgId] = useState("");
+  const [newContactName, setNewContactName] = useState("");
+  const [newContactEmail, setNewContactEmail] = useState("");
+  const [newContactPhone, setNewContactPhone] = useState("");
+  const [newContactJobTitle, setNewContactJobTitle] = useState("");
+  const [newContactIsPrimary, setNewContactIsPrimary] = useState(false);
+  const [isCreatingContact, setIsCreatingContact] = useState(false);
+  const [createContactError, setCreateContactError] = useState<string | null>(null);
 
   // Synchronize URL param with selectedContactId
   useEffect(() => {
@@ -194,6 +208,41 @@ export default function AdminContactsPage() {
     }
   };
 
+  const handleCreateContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newContactName.trim() || !newContactEmail.trim()) return;
+    setIsCreatingContact(true);
+    setCreateContactError(null);
+    try {
+      const res = await createAdminContact({
+        organizationId: newContactOrgId || undefined,
+        fullName: newContactName.trim(),
+        email: newContactEmail.trim(),
+        phone: newContactPhone.trim() || undefined,
+        jobTitle: newContactJobTitle.trim() || undefined,
+        isPrimary: newContactIsPrimary,
+      });
+
+      if (res.success && res.contact) {
+        setShowCreateModal(false);
+        setNewContactOrgId("");
+        setNewContactName("");
+        setNewContactEmail("");
+        setNewContactPhone("");
+        setNewContactJobTitle("");
+        setNewContactIsPrimary(false);
+        await fetchContacts();
+        handleSelectContact(res.contact.id);
+      } else {
+        setCreateContactError(res.error || "Failed to create contact.");
+      }
+    } catch (err: any) {
+      setCreateContactError(err?.message || "An unexpected error occurred while creating contact.");
+    } finally {
+      setIsCreatingContact(false);
+    }
+  };
+
   // KPI Calculations
   const kpis = useMemo(() => {
     const total = contacts.length;
@@ -247,6 +296,17 @@ export default function AdminContactsPage() {
 
           <div className="flex items-center gap-3">
             <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setShowCreateModal(true);
+                setCreateContactError(null);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              Add Contact
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               onClick={fetchContacts}
@@ -258,6 +318,144 @@ export default function AdminContactsPage() {
             </Button>
           </div>
         </div>
+
+        {/* Create Contact Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2 text-white font-bold text-base">
+                  <Users className="w-5 h-5 text-brand-400" />
+                  <span>Register Contact / Stakeholder</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {createContactError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{createContactError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleCreateContact} className="space-y-3.5 text-xs">
+                <div>
+                  <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                    Associated Organization
+                  </label>
+                  <select
+                    value={newContactOrgId}
+                    onChange={(e) => setNewContactOrgId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-brand-500 text-xs"
+                  >
+                    <option value="">Independent / Not Yet Associated</option>
+                    {organizations.map((org) => (
+                      <option key={org.id} value={org.id}>
+                        {org.name} {org.industry ? `(${org.industry})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Alhaji Ibrahim Danladi"
+                      value={newContactName}
+                      onChange={(e) => setNewContactName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-500 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                      Work Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="client@organization.com"
+                      value={newContactEmail}
+                      onChange={(e) => setNewContactEmail(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-500 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="+234 800 000 0000"
+                      value={newContactPhone}
+                      onChange={(e) => setNewContactPhone(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-500 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                      Job Title / Role
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Chief Technology Officer"
+                      value={newContactJobTitle}
+                      onChange={(e) => setNewContactJobTitle(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-500 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-1 flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="new-contact-primary"
+                    checked={newContactIsPrimary}
+                    onChange={(e) => setNewContactIsPrimary(e.target.checked)}
+                    className="rounded border-slate-700 bg-slate-950 text-brand-500 focus:ring-brand-500/20"
+                  />
+                  <label htmlFor="new-contact-primary" className="text-xs text-slate-300 select-none cursor-pointer">
+                    Designate as Primary Decision Maker for this account
+                  </label>
+                </div>
+
+                <div className="pt-3 flex justify-end gap-2 border-t border-slate-800">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    type="submit"
+                    disabled={isCreatingContact}
+                  >
+                    {isCreatingContact ? "Adding Contact..." : "Add Contact"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* KPI Strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
@@ -586,9 +784,20 @@ export default function AdminContactsPage() {
                     </div>
                     <div>
                       <span className="text-slate-500 block">Auth Profile Link</span>
-                      <span className="text-slate-200 font-mono text-[10px]">
-                        {detailContact.profileId || "No client portal account linked"}
-                      </span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-slate-200 font-mono text-[10px]">
+                          {detailContact.profileId || "No client portal account linked"}
+                        </span>
+                        {!detailContact.profileId && (
+                          <Link
+                            to={`/admin/scheduling?tab=invitations&email=${encodeURIComponent(detailContact.email)}&name=${encodeURIComponent(detailContact.fullName)}&org=${encodeURIComponent(detailContact.organization?.name || "")}&orgId=${detailContact.organizationId || ""}&contactId=${detailContact.id}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#e57804]/20 border border-[#e57804]/40 text-[#e57804] hover:bg-[#e57804]/30 text-[10px] font-medium transition-colors"
+                          >
+                            <UserPlus className="w-3 h-3" />
+                            Invite
+                          </Link>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <span className="text-slate-500 block">Created On</span>

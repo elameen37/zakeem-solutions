@@ -382,6 +382,9 @@ export async function createAdminInvitation(
     }
 
     try {
+      const { data: authData } = await client.auth.getUser();
+      const invitedBy = authData?.user?.id || null;
+
       const { error } = await client.from("client_invitations").insert({
         email: trimmedEmail,
         organization: trimmedOrg,
@@ -391,6 +394,7 @@ export async function createAdminInvitation(
         organization_id: payload.organizationId || null,
         contact_id: payload.contactId || null,
         booking_id: payload.bookingId || null,
+        invited_by: invitedBy,
         status: "pending",
         expires_at: expiresAt,
       });
@@ -481,7 +485,7 @@ export async function listAdminInvitations(): Promise<{
     try {
       const { data, error } = await client
         .from("client_invitations")
-        .select("id, email, organization, full_name, status, lead_id, organization_id, contact_id, booking_id, accepted_user_id, expires_at, created_at, accepted_at")
+        .select("id, email, organization, full_name, status, lead_id, organization_id, contact_id, booking_id, accepted_user_id, invited_by, expires_at, created_at, accepted_at")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -500,6 +504,7 @@ export async function listAdminInvitations(): Promise<{
         contactId: row.contact_id || undefined,
         bookingId: row.booking_id || undefined,
         acceptedUserId: row.accepted_user_id || undefined,
+        invitedBy: row.invited_by || undefined,
         expiresAt: row.expires_at,
         createdAt: row.created_at,
         acceptedAt: row.accepted_at || undefined,

@@ -115,23 +115,67 @@ function getActivityBadgeLabel(type: CRMActivityType): string {
   }
 }
 
-function formatRelativeTime(isoString: string): string {
+export interface FormattedActivityTime {
+  date: string;       // e.g. "21 Sep 2026"
+  time: string;       // e.g. "14:35"
+  full: string;       // e.g. "21 Sep 2026, 14:35"
+  relative: string;   // e.g. "12m ago", "2h ago", "Just now"
+}
+
+/**
+ * Formats an authoritative ISO timestamp with both date and time
+ * using Nigeria / West Africa Time (WAT = UTC+1).
+ */
+export function formatActivityTimestamp(isoString?: string | null): FormattedActivityTime | null {
+  if (!isoString) return null;
   try {
-    const diff = Date.now() - new Date(isoString).getTime();
-    const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return "Just now";
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `${days}d ago`;
-    return new Date(isoString).toLocaleDateString("en-GB", {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return null;
+
+    // Use Nigeria / West Africa Time (WAT = UTC+1)
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Lagos",
       day: "numeric",
       month: "short",
       year: "numeric",
-    });
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(d).reduce<Record<string, string>>((acc, p) => {
+      acc[p.type] = p.value;
+      return acc;
+    }, {});
+
+    const day = parts.day || "";
+    const month = (parts.month || "").replace("Sept", "Sep");
+    const year = parts.year || "";
+    const hour = parts.hour || "00";
+    const minute = parts.minute || "00";
+
+    const date = `${day} ${month} ${year}`.trim();
+    const time = `${hour}:${minute}`;
+    const full = `${date}, ${time}`;
+
+    // Compute relative time if in past
+    const diff = Date.now() - d.getTime();
+    let relative = "";
+    if (diff >= 0) {
+      const minutes = Math.floor(diff / 60000);
+      if (minutes < 1) relative = "Just now";
+      else if (minutes < 60) relative = `${minutes}m ago`;
+      else {
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) relative = `${hours}h ago`;
+        else {
+          const days = Math.floor(hours / 24);
+          if (days < 30) relative = `${days}d ago`;
+        }
+      }
+    }
+
+    return { date, time, full, relative };
   } catch {
-    return isoString;
+    return null;
   }
 }
 
@@ -227,6 +271,7 @@ export const CRMActivityStream: React.FC<CRMActivityStreamProps> = ({
             isPending &&
             act.dueDate &&
             new Date(act.dueDate).getTime() < Date.now();
+          const formattedCreated = formatActivityTimestamp(act.createdAt);
 
           return (
             <div key={act.id} className="relative group">
@@ -278,7 +323,7 @@ export const CRMActivityStream: React.FC<CRMActivityStreamProps> = ({
                         {isOverdue ? "Overdue" : "Pending"}
                       </span>
                     )}
-                    {!isPending && act.status === "completed" && act.completedAt && (
+                    {!isPending && act.status === "completed" && (
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-mono uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         Done
                       </span>
@@ -289,16 +334,43 @@ export const CRMActivityStream: React.FC<CRMActivityStreamProps> = ({
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1 shrink-0">
-                    <Clock className="w-3 h-3" />
-                    {formatRelativeTime(act.createdAt)}
-                  </span>
+
+                  {/* Authoritative Persisted Activity Timestamp */}
+                  {formattedCreated ? (
+                    <div className="text-right shrink-0 flex flex-col items-end">
+                      <span
+                        className="text-[11px] font-mono text-slate-300 font-medium flex items-center gap-1"
+                        title={`${formattedCreated.full} (WAT / UTC+1)`}
+                      >
+                        <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span>{formattedCreated.full}</span>
+                      </span>
+                      {formattedCreated.relative && (
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {formattedCreated.relative}
+                        </span>
+                      )}
+                    </div>
+                  ) : act.createdAt ? (
+                    <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1 shrink-0">
+                      <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                      {act.createdAt}
+                    </span>
+                  ) : null}
                 </div>
 
                 {act.description && (
                   <p className="text-slate-300 text-xs mt-1 leading-relaxed whitespace-pre-wrap">
                     {act.description}
                   </p>
+                )}
+
+                {/* Completed Timestamp if completed */}
+                {!isPending && act.status === "completed" && act.completedAt && (
+                  <div className="mt-2 pt-1.5 border-t border-white/5 flex items-center gap-1.5 text-[11px] font-mono text-emerald-400">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Completed: {formatActivityTimestamp(act.completedAt)?.full || act.completedAt}</span>
+                  </div>
                 )}
 
                 {/* Due Date & Assignee */}
@@ -317,12 +389,7 @@ export const CRMActivityStream: React.FC<CRMActivityStreamProps> = ({
                             isOverdue ? "text-rose-400 font-semibold" : "text-slate-300"
                           )}
                         >
-                          Due:{" "}
-                          {new Date(act.dueDate).toLocaleDateString("en-GB", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          Due: {formatActivityTimestamp(act.dueDate)?.full || act.dueDate}
                         </span>
                       </div>
                     )}

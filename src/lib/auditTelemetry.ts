@@ -45,11 +45,21 @@ export type PlatformAuditEventType =
   | "maintenance.disabled"
   | "application.unexpected_error";
 
+export type NotificationAuditEventType =
+  | "notification.queued"
+  | "notification.sent"
+  | "notification.failed"
+  | "notification.retrying"
+  | "invitation.delivery_requested"
+  | "invitation.delivery_sent"
+  | "invitation.delivery_failed";
+
 export type AuditEventType =
   | AuthAuditEventType
   | CRMAuditEventType
   | SchedulingAuditEventType
-  | PlatformAuditEventType;
+  | PlatformAuditEventType
+  | NotificationAuditEventType;
 
 export type ErrorCategory =
   | "AUTHENTICATION"
@@ -70,6 +80,7 @@ export type AuditEntityType =
   | "contact"
   | "activity"
   | "invitation"
+  | "notification"
   | "system"
   | "application";
 

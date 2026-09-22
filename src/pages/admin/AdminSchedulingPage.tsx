@@ -32,6 +32,9 @@ import {
   ChevronRight,
   Copy,
   UserPlus,
+  Send,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -73,6 +76,11 @@ import {
   createAdminInvitation,
   revokeAdminInvitation,
 } from "@/lib/invitationService";
+import {
+  maskRecipientEmail,
+  dispatchInvitationNotification,
+  retryNotificationDispatch,
+} from "@/lib/notificationService";
 import { ClientInvitation, CreateInvitationResult } from "@/types/auth";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import { formatDisplayDate } from "@/lib/leadValidation";
@@ -246,6 +254,10 @@ export const AdminSchedulingPage: React.FC = () => {
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   const [notifications, setNotifications] = useState<BookingNotification[]>([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const [retryingNotifId, setRetryingNotifId] = useState<string | null>(null);
+  const [unmaskedNotifIds, setUnmaskedNotifIds] = useState<Record<string, boolean>>({});
+  const [isDispatchingInvite, setIsDispatchingInvite] = useState(false);
+  const [inviteDispatchResult, setInviteDispatchResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -590,6 +602,7 @@ export const AdminSchedulingPage: React.FC = () => {
       if (res.success && res.token) {
         setCreatedInviteToken(res.token);
         setCreatedInvitationData(res);
+        setInviteDispatchResult(null);
         setActionSuccess(`Invitation generated for ${inviteOrg.trim()}.`);
         const listRes = await listAdminInvitations();
         if (listRes.success) {
@@ -602,6 +615,67 @@ export const AdminSchedulingPage: React.FC = () => {
       setActionError("An unexpected error occurred while generating invitation.");
     } finally {
       setIsCreatingInvite(false);
+    }
+  };
+
+  const handleDispatchInviteEmail = async (token: string, data?: CreateInvitationResult | null) => {
+    setIsDispatchingInvite(true);
+    setInviteDispatchResult(null);
+    try {
+      const res = await dispatchInvitationNotification({
+        email: data?.email || inviteEmail,
+        fullName: data?.fullName || inviteName,
+        organization: data?.organization || inviteOrg,
+        inviteToken: token,
+        expiresAt: data?.expiresAt || new Date(Date.now() + 7 * 86400000).toISOString(),
+        leadId: inviteLeadId || undefined,
+      });
+      if (res.success) {
+        setInviteDispatchResult({
+          success: true,
+          message: `Enterprise invitation dispatched successfully to ${maskRecipientEmail(data?.email || inviteEmail)} via ${res.provider || "notification service"}.`,
+        });
+      } else {
+        setInviteDispatchResult({
+          success: false,
+          message: `Dispatch failed: ${res.error || "Provider unavailable"}. Please copy link manually.`,
+        });
+      }
+    } catch {
+      setInviteDispatchResult({
+        success: false,
+        message: "An unexpected error occurred during dispatch. Please copy link manually.",
+      });
+    } finally {
+      setIsDispatchingInvite(false);
+    }
+  };
+
+  const handleRetryNotification = async (notification: BookingNotification) => {
+    setRetryingNotifId(notification.id);
+    setActionError(null);
+    try {
+      const res = await retryNotificationDispatch({
+        id: notification.id,
+        bookingId: notification.bookingId,
+        referenceId: notification.referenceId,
+        eventType: notification.eventType,
+        recipientEmail: notification.recipientEmail,
+        recipientName: notification.recipientName,
+        payload: notification.payload,
+      });
+      if (res.success) {
+        setActionSuccess(`Notification re-queued and dispatched via ${res.provider || "service"} (Ref: ${res.notificationId || notification.referenceId}).`);
+        if (selectedBooking) {
+          await loadBookingHistory(selectedBooking.id);
+        }
+      } else {
+        setActionError(`Notification retry failed: ${res.error || "Unknown dispatch error"}`);
+      }
+    } catch {
+      setActionError("Failed to retry notification dispatch.");
+    } finally {
+      setRetryingNotifId(null);
     }
   };
 
@@ -1633,6 +1707,38 @@ export const AdminSchedulingPage: React.FC = () => {
                         </button>
                       </div>
 
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          disabled={isDispatchingInvite}
+                          onClick={() => handleDispatchInviteEmail(createdInviteToken, createdInvitationData)}
+                          className="px-3.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-mono font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                        >
+                          {isDispatchingInvite ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Dispatching via Edge Service...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-3.5 h-3.5" /> Dispatch Invitation via Email
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {inviteDispatchResult && (
+                        <div
+                          className={cn(
+                            "p-3 rounded-lg text-xs font-mono border",
+                            inviteDispatchResult.success
+                              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                              : "bg-rose-500/10 border-rose-500/30 text-rose-300"
+                          )}
+                        >
+                          {inviteDispatchResult.message}
+                        </div>
+                      )}
+
                       <div className="pt-2 flex justify-end">
                         <Button
                           variant="ghost"
@@ -1831,7 +1937,9 @@ export const AdminSchedulingPage: React.FC = () => {
                               <div className="font-bold text-white">{inv.organization}</div>
                               <div className="text-[11px] text-slate-400">{inv.fullName}</div>
                             </td>
-                            <td className="p-3.5 font-mono text-slate-300">{inv.email}</td>
+                            <td className="p-3.5 font-mono text-slate-300" title={inv.email}>
+                              {maskRecipientEmail(inv.email)}
+                            </td>
                             <td className="p-3.5">
                               {inv.status === "pending" && (
                                 <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -2552,10 +2660,10 @@ export const AdminSchedulingPage: React.FC = () => {
                 <div className="space-y-4 pt-2">
                   <div className="p-3.5 rounded-xl bg-[#06152b] border border-emerald-500/20 text-xs text-slate-300 space-y-1">
                     <span className="text-emerald-400 font-mono font-semibold flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Provider-Neutral Queue
+                      <ShieldCheck className="w-3.5 h-3.5" /> Provider-Neutral Outbound Queue
                     </span>
                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Zakeem Solutions records all customer transactional dispatches in this PostgreSQL queue. Workers can deliver via SMTP, SendGrid, Postmark, or AWS SES without code modifications.
+                      Zakeem Solutions records all customer transactional dispatches in this PostgreSQL queue. Workers deliver via Resend, SendGrid, SMTP, or Webhooks with server-side secret isolation.
                     </p>
                   </div>
 
@@ -2578,34 +2686,83 @@ export const AdminSchedulingPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
-                      {notifications.map((n) => (
-                        <div
-                          key={n.id}
-                          className="p-3.5 rounded-xl bg-[#06152b] border border-white/10 text-xs space-y-1.5"
-                        >
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="font-mono text-sky-400 font-semibold">
-                              {n.eventType}
-                            </span>
-                            <span
-                              className={cn(
-                                "px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold",
-                                n.status === "pending"
-                                  ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                                  : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                      {notifications.map((n) => {
+                        const isUnmasked = Boolean(unmaskedNotifIds[n.id]);
+                        const displayedEmail = isUnmasked ? n.recipientEmail : maskRecipientEmail(n.recipientEmail);
+
+                        return (
+                          <div
+                            key={n.id}
+                            className="p-3.5 rounded-xl bg-[#06152b] border border-white/10 text-xs space-y-2"
+                          >
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="font-mono text-sky-400 font-semibold">
+                                {n.eventType}
+                              </span>
+                              <span
+                                className={cn(
+                                  "px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold",
+                                  n.status === "pending" && "bg-amber-500/15 text-amber-400 border border-amber-500/30",
+                                  n.status === "processing" && "bg-sky-500/15 text-sky-400 border border-sky-500/30",
+                                  n.status === "delivered" && "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
+                                  n.status === "failed" && "bg-rose-500/15 text-rose-400 border border-rose-500/30",
+                                  n.status === "retrying" && "bg-purple-500/15 text-purple-400 border border-purple-500/30",
+                                  n.status === "skipped" && "bg-slate-500/15 text-slate-400 border border-slate-500/30"
+                                )}
+                              >
+                                {n.status}
+                              </span>
+                            </div>
+
+                            <div className="text-slate-300 text-[11px] flex items-center justify-between gap-2">
+                              <div>
+                                To: <span className="text-white font-mono">{displayedEmail}</span> ({n.recipientName}) • via {n.channel}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setUnmaskedNotifIds((prev) => ({ ...prev, [n.id]: !prev[n.id] }))
+                                }
+                                className="text-slate-400 hover:text-white transition-colors"
+                                title={isUnmasked ? "Mask email" : "Show full email"}
+                              >
+                                {isUnmasked ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                              <span>Queued: {new Date(n.createdAt).toLocaleString("en-GB")}</span>
+                              {n.sentAt && (
+                                <span className="text-emerald-400/90">
+                                  Delivered: {new Date(n.sentAt).toLocaleString("en-GB")}
+                                </span>
                               )}
-                            >
-                              {n.status}
-                            </span>
+                            </div>
+
+                            {n.errorMessage && (
+                              <div className="p-2 rounded bg-rose-950/40 border border-rose-500/20 text-[10px] font-mono text-rose-300">
+                                Delivery Error: {n.errorMessage}
+                              </div>
+                            )}
+
+                            {(n.status === "failed" || n.status === "pending") && (
+                              <div className="pt-1 flex justify-end">
+                                <button
+                                  type="button"
+                                  disabled={retryingNotifId === n.id}
+                                  onClick={() => handleRetryNotification(n)}
+                                  className="px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white text-[11px] font-mono transition-colors flex items-center gap-1 cursor-pointer border border-white/10 disabled:opacity-50"
+                                >
+                                  <RefreshCw
+                                    className={cn("w-3 h-3", retryingNotifId === n.id && "animate-spin text-[#e57804]")}
+                                  />
+                                  {retryingNotifId === n.id ? "Retrying..." : "Retry Dispatch"}
+                                </button>
+                              </div>
+                            )}
                           </div>
-                          <div className="text-slate-300 text-[11px]">
-                            To: <span className="text-white font-mono">{n.recipientEmail}</span> ({n.recipientName}) • via {n.channel}
-                          </div>
-                          <div className="text-[10px] text-slate-500 font-mono">
-                            Queued: {new Date(n.createdAt).toLocaleString("en-GB")}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

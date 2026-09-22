@@ -140,7 +140,7 @@ export interface BookingNotification {
   recipientEmail: string;
   recipientName: string;
   channel: "email" | "sms" | "whatsapp" | "webhook";
-  status: "pending" | "delivered" | "failed" | "skipped";
+  status: "pending" | "processing" | "delivered" | "failed" | "retrying" | "skipped";
   payload: Record<string, unknown>;
   errorMessage?: string;
   createdAt: string;

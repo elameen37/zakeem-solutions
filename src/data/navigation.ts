@@ -187,7 +187,14 @@ export const MAIN_NAVIGATION: NavItem[] = [
 export const FOOTER_NAVIGATION = {
   products: [
     { label: "Zakeem Realty ERP", href: "/products/zakeem-realty-erp" },
+    { label: "Zakeem Forecourt", href: "/products/forecourt" },
+    { label: "Zakeem Smart Attendance", href: "/products/smart-attendance" },
+    { label: "Zakeem Events Booking", href: "/products/events-booking" },
+    { label: "Zakeem Feedback", href: "/products/feedback" },
     { label: "Zakeem Cortex AI", href: "/products/cortex-ai" },
+    { label: "Zakeem Performance", href: "/products/performance" },
+    { label: "Zakeem AI Automated HR", href: "/products/ai-automated-hr" },
+    { label: "Zakeem Secure Messaging", href: "/products/secure-messaging" },
     { label: "Zakeem Flow", href: "/products/flow-procure" },
     { label: "Zakeem Vault", href: "/products/vault-pay" },
     { label: "Product Roadmap", href: "/products" },

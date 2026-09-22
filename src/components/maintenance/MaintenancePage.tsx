@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Wrench, Shield, Lock, ArrowRight, Activity } from "lucide-react";
+import { Wrench, Activity } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -104,18 +104,6 @@ export const MaintenancePage: React.FC = () => {
                 <span>Platform Optimization</span>
                 <span className="text-[#e57804] font-semibold">Active</span>
               </div>
-            </div>
-
-            {/* Staff / Administrative Access Gateway */}
-            <div className="pt-6 border-t border-slate-200/70 dark:border-white/10 flex items-center justify-center">
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-1.5 text-xs font-mono text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors py-1.5 px-3 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5"
-              >
-                <Lock className="w-3.5 h-3.5 text-[#e57804]" />
-                <span>Authorized Staff Sign In</span>
-                <ArrowRight className="w-3 h-3 ml-0.5 opacity-70" />
-              </Link>
             </div>
           </div>
         </div>

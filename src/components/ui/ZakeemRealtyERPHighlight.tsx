@@ -203,34 +203,78 @@ export const ZakeemRealtyERPHighlight: React.FC = () => {
             {/* Right Architectural Preview Mockup */}
             <div className="lg:col-span-6">
               <div className="rounded-2xl border border-white/15 bg-[#06152b] p-4 md:p-6 shadow-2xl relative group">
+                <style>{`
+                  @keyframes slowBlink {
+                    0%, 100% {
+                      opacity: 0.35;
+                      transform: scale(0.95);
+                    }
+                    50% {
+                      opacity: 1;
+                      transform: scale(1.05);
+                    }
+                  }
+                `}</style>
                 {/* Window header */}
-                <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4 text-xs font-mono text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-                    <span className="ml-2 text-[11px] text-slate-400">realty.zakeemsolutions.com/dashboard</span>
+                <div className="flex items-start sm:items-center justify-between pb-3 sm:pb-4 border-b border-white/10 mb-4 text-xs font-mono text-slate-300">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                    <div className="flex items-center gap-2">
+                      <span
+                        style={{ animation: "slowBlink 2.4s ease-in-out infinite" }}
+                        className="w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block"
+                      />
+                      <span
+                        style={{ animation: "slowBlink 2.4s ease-in-out infinite 0.4s" }}
+                        className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block"
+                      />
+                      <span
+                        style={{ animation: "slowBlink 2.4s ease-in-out infinite 0.8s" }}
+                        className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block"
+                      />
+                    </div>
+                    <span className="text-[11px] text-slate-400 sm:ml-2 font-mono break-all sm:break-normal">
+                      realty.zakeemsolutions.com/dashboard
+                    </span>
                   </div>
-                  <Badge variant="neutral">Secure SSL 256-bit</Badge>
+                  <Badge variant="neutral" className="hidden sm:inline-flex">
+                    Secure SSL 256-bit
+                  </Badge>
                 </div>
 
                 {/* Dashboard Mock Content */}
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                      <div className="text-[11px] text-slate-300">Gross Sales (YTD)</div>
-                      <div className="text-lg font-bold font-mono text-white mt-1">₦4.85B</div>
-                      <div className="text-[10px] text-[#e57804] font-mono mt-0.5">+34.2% MoM</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                    <div className="p-2.5 sm:p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between sm:block">
+                      <div>
+                        <div className="text-[11px] text-slate-300">Gross Sales (YTD)</div>
+                        <div className="text-[10px] text-[#e57804] font-mono mt-0.5 sm:hidden">+34.2% MoM</div>
+                      </div>
+                      <div className="text-right sm:text-left">
+                        <div className="text-base sm:text-lg font-bold font-mono text-white sm:mt-1">₦4.85B</div>
+                        <div className="text-[10px] text-[#e57804] font-mono mt-0.5 hidden sm:block">+34.2% MoM</div>
+                      </div>
                     </div>
-                    <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                      <div className="text-[11px] text-slate-300">Allocated Units</div>
-                      <div className="text-lg font-bold font-mono text-white mt-1">342 / 410</div>
-                      <div className="text-[10px] text-white font-mono mt-0.5">83.4% Occupancy</div>
+
+                    <div className="p-2.5 sm:p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between sm:block">
+                      <div>
+                        <div className="text-[11px] text-slate-300">Allocated Units</div>
+                        <div className="text-[10px] text-white font-mono mt-0.5 sm:hidden">83.4% Occupancy</div>
+                      </div>
+                      <div className="text-right sm:text-left">
+                        <div className="text-base sm:text-lg font-bold font-mono text-white sm:mt-1">342 / 410</div>
+                        <div className="text-[10px] text-white font-mono mt-0.5 hidden sm:block">83.4% Occupancy</div>
+                      </div>
                     </div>
-                    <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                      <div className="text-[11px] text-slate-300">Escrow Balance</div>
-                      <div className="text-lg font-bold font-mono text-white mt-1">₦1.12B</div>
-                      <div className="text-[10px] text-[#e57804] font-mono mt-0.5">Reconciled</div>
+
+                    <div className="p-2.5 sm:p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between sm:block">
+                      <div>
+                        <div className="text-[11px] text-slate-300">Escrow Balance</div>
+                        <div className="text-[10px] text-[#e57804] font-mono mt-0.5 sm:hidden">Reconciled</div>
+                      </div>
+                      <div className="text-right sm:text-left">
+                        <div className="text-base sm:text-lg font-bold font-mono text-white sm:mt-1">₦1.12B</div>
+                        <div className="text-[10px] text-[#e57804] font-mono mt-0.5 hidden sm:block">Reconciled</div>
+                      </div>
                     </div>
                   </div>
 

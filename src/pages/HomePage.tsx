@@ -176,7 +176,7 @@ export const HomePage: React.FC = () => {
       {/* 2. CREDIBILITY & MEASURABLE OUTCOMES BAR */}
       <section data-surface="dark" className="py-12 bg-[#040e1d] border-t border-white/10 relative z-20">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
             <MetricCard
               value="99.99%"
               label="Core System SLA"

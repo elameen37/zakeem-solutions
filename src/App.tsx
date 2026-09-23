@@ -43,17 +43,7 @@ const AdminSettingsPage = React.lazy(() => import("@/pages/admin/AdminSettingsPa
 const AdminLoginPage = React.lazy(() => import("@/pages/admin/AdminLoginPage").then((m) => ({ default: m.AdminLoginPage })));
 const NotFoundPage = React.lazy(() => import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
-// Minimal on-brand loading fallback for seamless route transitions
-const RouteLoadingFallback: React.FC = () => (
-  <div className="min-h-[60vh] flex items-center justify-center" aria-live="polite" aria-busy="true">
-    <div className="flex flex-col items-center gap-3">
-      <div className="w-7 h-7 rounded-full border-2 border-[#e57804]/20 border-t-[#e57804] animate-spin" />
-      <span className="text-[11px] font-mono tracking-widest text-slate-500 dark:text-slate-400 uppercase">
-        Loading...
-      </span>
-    </div>
-  </div>
-);
+import { PageSkeleton } from "@/components/ui/Skeleton";
 
 export const App: React.FC = () => {
   return (
@@ -63,7 +53,7 @@ export const App: React.FC = () => {
         <AuthProvider>
           <MaintenanceProvider>
           <Layout>
-            <Suspense fallback={<RouteLoadingFallback />}>
+            <Suspense fallback={<PageSkeleton />}>
               <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/about" element={<AboutPage />} />

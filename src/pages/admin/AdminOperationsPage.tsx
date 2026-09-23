@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/Button";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { CRMOwnerSelect } from "@/components/admin/CRMOwnerSelect";
 import { CRMActivityModal } from "@/components/admin/CRMActivityModal";
+import { CardSkeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 import {
   FollowUpIntelligence,
@@ -444,9 +445,12 @@ export const AdminOperationsPage: React.FC = () => {
 
             {/* Tab Contents */}
             {isLoading ? (
-              <div className="py-20 text-center space-y-3">
-                <div className="w-8 h-8 rounded-full border-2 border-[#e57804]/20 border-t-[#e57804] animate-spin mx-auto" />
-                <p className="text-xs text-slate-400 font-mono">Loading operational intelligence queue...</p>
+              <div className="py-6 space-y-4">
+                <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                  <div className="w-4 h-4 rounded-full border-2 border-[#e57804]/20 border-t-[#e57804] animate-spin" />
+                  <span>Loading operational intelligence queue...</span>
+                </div>
+                <CardSkeleton count={4} />
               </div>
             ) : (
               <>

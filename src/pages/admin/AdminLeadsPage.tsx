@@ -37,6 +37,7 @@ import { AdminPagination } from "@/components/admin/AdminPagination";
 import { CRMActivityStream } from "@/components/admin/CRMActivityStream";
 import { CRMOwnerSelect } from "@/components/admin/CRMOwnerSelect";
 import { CRMActivityModal } from "@/components/admin/CRMActivityModal";
+import { TableSkeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 import {
   CRMLead,
@@ -678,9 +679,12 @@ export const AdminLeadsPage: React.FC = () => {
           {/* Leads Table / Cards */}
           <div data-surface="dark" className="rounded-2xl bg-[#081c38] border border-white/10 overflow-hidden">
             {isLoading ? (
-              <div className="py-20 text-center space-y-3">
-                <div className="w-8 h-8 rounded-full border-2 border-[#e57804]/20 border-t-[#e57804] animate-spin mx-auto" />
-                <p className="text-xs text-slate-400 font-mono">Loading inbound leads desk...</p>
+              <div className="p-6 space-y-4">
+                <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                  <div className="w-4 h-4 rounded-full border-2 border-[#e57804]/20 border-t-[#e57804] animate-spin" />
+                  <span>Loading inbound leads ledger...</span>
+                </div>
+                <TableSkeleton rows={6} columns={6} />
               </div>
             ) : leads.length === 0 ? (
               <div className="py-16 text-center space-y-3">

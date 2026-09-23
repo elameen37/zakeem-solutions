@@ -366,6 +366,30 @@ html:not(.dark) {
   }
 }
 
+/* ==========================================================================
+   GLOBAL KEYFRAME ANIMATIONS: SHIMMER & LOADING EFFECTS
+   ========================================================================== */
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slowBlink {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {

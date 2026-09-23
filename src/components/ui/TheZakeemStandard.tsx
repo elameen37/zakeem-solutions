@@ -516,9 +516,18 @@ export const TheZakeemStandard: React.FC = () => {
                 {/* Console Window Chrome */}
                 <div className="flex items-center justify-between px-4 py-3 bg-[#061120] border-b border-white/10">
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block" />
-                    <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
-                    <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
+                    <span
+                      style={{ animation: "slowBlink 2.4s ease-in-out infinite" }}
+                      className="w-3 h-3 rounded-full bg-red-500/80 inline-block"
+                    />
+                    <span
+                      style={{ animation: "slowBlink 2.4s ease-in-out infinite 0.4s" }}
+                      className="w-3 h-3 rounded-full bg-amber-500/80 inline-block"
+                    />
+                    <span
+                      style={{ animation: "slowBlink 2.4s ease-in-out infinite 0.8s" }}
+                      className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"
+                    />
                     <span className="text-xs font-mono text-slate-400 ml-2 hidden sm:inline">
                       zakeem-pipeline-monitor // stage-0{activeStage.stepNumber}
                     </span>

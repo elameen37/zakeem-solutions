@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { UserRole } from "@/types/auth";
 import { ShieldAlert, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { PageSkeleton } from "@/components/ui/Skeleton";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -16,16 +17,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
 
   // 1. Accessible loading state during authentication resolution
   if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center" aria-live="polite" aria-busy="true">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-[#e57804]/20 border-t-[#e57804] animate-spin" />
-          <span className="text-[11px] font-mono tracking-widest text-slate-500 dark:text-slate-400 uppercase">
-            Verifying Credentials...
-          </span>
-        </div>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   // 2. Redirect unauthenticated visitors, routing admin access to /zakeem-admin3100

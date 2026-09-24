@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isRecoverySession, setIsRecoverySession] = useState<boolean>(false);
 
   // Local development mock user state for when Supabase is unconfigured
   const [localDevRole, setLocalDevRole] = useState<UserRole | null>(() => {
@@ -158,7 +159,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Reactive subscription to login/logout/refresh events
     const {
       data: { subscription },
-    } = client.auth.onAuthStateChange((_event, newSession) => {
+    } = client.auth.onAuthStateChange((event, newSession) => {
+      // PASSWORD_RECOVERY: Supabase detected a recovery token in the URL hash.
+      // Set recovery flag so ResetPasswordPage can display the form,
+      // and skip normal role resolution to prevent redirect away from /reset-password.
+      if (event === "PASSWORD_RECOVERY" && newSession?.user) {
+        setIsRecoverySession(true);
+        setUser(newSession.user);
+        setSession(newSession);
+        setLoading(false);
+        return;
+      }
+
       handleSessionResolution(newSession);
     });
 
@@ -460,6 +472,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true };
   }, []);
 
+  const clearRecoverySession = useCallback(() => {
+    setIsRecoverySession(false);
+  }, []);
+
   const updatePassword = useCallback(async (newPassword: string): Promise<{ success: boolean; error?: string }> => {
     if (!newPassword || newPassword.length < 8) {
       return { success: false, error: "Password must be at least 8 characters in length." };
@@ -527,11 +543,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAdmin,
       isClient,
       loading,
+      isRecoverySession,
       signIn,
       signOut,
       refreshSession,
       resetPassword,
       updatePassword,
+      clearRecoverySession,
     }),
     [
       user,
@@ -542,11 +560,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAdmin,
       isClient,
       loading,
+      isRecoverySession,
       signIn,
       signOut,
       refreshSession,
       resetPassword,
       updatePassword,
+      clearRecoverySession,
     ]
   );
 

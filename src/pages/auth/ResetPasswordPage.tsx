@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { 
-  KeyRound, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowRight 
+  KeyRound, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowRight, Clock 
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 
 export const ResetPasswordPage: React.FC = () => {
-  const { updatePassword } = useAuth();
+  const { updatePassword, isRecoverySession, clearRecoverySession, loading } = useAuth();
   const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
@@ -18,6 +18,28 @@ export const ResetPasswordPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState(false);
+
+  // Allow a brief window for Supabase to detect the hash fragment and fire PASSWORD_RECOVERY.
+  // After this grace period, if isRecoverySession is still false, the link is invalid/expired.
+  const [waitingForRecovery, setWaitingForRecovery] = useState(true);
+
+  useEffect(() => {
+    // If AuthContext is still loading, wait for it.
+    if (loading) return;
+
+    // If recovery session is already detected, stop waiting immediately.
+    if (isRecoverySession) {
+      setWaitingForRecovery(false);
+      return;
+    }
+
+    // Give Supabase up to 2 seconds to process the hash fragment and fire the event.
+    const timer = setTimeout(() => {
+      setWaitingForRecovery(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [loading, isRecoverySession]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +60,7 @@ export const ResetPasswordPage: React.FC = () => {
       const res = await updatePassword(password);
       if (res.success) {
         setResetSuccess(true);
+        clearRecoverySession();
         setTimeout(() => {
           navigate("/login", { replace: true });
         }, 2500);
@@ -50,6 +73,11 @@ export const ResetPasswordPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Determine which view to render
+  const showLoadingState = loading || waitingForRecovery;
+  const showExpiredState = !showLoadingState && !isRecoverySession && !resetSuccess;
+  const showForm = !showLoadingState && isRecoverySession && !resetSuccess;
 
   return (
     <>
@@ -79,7 +107,38 @@ export const ResetPasswordPage: React.FC = () => {
                 Proceed to Sign In
               </Button>
             </div>
-          ) : (
+          ) : showLoadingState ? (
+            <div data-surface="dark" className="p-8 sm:p-10 rounded-3xl bg-[#081c38] border border-white/15 text-center space-y-5 shadow-2xl">
+              <div className="w-14 h-14 rounded-2xl bg-[#e57804]/15 border border-[#e57804]/30 flex items-center justify-center mx-auto text-[#e57804]">
+                <span className="w-6 h-6 border-2 border-[#e57804]/30 border-t-[#e57804] rounded-full animate-spin" />
+              </div>
+
+              <div>
+                <h1 className="text-xl font-bold text-white">Verifying Recovery Link</h1>
+                <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                  Establishing your secure recovery session. Please wait...
+                </p>
+              </div>
+            </div>
+          ) : showExpiredState ? (
+            <div data-surface="dark" className="p-8 sm:p-10 rounded-3xl bg-[#081c38] border border-amber-500/30 text-center space-y-5 shadow-2xl">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+                <Clock className="w-7 h-7" />
+              </div>
+
+              <div>
+                <h1 className="text-xl font-bold text-white">Recovery Link Expired or Invalid</h1>
+                <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                  This password reset link has expired or is no longer valid.
+                  Please request a new recovery email from the sign-in page.
+                </p>
+              </div>
+
+              <Button variant="primary" size="sm" href="/login" className="w-full">
+                Back to Sign In
+              </Button>
+            </div>
+          ) : showForm ? (
             <div data-surface="dark" className="p-7 sm:p-9 rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl space-y-6">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -181,7 +240,7 @@ export const ResetPasswordPage: React.FC = () => {
                 </Link>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       </section>
     </>

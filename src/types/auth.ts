@@ -81,6 +81,7 @@ export interface AuthState {
   isAdmin: boolean;
   isClient: boolean;
   loading: boolean;
+  isRecoverySession: boolean;
 }
 
 export interface AuthContextValue extends AuthState {
@@ -89,4 +90,5 @@ export interface AuthContextValue extends AuthState {
   refreshSession: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  clearRecoverySession: () => void;
 }

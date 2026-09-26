@@ -34,6 +34,49 @@ function resolveExplicitRole(user: User | null, profileRole?: UserRole | null): 
   return "client";
 }
 
+/**
+ * Asynchronously resolves server-authoritative role.
+ * Queries app_metadata, profile table, and the PostgreSQL is_admin() RPC.
+ * Returns the resolved role and whether it was authoritatively confirmed.
+ */
+async function resolveAuthoritativeRole(
+  user: User | null,
+  profileRole: UserRole | null | undefined,
+  client?: ReturnType<typeof getSupabaseClient>
+): Promise<{ role: UserRole; isAuthoritative: boolean }> {
+  if (!user) return { role: "client", isAuthoritative: false };
+
+  // 1. Fast check: app_metadata or database profile already shows admin
+  const explicitRole = resolveExplicitRole(user, profileRole);
+  if (explicitRole === "admin") {
+    return { role: "admin", isAuthoritative: true };
+  }
+
+  // 2. If profile explicitly confirmed client:
+  if (profileRole === "client") {
+    return { role: "client", isAuthoritative: true };
+  }
+
+  // 3. If profile was null/undefined or not yet determined, query server-side is_admin() RPC
+  if (client) {
+    try {
+      const { data: rpcIsAdmin, error: rpcError } = await client.rpc("is_admin");
+      if (!rpcError && typeof rpcIsAdmin === "boolean") {
+        if (rpcIsAdmin === true) {
+          return { role: "admin", isAuthoritative: true };
+        } else {
+          return { role: "client", isAuthoritative: true };
+        }
+      }
+    } catch {
+      // Non-blocking: transient RPC network error
+    }
+  }
+
+  // 4. Default authenticated user fallback
+  return { role: "client", isAuthoritative: profileRole !== undefined && profileRole !== null };
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -54,24 +97,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Ref to track role requirement during active login to prevent unauthorized session flashing
   const pendingAllowedRoleRef = useRef<UserRole | null>(null);
 
+  // Ref to track active signIn execution to prevent race condition with onAuthStateChange
+  const isSigningInRef = useRef<boolean>(false);
+
   const fetchProfile = useCallback(async (activeUser: User): Promise<UserProfile | null> => {
     if (!isSupabaseConfigured()) return null;
     const client = getSupabaseClient();
     if (!client) return null;
 
     try {
+      // 1. Primary query: full profile with extended organizational columns
       const { data, error } = await client
         .from("profiles")
         .select("id, full_name, organization, organization_id, phone, job_title, role, created_at, updated_at")
         .eq("id", activeUser.id)
         .maybeSingle();
 
-      if (error) {
-        // Non-blocking: table might be empty or in setup
-        return null;
-      }
-
-      if (data) {
+      if (!error && data) {
         return {
           id: data.id,
           fullName: data.full_name,
@@ -84,8 +126,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           updatedAt: data.updated_at,
         };
       }
+
+      // 2. Fallback query: core profile columns if extended query fails (e.g. schema variance)
+      if (error) {
+        const { data: coreData, error: coreError } = await client
+          .from("profiles")
+          .select("id, full_name, organization, role, created_at, updated_at")
+          .eq("id", activeUser.id)
+          .maybeSingle();
+
+        if (!coreError && coreData) {
+          return {
+            id: coreData.id,
+            fullName: coreData.full_name,
+            organization: coreData.organization || undefined,
+            role: coreData.role as UserRole,
+            createdAt: coreData.created_at,
+            updatedAt: coreData.updated_at,
+          };
+        }
+      }
+
+      // 3. Brief single retry if record was momentarily inaccessible right at auth establishment
+      await new Promise((res) => setTimeout(res, 120));
+      const { data: retryData, error: retryError } = await client
+        .from("profiles")
+        .select("id, full_name, organization, organization_id, phone, job_title, role, created_at, updated_at")
+        .eq("id", activeUser.id)
+        .maybeSingle();
+
+      if (!retryError && retryData) {
+        return {
+          id: retryData.id,
+          fullName: retryData.full_name,
+          organization: retryData.organization || undefined,
+          organizationId: retryData.organization_id || undefined,
+          phone: retryData.phone || undefined,
+          jobTitle: retryData.job_title || undefined,
+          role: retryData.role as UserRole,
+          createdAt: retryData.created_at,
+          updatedAt: retryData.updated_at,
+        };
+      }
     } catch {
-      // Graceful fallback
+      // Graceful fallback on network glitch
     }
 
     return null;
@@ -93,15 +177,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleSessionResolution = useCallback(
     async (currentSession: Session | null) => {
+      // If an active signIn() call is currently managing the auth handshake, yield to signIn()
+      if (isSigningInRef.current) {
+        return;
+      }
+
       if (currentSession?.user) {
         const activeUser = currentSession.user;
+        const client = getSupabaseClient();
         const userProfile = await fetchProfile(activeUser);
-        const resolvedRole = resolveExplicitRole(activeUser, userProfile?.role);
+        const explicitRole = resolveExplicitRole(activeUser, userProfile?.role);
+        const { role: resolvedRole } = await resolveAuthoritativeRole(
+          activeUser,
+          userProfile?.role,
+          client || undefined
+        );
 
         // If an explicit role constraint is currently being enforced (e.g. client login or admin login)
         if (pendingAllowedRoleRef.current && resolvedRole !== pendingAllowedRoleRef.current) {
           // Do NOT populate React state with an unauthorized session.
           // This completely prevents premature isAuthenticated=true state or route flashing.
+          setLoading(false);
           return;
         }
 
@@ -174,6 +270,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      // Any non-recovery auth event explicitly clears recovery mode to prevent leakage
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "SIGNED_OUT") {
+        setIsRecoverySession(false);
+      }
+
+      // If an active signIn() call is managing auth, yield to signIn() to avoid race
+      if (isSigningInRef.current) {
+        return;
+      }
+
       handleSessionResolution(newSession);
     });
 
@@ -188,7 +294,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password: string,
       allowedRole?: UserRole
     ): Promise<{ success: boolean; error?: string; role?: UserRole }> => {
+      isSigningInRef.current = true;
       pendingAllowedRoleRef.current = allowedRole || null;
+      setIsRecoverySession(false);
 
       try {
         // 1. Production Mode: Supabase Auth
@@ -232,43 +340,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (data.session?.user) {
             const activeUser = data.session.user;
             const userProfile = await fetchProfile(activeUser);
-            const resolvedRole = resolveExplicitRole(activeUser, userProfile?.role);
+            const explicitRole = resolveExplicitRole(activeUser, userProfile?.role);
+            const { role: resolvedRole, isAuthoritative } = await resolveAuthoritativeRole(
+              activeUser,
+              userProfile?.role,
+              client
+            );
 
             // Role enforcement check: If the login portal restricts roles
             if (allowedRole && resolvedRole !== allowedRole) {
-              await client.auth.signOut();
-              setUser(null);
-              setSession(null);
-              setProfile(null);
-              setRole(null);
+              // Only purge session if role determination was authoritative.
+              // A transient profile/network error must NOT sign the administrator out.
+              if (isAuthoritative) {
+                await client.auth.signOut();
+                setUser(null);
+                setSession(null);
+                setProfile(null);
+                setRole(null);
+                setLoading(false);
 
-              recordAuditEvent({
-                eventType: allowedRole === "admin" ? "auth.admin_login.failure" : "auth.login.failure",
-                entityType: "user",
-                actorRole: "anonymous",
-                errorCategory: "AUTHORIZATION",
-                metadata: { reason: "role_mismatch", attemptedRole: allowedRole },
-              });
+                recordAuditEvent({
+                  eventType: allowedRole === "admin" ? "auth.admin_login.failure" : "auth.login.failure",
+                  entityType: "user",
+                  actorRole: "anonymous",
+                  errorCategory: "AUTHORIZATION",
+                  metadata: { reason: "role_mismatch", attemptedRole: allowedRole },
+                });
 
-              if (allowedRole === "client" && resolvedRole === "admin") {
+                if (allowedRole === "client" && resolvedRole === "admin") {
+                  return {
+                    success: false,
+                    error: "Access restricted: Administrator accounts cannot sign in through the Client Portal. Please use the authorized administration URL.",
+                  };
+                }
+
+                if (allowedRole === "admin" && resolvedRole !== "admin") {
+                  return {
+                    success: false,
+                    error: "Administrative access denied. Your authenticated account does not possess systems administrator privileges.",
+                  };
+                }
+              } else {
+                // Non-authoritative / transient resolution failure:
+                // Do NOT purge session; inform the user gracefully.
+                setLoading(false);
                 return {
                   success: false,
-                  error: "Access restricted: Administrator accounts cannot sign in through the Client Portal. Please use the authorized administration URL.",
-                };
-              }
-
-              if (allowedRole === "admin" && resolvedRole !== "admin") {
-                return {
-                  success: false,
-                  error: "Administrative access denied. Your authenticated account does not possess systems administrator privileges.",
+                  error: "Unable to verify administrative authorization due to a temporary network condition. Please verify your connection and try again.",
                 };
               }
             }
 
+            // Successfully authenticated and role verified
             setUser(activeUser);
             setSession(data.session);
             setProfile(userProfile);
             setRole(resolvedRole);
+            setLoading(false);
 
             recordAuditEvent({
               eventType: resolvedRole === "admin" ? "auth.admin_login.success" : "auth.login.success",
@@ -334,6 +462,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           setLocalDevRole(devRole);
           setRole(devRole);
+          setLoading(false);
 
           recordAuditEvent({
             eventType: devRole === "admin" ? "auth.admin_login.success" : "auth.login.success",
@@ -374,6 +503,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         return { success: false, error: "Invalid email or password. Please verify your credentials and try again." };
       } finally {
+        isSigningInRef.current = false;
         pendingAllowedRoleRef.current = null;
       }
     },
@@ -381,6 +511,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const signOut = useCallback(async () => {
+    isSigningInRef.current = false;
+    pendingAllowedRoleRef.current = null;
+    setIsRecoverySession(false);
+
     const currentUserId = user?.id || null;
     const currentRole = role || "anonymous";
 
@@ -417,6 +551,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null);
     setProfile(null);
     setRole(null);
+    setLoading(false);
   }, [user, role]);
 
   const resetPassword = useCallback(async (email: string): Promise<{ success: boolean; error?: string }> => {

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { 
   Building2, ShieldCheck, LogOut, ArrowRight, Calendar, LifeBuoy, BookOpen, Layers, 
   Clock, CheckCircle2, AlertCircle, FileText, Cpu, Fuel, Sparkles, ChevronRight,
-  UserCheck, ExternalLink, Activity
+  UserCheck, ExternalLink, Activity, Phone, Mail, User, Info, Lock
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -23,6 +23,7 @@ export const ClientPortalPage: React.FC = () => {
   const displayEmail = user?.email || "Authenticated Session";
   const displayOrg = profile?.organization || "Enterprise Partner";
   const displayJobTitle = profile?.jobTitle || "Executive Account Holder";
+  const displayPhone = profile?.phone || "Direct line on file";
 
   return (
     <>
@@ -33,15 +34,15 @@ export const ClientPortalPage: React.FC = () => {
         noindex={true}
       />
 
-      <section className="pt-10 pb-24 border-b border-white/10 min-h-[85vh]">
+      <section className="pt-10 pb-24 border-b border-white/10 min-h-[85vh]" aria-label="Enterprise Client Workspace">
         <div className="container mx-auto px-4 md:px-6 max-w-6xl space-y-10">
           
           {/* 1. Welcome & Identity Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-8">
+          <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-8">
             <div>
               <div className="flex items-center gap-2.5 mb-2.5 flex-wrap">
                 <Badge variant="neon">Enterprise Client Portal</Badge>
-                <span className="text-xs font-mono text-emerald-400 flex items-center gap-1.5">
+                <span className="text-xs font-mono text-emerald-400 flex items-center gap-1.5" role="status">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Active Enterprise Session
                 </span>
@@ -65,7 +66,7 @@ export const ClientPortalPage: React.FC = () => {
 
             <div className="flex items-center gap-3 shrink-0">
               {isAdmin && (
-                <Button variant="outline" size="sm" href="/admin/scheduling">
+                <Button variant="outline" size="sm" href="/admin/scheduling" aria-label="Go to Admin Scheduling Desk">
                   Admin Scheduling Desk
                 </Button>
               )}
@@ -75,25 +76,26 @@ export const ClientPortalPage: React.FC = () => {
                 onClick={handleSignOut}
                 leftIcon={<LogOut className="w-4 h-4" />}
                 className="text-slate-400 hover:text-rose-400 border border-white/10"
+                aria-label="Sign out of enterprise portal"
               >
                 Sign Out
               </Button>
             </div>
-          </div>
+          </header>
 
           {/* 2. Enterprise Onboarding & Engagement Milestone Horizon */}
-          <div data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 space-y-5">
+          <section data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 space-y-5" aria-labelledby="milestone-heading">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                   <Activity className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-white">Commercial Engagement & Onboarding Horizon</h2>
+                  <h2 id="milestone-heading" className="text-base font-bold text-white">Commercial Engagement & Onboarding Horizon</h2>
                   <p className="text-xs text-slate-400">Authoritative lifecycle tracking for {displayOrg}</p>
                 </div>
               </div>
-              <span className="text-xs font-mono px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+              <span className="text-xs font-mono px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5" role="status">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                 Active Discovery Phase
               </span>
@@ -171,10 +173,54 @@ export const ClientPortalPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* 3. Active Solution Engagement Context: Zakeem Forecourt */}
-          <div data-surface="dark" className="p-6 md:p-8 rounded-3xl bg-[#06152b] border border-[#e57804]/30 space-y-6">
+          {/* 3. Commercial Engagement Summary Dossier */}
+          <section data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 space-y-4" aria-labelledby="commercial-dossier-heading">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 id="commercial-dossier-heading" className="text-base font-bold text-white">Commercial Engagement Dossier</h2>
+                  <p className="text-xs text-slate-400">Enterprise partnership details and operational scope</p>
+                </div>
+              </div>
+              <span className="text-xs font-mono text-purple-300 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
+                Engagement ID: ZK-CW-2026
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+              <div className="p-4 rounded-xl bg-black/25 border border-white/5">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Organization</span>
+                <div className="text-sm font-bold text-white mt-1">{displayOrg}</div>
+                <p className="text-[11px] text-slate-400 mt-0.5">Primary Enterprise Account</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-black/25 border border-white/5">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Account Lead</span>
+                <div className="text-sm font-bold text-white mt-1">{displayName}</div>
+                <p className="text-[11px] text-slate-400 mt-0.5">{displayJobTitle}</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-black/25 border border-white/5">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Active Solution Track</span>
+                <div className="text-sm font-bold text-white mt-1">Zakeem Forecourt</div>
+                <p className="text-[11px] text-slate-400 mt-0.5">Downstream Petroleum</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-black/25 border border-white/5">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Next Action</span>
+                <div className="text-sm font-bold text-amber-400 mt-1">Book Walkthrough</div>
+                <p className="text-[11px] text-slate-400 mt-0.5">Technical Scoping Review</p>
+              </div>
+            </div>
+          </section>
+
+          {/* 4. Active Solution Engagement Context: Zakeem Forecourt */}
+          <section data-surface="dark" className="p-6 md:p-8 rounded-3xl bg-[#06152b] border border-[#e57804]/30 space-y-6" aria-labelledby="forecourt-heading">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-[#e57804]/15 border border-[#e57804]/30 flex items-center justify-center text-[#e57804] shrink-0 mt-0.5">
@@ -185,7 +231,7 @@ export const ClientPortalPage: React.FC = () => {
                     <Badge variant="blue">Selected Enterprise Solution</Badge>
                     <span className="text-xs font-mono text-slate-400">Category: Downstream Operations</span>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                  <h2 id="forecourt-heading" className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                     Zakeem Forecourt (Enterprise)
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
@@ -195,7 +241,7 @@ export const ClientPortalPage: React.FC = () => {
               </div>
 
               <div className="shrink-0 flex sm:flex-col items-end justify-between sm:justify-center gap-2">
-                <span className="text-xs font-mono text-emerald-400 font-semibold bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                <span className="text-xs font-mono text-emerald-400 font-semibold bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20" role="status">
                   Discovery Phase Active
                 </span>
                 <span className="text-[11px] text-slate-400 font-mono">Target Discovery Horizon: October 2026</span>
@@ -238,7 +284,7 @@ export const ClientPortalPage: React.FC = () => {
                 <Button
                   variant="primary"
                   size="sm"
-                  href="/request-demo"
+                  href="/request-demo?product=forecourt"
                   rightIcon={<ArrowRight className="w-4 h-4" />}
                   className="w-full sm:w-auto"
                 >
@@ -255,32 +301,63 @@ export const ClientPortalPage: React.FC = () => {
                 </Button>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* 4. Executive Consultation & Walkthrough Desk */}
-          <div data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 space-y-4">
+          {/* 5. Executive Consultation & Walkthrough Desk */}
+          <section data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 space-y-5" aria-labelledby="consultation-desk-heading">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400">
                   <Calendar className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-white">Executive Architecture Consultation Desk</h2>
+                  <h2 id="consultation-desk-heading" className="text-base font-bold text-white">Executive Architecture Consultation Desk</h2>
                   <p className="text-xs text-slate-400">Dedicated systems advisory & architectural alignment sessions</p>
                 </div>
               </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono px-3 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/30">
+                  Walkthrough Available
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  href="/request-demo?product=forecourt"
+                  rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                  className="border-sky-500/30 text-sky-300 hover:bg-sky-500/10"
+                >
+                  Schedule Consultation Slot
+                </Button>
+              </div>
+            </div>
+
+            {/* Current Booking Presentation / Empty State */}
+            <div className="p-4 rounded-2xl bg-black/30 border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400 shrink-0 mt-0.5">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-2">
+                    <span>Upcoming Walkthrough Session</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/10 text-slate-300">Pending Scheduling</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    No active appointment currently confirmed. You can book an executive demonstration directly using your client credentials.
+                  </p>
+                </div>
+              </div>
               <Button
-                variant="outline"
+                variant="primary"
                 size="sm"
-                href="/request-demo"
-                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-                className="border-sky-500/30 text-sky-300 hover:bg-sky-500/10"
+                href="/request-demo?product=forecourt"
+                className="shrink-0"
               >
-                Schedule Consultation Slot
+                Book Session Now
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
               <div className="p-4 rounded-xl bg-black/25 border border-white/5">
                 <div className="flex items-center gap-2 text-xs font-bold text-white mb-1">
                   <Clock className="w-3.5 h-3.5 text-sky-400" />
@@ -311,10 +388,17 @@ export const ClientPortalPage: React.FC = () => {
                 </p>
               </div>
             </div>
-          </div>
+            
+            <div className="text-[11px] text-slate-400 border-t border-white/5 pt-3 flex items-center justify-between gap-4 flex-wrap">
+              <span>Need to reschedule or cancel a session? Contact the Executive Service Desk with your booking reference.</span>
+              <Link to="/support" className="text-sky-400 hover:underline">
+                Contact Service Desk &rarr;
+              </Link>
+            </div>
+          </section>
 
-          {/* 5. Account Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* 6. Account & Security Boundary Cards */}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-5" aria-label="Security and Operational Overview">
             <div data-surface="dark" className="p-5 rounded-2xl bg-[#081c38] border border-white/10 flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-[#e57804]/15 border border-[#e57804]/30 flex items-center justify-center text-[#e57804] shrink-0 mt-0.5">
                 <ShieldCheck className="w-5 h-5" />
@@ -353,17 +437,17 @@ export const ClientPortalPage: React.FC = () => {
                 </p>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* 6. Quick Action Matrix */}
-          <div>
-            <h2 className="text-lg font-bold text-slate-950 dark:text-white mb-4 flex items-center gap-2">
+          {/* 7. Operational Capabilities & Legitimate Resources Matrix */}
+          <section aria-labelledby="resources-heading">
+            <h2 id="resources-heading" className="text-lg font-bold text-slate-950 dark:text-white mb-4 flex items-center gap-2">
               <span>Operational Capabilities & Resources</span>
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Link
-                to="/request-demo"
+                to="/request-demo?product=forecourt"
                 className="group p-5 rounded-2xl bg-[#06152b] border border-white/10 hover:border-[#e57804]/40 transition-all flex flex-col justify-between"
               >
                 <div>
@@ -446,14 +530,45 @@ export const ClientPortalPage: React.FC = () => {
                 </div>
               </Link>
             </div>
-          </div>
+          </section>
 
-          {/* 7. Coming Online Modules Roadmap Notice */}
-          <div data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 space-y-4">
+          {/* 8. Operational Advisory & Broadcast Channel */}
+          <section data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 space-y-4" aria-labelledby="advisory-heading">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 id="advisory-heading" className="text-base font-bold text-white">Advisory & Operational Broadcasts</h2>
+                  <p className="text-xs text-slate-400">Authoritative channel for customer security and platform advisories</p>
+                </div>
+              </div>
+              <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                All Systems Normal
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-black/25 border border-white/5 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-white">
+                <Info className="w-3.5 h-3.5 text-sky-400" />
+                <span>Notice on Communication & Dispatch Protocols</span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                System operational advisories and milestone updates are posted directly to this workspace. 
+                Meeting coordination will be provided through the approved scheduling/communication workflow.
+                For mission-critical inquiries or immediate escalation, authorized personnel can utilize the Executive Service Desk.
+              </p>
+            </div>
+          </section>
+
+          {/* 9. Coming Online Modules Roadmap Notice (Honest Future State) */}
+          <section data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 space-y-4" aria-labelledby="roadmap-heading">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2.5">
                 <Cpu className="w-5 h-5 text-[#e57804]" />
-                <h3 className="text-base font-bold text-white">Client Portal Roadmap Modules</h3>
+                <h3 id="roadmap-heading" className="text-base font-bold text-white">Client Portal Roadmap Modules</h3>
               </div>
               <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
                 Phase 24 Deployment Pipeline
@@ -489,7 +604,7 @@ export const ClientPortalPage: React.FC = () => {
                 <p className="text-[11px] text-slate-400">Uptime guarantees, latency dashboards, and cryptographic audit logs.</p>
               </div>
             </div>
-          </div>
+          </section>
 
         </div>
       </section>

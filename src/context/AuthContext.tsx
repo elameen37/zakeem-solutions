@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await client
         .from("profiles")
-        .select("id, full_name, organization, role, created_at, updated_at")
+        .select("id, full_name, organization, organization_id, phone, job_title, role, created_at, updated_at")
         .eq("id", activeUser.id)
         .maybeSingle();
 
@@ -76,6 +76,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: data.id,
           fullName: data.full_name,
           organization: data.organization || undefined,
+          organizationId: data.organization_id || undefined,
+          phone: data.phone || undefined,
+          jobTitle: data.job_title || undefined,
           role: data.role as UserRole,
           createdAt: data.created_at,
           updatedAt: data.updated_at,

@@ -1751,41 +1751,38 @@ export async function getAdminOpportunities(filters?: {
     }
 
     try {
-      let query = client
-        .from("crm_opportunities")
-        .select(`
-          id, organization_id, contact_id, lead_id, title, primary_product, stage,
-          deal_value_ngn, close_date, expected_close_date, next_action, next_action_due_date,
-          last_activity_at, loss_reason, owner_id, created_at, updated_at,
-          organization:crm_organizations(id, name, slug, domain, status, created_at, updated_at),
-          contact:crm_contacts(id, email, full_name, phone, job_title, created_at, updated_at)
-        `)
-        .order("created_at", { ascending: false });
-
-      if (filters?.stage) {
-        query = query.eq("stage", filters.stage);
-      }
-      if (filters?.product) {
-        query = query.eq("primary_product", filters.product);
-      }
-      if (filters?.organizationId) {
-        query = query.eq("organization_id", filters.organizationId);
-      }
-      if (filters?.ownerId && filters.ownerId !== "all") {
-        if (filters.ownerId === "unassigned") {
-          query = query.is("owner_id", null);
-        } else {
-          query = query.eq("owner_id", filters.ownerId);
+      const { data: rpcRes, error: rpcErr } = await client.rpc(
+        "get_admin_opportunities_atomic",
+        {
+          p_stage: filters?.stage || null,
+          p_product: filters?.product || null,
+          p_organization_id: filters?.organizationId || null,
+          p_owner_id:
+            filters?.ownerId && filters.ownerId !== "all" && filters.ownerId !== "unassigned"
+              ? filters.ownerId
+              : null,
+          p_unassigned_only: filters?.ownerId === "unassigned",
+          p_stale_only: Boolean(filters?.staleOnly),
+          p_search: filters?.search?.trim() || null,
         }
+      );
+
+      if (rpcErr) {
+        return { success: false, opportunities: [], error: rpcErr.message };
       }
 
-      const { data, error } = await query;
-      if (error) {
-        return { success: false, opportunities: [], error: error.message };
+      if (!rpcRes || typeof rpcRes !== "object") {
+        return { success: false, opportunities: [], error: "Invalid response from server." };
       }
+
+      if (rpcRes.success === false) {
+        return { success: false, opportunities: [], error: rpcRes.error || "Failed to load opportunities." };
+      }
+
+      const rows = Array.isArray(rpcRes.opportunities) ? rpcRes.opportunities : [];
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let opps: CRMOpportunity[] = (data || []).map((row: any) => ({
+      const opps: CRMOpportunity[] = rows.map((row: any) => ({
         id: row.id,
         organizationId: row.organization_id,
         contactId: row.contact_id,
@@ -1831,27 +1828,6 @@ export async function getAdminOpportunities(filters?: {
           : null,
       }));
 
-      if (filters?.staleOnly) {
-        const fourteenDaysAgo = Date.now() - 14 * 86400000;
-        opps = opps.filter(
-          (o) =>
-            o.stage !== "won" &&
-            o.stage !== "lost" &&
-            new Date(o.lastActivityAt || o.updatedAt).getTime() < fourteenDaysAgo
-        );
-      }
-
-      if (filters?.search && filters.search.trim()) {
-        const q = filters.search.toLowerCase().trim();
-        opps = opps.filter(
-          (o) =>
-            o.title.toLowerCase().includes(q) ||
-            o.primaryProduct.toLowerCase().includes(q) ||
-            (o.organization?.name && o.organization.name.toLowerCase().includes(q)) ||
-            (o.contact?.fullName && o.contact.fullName.toLowerCase().includes(q))
-        );
-      }
-
       return { success: true, opportunities: opps };
     } catch (err: any) {
       return { success: false, opportunities: [], error: err?.message || "Failed to fetch opportunities." };
@@ -1896,57 +1872,41 @@ export async function getOpportunityDetails(opportunityId: string): Promise<{
     }
 
     try {
-      const { data: row, error: fetchErr } = await client
-        .from("crm_opportunities")
-        .select(`
-          id, organization_id, contact_id, lead_id, title, primary_product, stage,
-          deal_value_ngn, close_date, expected_close_date, next_action, next_action_due_date,
-          last_activity_at, loss_reason, owner_id, created_at, updated_at,
-          organization:crm_organizations(id, name, slug, domain, industry, company_size, status, created_at, updated_at),
-          contact:crm_contacts(id, organization_id, email, full_name, phone, job_title, is_primary, created_at, updated_at),
-          lead:crm_leads(id, reference_id, form_type, status, product_interest, tier, notes, created_at)
-        `)
-        .eq("id", opportunityId)
-        .single();
-
-      if (fetchErr || !row) {
-        return { success: false, error: fetchErr?.message || "Opportunity not found." };
-      }
-
-      // Check for associated booking
-      let bookingData = null;
-      const leadObj = (row as any).lead;
-      if (leadObj?.reference_id || row.contact_id) {
-        const { data: bRow } = await client
-          .from("bookings")
-          .select("id, reference_id, booking_date, start_time, end_time, status")
-          .or(`lead_id.eq.${leadObj?.reference_id || '00000000'},contact_id.eq.${row.contact_id || '00000000-0000-0000-0000-000000000000'}`)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (bRow) {
-          bookingData = {
-            id: bRow.id,
-            referenceId: bRow.reference_id,
-            bookingDate: bRow.booking_date,
-            startTime: bRow.start_time,
-            endTime: bRow.end_time,
-            status: bRow.status,
-          };
+      const { data: rpcRes, error: rpcErr } = await client.rpc(
+        "get_admin_opportunity_detail_atomic",
+        {
+          p_opportunity_id: opportunityId,
         }
+      );
+
+      if (rpcErr) {
+        return { success: false, error: rpcErr.message };
       }
 
-      // Fetch activities for this opportunity or lead
-      const { data: actRows } = await client
-        .from("crm_activities")
-        .select("id, activity_type, organization_id, contact_id, lead_id, booking_id, opportunity_id, actor_id, assigned_to, due_date, completed_at, status, title, description, metadata, created_at")
-        .or(`opportunity_id.eq.${opportunityId},lead_id.eq.${row.lead_id || '00000000-0000-0000-0000-000000000000'}`)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      if (!rpcRes || typeof rpcRes !== "object") {
+        return { success: false, error: "Invalid response from server." };
+      }
+
+      if (rpcRes.success === false || !rpcRes.opportunity) {
+        return { success: false, error: rpcRes.error || "Opportunity not found." };
+      }
+
+      const row = rpcRes.opportunity;
+
+      let bookingData = null;
+      if (row.booking) {
+        bookingData = {
+          id: row.booking.id,
+          referenceId: row.booking.reference_id,
+          bookingDate: row.booking.booking_date,
+          startTime: row.booking.start_time,
+          endTime: row.booking.end_time,
+          status: row.booking.status,
+        };
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const activities: CRMActivity[] = (actRows || []).map((a: any) => ({
+      const activities: CRMActivity[] = (row.activities || []).map((a: any) => ({
         id: a.id,
         activityType: a.activity_type,
         organizationId: a.organization_id,

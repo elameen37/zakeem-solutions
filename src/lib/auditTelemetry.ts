@@ -52,7 +52,12 @@ export type NotificationAuditEventType =
   | "notification.retrying"
   | "invitation.delivery_requested"
   | "invitation.delivery_sent"
-  | "invitation.delivery_failed";
+  | "invitation.delivery_failed"
+  | "email.provider_switched"
+  | "email.delivery_enabled"
+  | "email.delivery_disabled"
+  | "email.health_check_passed"
+  | "email.test_dispatched";
 
 export type AuditEventType =
   | AuthAuditEventType
@@ -65,6 +70,7 @@ export type ErrorCategory =
   | "AUTHENTICATION"
   | "AUTHORIZATION"
   | "VALIDATION"
+  | "CONFIGURATION"
   | "NETWORK"
   | "CONFLICT"
   | "NOT_FOUND"
@@ -81,6 +87,7 @@ export type AuditEntityType =
   | "activity"
   | "invitation"
   | "notification"
+  | "email_infrastructure"
   | "system"
   | "application";
 

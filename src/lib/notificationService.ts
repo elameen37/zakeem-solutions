@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Zakeem Solutions — Outbound Notification Client Service
  * Phase 45: Controlled Commercial Pilot & Notification Architecture
  *
@@ -201,43 +201,47 @@ export async function dispatchNotification(
     }
   }
 
-  // 3. Fallback / Development Simulation
-  // When Edge Function is not yet deployed or in offline mode, simulate safe mock dispatch
-  const fallbackLatency = Date.now() - startTime;
-  const isMockSuccess = true; // Mock dispatcher succeeds gracefully
+  // 3. Truthful Status Reporting (Zero False Success Claims)
+  // When Edge Function is unavailable or provider credentials are missing, fail truthfully.
+  const lastAttempt = attempts[attempts.length - 1];
+  const errorMessage = lastAttempt?.error || (isSupabaseConfigured() ? "PROVIDER CREDENTIALS NOT CONFIGURED: Edge Function dispatch failed or provider returned error" : "PROVIDER CREDENTIALS NOT CONFIGURED: Supabase client unconfigured in this runtime");
+  const finalProvider = (lastAttempt?.provider as EmailProviderType) || "mock";
+  const totalLatency = Date.now() - startTime;
 
-  const fallbackAttempt: DeliveryAttempt = {
-    attemptNumber: attempts.length + 1,
-    timestamp: new Date().toISOString(),
-    provider: "mock",
-    status: isMockSuccess ? "success" : "failure",
-    statusCode: 200,
-    latencyMs: fallbackLatency,
-  };
-  attempts.push(fallbackAttempt);
+  if (attempts.length === 0) {
+    attempts.push({
+      attemptNumber: 1,
+      timestamp: new Date().toISOString(),
+      provider: "mock",
+      status: "failure",
+      statusCode: 503,
+      error: errorMessage,
+      latencyMs: totalLatency,
+    });
+  }
 
   recordAuditEvent({
-    eventType: isMockSuccess ? "notification.sent" : "notification.failed",
+    eventType: "notification.failed",
     entityType: "notification",
     entityId: payload.referenceId || payload.bookingId || null,
     metadata: {
       eventType: payload.eventType,
       recipient: maskedEmail,
-      provider: "mock",
+      provider: finalProvider,
       isFallback: true,
-      latencyMs: fallbackLatency,
+      error: errorMessage,
+      latencyMs: totalLatency,
     },
-    errorCategory: isMockSuccess ? undefined : "NETWORK",
+    errorCategory: lastAttempt?.statusCode === 503 ? "NETWORK" : "CONFIGURATION",
   });
 
   return {
-    success: isMockSuccess,
+    success: false,
     notificationId: payload.referenceId,
-    provider: "mock",
-    providerMessageId: `mock_msg_${Date.now()}`,
-    status: isMockSuccess ? "delivered" : "failed",
+    provider: finalProvider,
+    status: "failed",
+    error: errorMessage,
     attempts,
-    deliveredAt: isMockSuccess ? new Date().toISOString() : undefined,
   };
 }
 

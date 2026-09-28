@@ -1,15 +1,17 @@
-﻿/**
+/**
  * Zakeem Solutions — Outbound Transactional Notification Dispatcher
  * Supabase Edge Function (Deno Runtime)
- * Phase 45: Controlled Commercial Pilot & Notification Architecture
+ * Phase 69: Multi-Provider Transactional Email Infrastructure & Admin Control Center
  *
  * Security & Reliability Directives:
- * 1. ZERO secret leakage: Provider API keys (Resend, SendGrid, SMTP) are stored
- *    strictly in Supabase Secrets (Deno.env), never in client bundles.
- * 2. Authorization boundary: Enforces valid authenticated session with admin privileges.
- * 3. Anti-CRLF defense: Rejects or strips header injection sequences (\r, \n, %0A, %0D).
- * 4. Multi-provider abstraction: Resend -> SendGrid -> Webhook -> Mock fallback.
- * 5. Idempotent execution & PostgreSQL state synchronization via service role.
+ * 1. ZERO secret leakage: Provider API keys (Resend, SendGrid, Mailtrap) are stored
+ *    strictly in Supabase Secrets (Deno.env), never in client bundles or responses.
+ * 2. Multi-Action Architecture: "dispatch", "health_check", "send_test", "get_status".
+ * 3. First-Class Providers: Resend, SendGrid, and Mailtrap (sandbox/testing).
+ * 4. Anti-CRLF defense: Rejects or strips header injection sequences (\r, \n, %0A, %0D).
+ * 5. Environment-Aware routing: Defaults to Mailtrap in dev/QA, Resend/SendGrid in production.
+ * 6. Zero False Delivery Claims: Honest failure reporting when credentials missing.
+ * 7. Idempotent execution & PostgreSQL state synchronization via service role.
  */
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
@@ -22,10 +24,12 @@ const corsHeaders = {
 };
 
 interface DispatchRequestBody {
-  eventType: string;
-  recipientEmail: string;
-  recipientName: string;
-  subject: string;
+  action?: "dispatch" | "health_check" | "send_test" | "get_status";
+  provider?: string;
+  eventType?: string;
+  recipientEmail?: string;
+  recipientName?: string;
+  subject?: string;
   htmlContent?: string;
   textContent?: string;
   templateId?: string;
@@ -33,7 +37,8 @@ interface DispatchRequestBody {
   referenceId?: string;
   bookingId?: string;
   invitationId?: string;
-  idempotencyKey: string;
+  idempotencyKey?: string;
+  note?: string;
 }
 
 // -----------------------------------------------------------------------------
@@ -129,6 +134,38 @@ function renderTemplate(
   const safeName = recipientName || "Valued Partner";
 
   switch (eventType) {
+    case "test_email": {
+      const provider = (templateData.provider as string) || "Configured Provider";
+      const env = (templateData.environment as string) || "Testing";
+      const adminEmail = (templateData.adminEmail as string) || "Administrator";
+      const note = (templateData.note as string) || "Verification test message.";
+      const subject = `[TEST] Zakeem Solutions Email Infrastructure Verification (${provider})`;
+      const body = `
+        <h1>Email Infrastructure Verification Test</h1>
+        <p>Hello ${safeName},</p>
+        <p>This is a live transactional test email dispatched from the <strong>Zakeem Solutions Email Control Center</strong>.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Active Provider</span><span class="info-val">${provider}</span></div>
+          <div class="info-row"><span class="info-label">Environment</span><span class="info-val">${env}</span></div>
+          <div class="info-row"><span class="info-label">Dispatched By</span><span class="info-val">${adminEmail}</span></div>
+          <div class="info-row"><span class="info-label">Timestamp</span><span class="info-val">${new Date().toISOString()}</span></div>
+        </div>
+        <p style="font-size: 13px; color: #94a3b8;">${note}</p>
+        <p style="font-size: 13px; color: #10b981; font-weight: 600;">&#10003; Verification successful: Transport credentials, MIME encoding, and delivery pipelines are active.</p>
+      `;
+      const text = `[TEST] Zakeem Solutions Email Infrastructure Verification\n\nProvider: ${provider}\nEnvironment: ${env}\nDispatched By: ${adminEmail}\nTimestamp: ${new Date().toISOString()}\n\n${note}`;
+      return {
+        subject,
+        html: buildEmailHtml({
+          title: subject,
+          preheader: "Zakeem Solutions live infrastructure test email",
+          bodyContent: body,
+          referenceBadge: "LIVE TEST EMAIL",
+        }),
+        text,
+      };
+    }
+
     case "client_invitation_created":
     case "client_invitation_resent": {
       const org = (templateData.organization as string) || "Your Enterprise";
@@ -245,7 +282,7 @@ function renderTemplate(
 }
 
 // -----------------------------------------------------------------------------
-// 3. PROVIDER ADAPTERS
+// 3. PROVIDER ADAPTERS (FIRST-CLASS)
 // -----------------------------------------------------------------------------
 
 async function sendViaResend(params: {
@@ -321,8 +358,115 @@ async function sendViaSendGrid(params: {
   }
 }
 
+async function sendViaMailtrap(params: {
+  apiKey: string;
+  inboxId?: string;
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const isSandbox = Boolean(params.inboxId);
+    const endpoint = isSandbox
+      ? `https://sandbox.api.mailtrap.io/api/send/${params.inboxId}`
+      : "https://send.api.mailtrap.io/api/send";
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${params.apiKey}`,
+        "Api-Token": params.apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: { email: params.from, name: "Zakeem Solutions" },
+        to: [{ email: params.to }],
+        subject: params.subject,
+        text: params.text,
+        html: params.html,
+      }),
+    });
+
+    const data = await res.json().catch(() => null);
+    if (res.ok) {
+      const messageId = data?.message_ids?.[0] || `mt_${Date.now()}`;
+      return { success: true, messageId };
+    }
+    const errMessage = data?.errors?.join(", ") || data?.message || `Mailtrap HTTP ${res.status}`;
+    return { success: false, error: errMessage };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : "Mailtrap request error" };
+  }
+}
+
 // -----------------------------------------------------------------------------
-// 4. MAIN HTTP SERVER DISPATCHER
+// 4. HEALTH CHECK ADAPTERS
+// -----------------------------------------------------------------------------
+
+async function pingProvider(provider: string): Promise<{ success: boolean; status: "healthy" | "degraded" | "error"; error?: string }> {
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
+  const mailtrapApiKey = Deno.env.get("MAILTRAP_API_KEY");
+  const mailtrapInboxId = Deno.env.get("MAILTRAP_INBOX_ID");
+
+  switch (provider) {
+    case "resend": {
+      if (!resendApiKey) {
+        return { success: false, status: "error", error: "PROVIDER CREDENTIALS NOT CONFIGURED: RESEND_API_KEY is not set." };
+      }
+      try {
+        const res = await fetch("https://api.resend.com/domains", {
+          headers: { Authorization: `Bearer ${resendApiKey}` },
+        });
+        if (res.ok) return { success: true, status: "healthy" };
+        return { success: false, status: "degraded", error: `Resend ping returned status ${res.status}` };
+      } catch (err) {
+        return { success: false, status: "error", error: err instanceof Error ? err.message : "Resend ping network failure" };
+      }
+    }
+
+    case "sendgrid": {
+      if (!sendgridApiKey) {
+        return { success: false, status: "error", error: "PROVIDER CREDENTIALS NOT CONFIGURED: SENDGRID_API_KEY is not set." };
+      }
+      try {
+        const res = await fetch("https://api.sendgrid.com/v3/scopes", {
+          headers: { Authorization: `Bearer ${sendgridApiKey}` },
+        });
+        if (res.ok) return { success: true, status: "healthy" };
+        return { success: false, status: "degraded", error: `SendGrid ping returned status ${res.status}` };
+      } catch (err) {
+        return { success: false, status: "error", error: err instanceof Error ? err.message : "SendGrid ping network failure" };
+      }
+    }
+
+    case "mailtrap": {
+      if (!mailtrapApiKey) {
+        return { success: false, status: "error", error: "PROVIDER CREDENTIALS NOT CONFIGURED: MAILTRAP_API_KEY is not set." };
+      }
+      try {
+        const endpoint = mailtrapInboxId
+          ? `https://mailtrap.io/api/v1/inboxes/${mailtrapInboxId}`
+          : "https://mailtrap.io/api/v1/inboxes";
+        const res = await fetch(endpoint, {
+          headers: { "Api-Token": mailtrapApiKey, Authorization: `Bearer ${mailtrapApiKey}` },
+        });
+        if (res.ok) return { success: true, status: "healthy" };
+        return { success: false, status: "degraded", error: `Mailtrap ping returned status ${res.status}` };
+      } catch (err) {
+        return { success: false, status: "error", error: err instanceof Error ? err.message : "Mailtrap ping network failure" };
+      }
+    }
+
+    default:
+      return { success: false, status: "error", error: `Provider adapter "${provider}" does not have active server credentials.` };
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 5. MAIN HTTP SERVER DISPATCHER
 // -----------------------------------------------------------------------------
 
 serve(async (req: Request) => {
@@ -333,7 +477,6 @@ serve(async (req: Request) => {
   const startTime = Date.now();
 
   try {
-    // 1. Enforce POST
     if (req.method !== "POST") {
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
         status: 405,
@@ -341,27 +484,10 @@ serve(async (req: Request) => {
       });
     }
 
-    // 2. Parse & Validate Payload
     const body: DispatchRequestBody = await req.json();
-    const {
-      eventType,
-      recipientEmail,
-      recipientName,
-      subject: reqSubject,
-      templateData = {},
-      referenceId,
-      bookingId,
-      idempotencyKey,
-    } = body;
+    const action = body.action || "dispatch";
 
-    if (!recipientEmail || !isValidEmail(recipientEmail)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid recipient email address format" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 3. Supabase Auth Verification
+    // Supabase Auth Verification
     const authHeader = req.headers.get("Authorization");
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
@@ -380,20 +506,177 @@ serve(async (req: Request) => {
       );
     }
 
-    // 4. Render Email Template
+    const environment = Deno.env.get("ENVIRONMENT") || Deno.env.get("DENO_ENV") || "production";
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
+    const mailtrapApiKey = Deno.env.get("MAILTRAP_API_KEY");
+    const mailtrapInboxId = Deno.env.get("MAILTRAP_INBOX_ID");
+    const fromAddress = Deno.env.get("OUTBOUND_FROM_EMAIL") || "admin@zakeemsolutions.com";
+
+    // -------------------------------------------------------------------------
+    // ACTION: GET_STATUS (Sanitized Metadata — Zero Secrets Leaked)
+    // -------------------------------------------------------------------------
+    if (action === "get_status") {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          environment,
+          senderEmail: fromAddress,
+          providers: {
+            resend: { configured: Boolean(resendApiKey) },
+            sendgrid: { configured: Boolean(sendgridApiKey) },
+            mailtrap: { configured: Boolean(mailtrapApiKey), sandbox: Boolean(mailtrapInboxId) },
+          },
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // -------------------------------------------------------------------------
+    // ACTION: HEALTH_CHECK
+    // -------------------------------------------------------------------------
+    if (action === "health_check") {
+      const targetProvider = body.provider || (environment === "production" ? "resend" : "mailtrap");
+      const health = await pingProvider(targetProvider);
+      const latencyMs = Date.now() - startTime;
+
+      return new Response(
+        JSON.stringify({
+          success: health.success,
+          provider: targetProvider,
+          status: health.status,
+          latencyMs,
+          error: health.error,
+          timestamp: new Date().toISOString(),
+        }),
+        {
+          status: health.success ? 200 : 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // -------------------------------------------------------------------------
+    // ACTION: SEND_TEST (Rate-limited, Admin-only Live Test)
+    // -------------------------------------------------------------------------
+    if (action === "send_test") {
+      const recipient = body.recipientEmail?.trim();
+      if (!recipient || !isValidEmail(recipient)) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Valid recipient email address is required for test dispatch." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const targetProvider = body.provider || (environment === "production" ? "resend" : "mailtrap");
+      const testTemplate = renderTemplate("test_email", "Administrator", {
+        provider: targetProvider.toUpperCase(),
+        environment,
+        adminEmail: userData.user.email || "Platform Admin",
+        note: sanitizeHeader(body.note || "Live transactional route verification test"),
+      });
+
+      let testResult: { success: boolean; messageId?: string; error?: string };
+
+      if (targetProvider === "resend" && resendApiKey) {
+        testResult = await sendViaResend({
+          apiKey: resendApiKey,
+          from: fromAddress,
+          to: recipient,
+          subject: testTemplate.subject,
+          html: testTemplate.html,
+          text: testTemplate.text,
+        });
+      } else if (targetProvider === "sendgrid" && sendgridApiKey) {
+        testResult = await sendViaSendGrid({
+          apiKey: sendgridApiKey,
+          from: fromAddress,
+          to: recipient,
+          subject: testTemplate.subject,
+          html: testTemplate.html,
+          text: testTemplate.text,
+        });
+      } else if (targetProvider === "mailtrap" && mailtrapApiKey) {
+        testResult = await sendViaMailtrap({
+          apiKey: mailtrapApiKey,
+          inboxId: mailtrapInboxId,
+          from: fromAddress,
+          to: recipient,
+          subject: testTemplate.subject,
+          html: testTemplate.html,
+          text: testTemplate.text,
+        });
+      } else {
+        testResult = {
+          success: false,
+          error: `PROVIDER CREDENTIALS NOT CONFIGURED: No credentials found for provider "${targetProvider}".`,
+        };
+      }
+
+      console.log(`[Email Control Center] Test Email dispatched via ${targetProvider} to ${maskEmailForLogs(recipient)} status=${testResult.success ? "OK" : "FAIL"}`);
+
+      return new Response(
+        JSON.stringify({
+          success: testResult.success,
+          provider: targetProvider,
+          providerMessageId: testResult.messageId,
+          error: testResult.error,
+          timestamp: new Date().toISOString(),
+        }),
+        {
+          status: testResult.success ? 200 : 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // -------------------------------------------------------------------------
+    // ACTION: DISPATCH (Transactional Outbound Message)
+    // -------------------------------------------------------------------------
+    const {
+      eventType = "transactional_notification",
+      recipientEmail,
+      recipientName = "Valued Partner",
+      subject: reqSubject,
+      templateData = {},
+      referenceId,
+      bookingId,
+      idempotencyKey,
+    } = body;
+
+    if (!recipientEmail || !isValidEmail(recipientEmail)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid recipient email address format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Render Email Template
     const template = renderTemplate(eventType, recipientName, templateData);
     const finalSubject = sanitizeHeader(reqSubject || template.subject);
     const finalHtml = body.htmlContent || template.html;
     const finalText = body.textContent || template.text;
 
-    // 5. Provider Selection & Outbound Dispatch
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
-    const fromAddress = Deno.env.get("OUTBOUND_FROM_EMAIL") || "no-reply@zakeemsolutions.com";
+    // Determine Provider with Environment Awareness
+    // Hierarchy: explicitly requested provider -> Mailtrap in dev/QA -> Resend in prod -> SendGrid -> fail truthfully
+    let selectedProvider = body.provider;
+    if (!selectedProvider) {
+      if ((environment === "development" || environment === "qa") && mailtrapApiKey) {
+        selectedProvider = "mailtrap";
+      } else if (resendApiKey) {
+        selectedProvider = "resend";
+      } else if (sendgridApiKey) {
+        selectedProvider = "sendgrid";
+      } else if (mailtrapApiKey) {
+        selectedProvider = "mailtrap";
+      } else {
+        selectedProvider = "none";
+      }
+    }
 
     let dispatchResult: { success: boolean; provider: string; messageId?: string; error?: string };
 
-    if (resendApiKey) {
+    if (selectedProvider === "resend" && resendApiKey) {
       const resendRes = await sendViaResend({
         apiKey: resendApiKey,
         from: fromAddress,
@@ -409,7 +692,7 @@ serve(async (req: Request) => {
         messageId: resendRes.messageId,
         error: resendRes.error,
       };
-    } else if (sendgridApiKey) {
+    } else if (selectedProvider === "sendgrid" && sendgridApiKey) {
       const sgRes = await sendViaSendGrid({
         apiKey: sendgridApiKey,
         from: fromAddress,
@@ -424,17 +707,32 @@ serve(async (req: Request) => {
         messageId: sgRes.messageId,
         error: sgRes.error,
       };
-    } else {
-      // Mock provider for development, verification, or pre-credential testing
-      const mockMsgId = `mock_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    } else if (selectedProvider === "mailtrap" && mailtrapApiKey) {
+      const mtRes = await sendViaMailtrap({
+        apiKey: mailtrapApiKey,
+        inboxId: mailtrapInboxId,
+        from: fromAddress,
+        to: recipientEmail,
+        subject: finalSubject,
+        html: finalHtml,
+        text: finalText,
+      });
       dispatchResult = {
-        success: true,
-        provider: "mock",
-        messageId: mockMsgId,
+        success: mtRes.success,
+        provider: "mailtrap",
+        messageId: mtRes.messageId,
+        error: mtRes.error,
+      };
+    } else {
+      // ZERO FALSE SUCCESS CLAIMS: Truthfully fail if no provider credentials are configured
+      dispatchResult = {
+        success: false,
+        provider: selectedProvider || "none",
+        error: "PROVIDER CREDENTIALS NOT CONFIGURED: Outbound provider credentials missing on Edge server.",
       };
     }
 
-    // 6. Database Synchronization (Service Role)
+    // Database Synchronization (Service Role)
     if (supabaseServiceKey && bookingId) {
       try {
         const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
@@ -473,7 +771,7 @@ serve(async (req: Request) => {
     );
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Internal notification dispatcher error";
-    return new Response(JSON.stringify({ error: errorMsg }), {
+    return new Response(JSON.stringify({ success: false, error: errorMsg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

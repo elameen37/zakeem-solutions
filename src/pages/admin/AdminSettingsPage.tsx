@@ -2,6 +2,7 @@ import React from "react";
 import { SEO } from "@/components/seo/SEO";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { AdminMaintenanceControl } from "@/components/admin/AdminMaintenanceControl";
+import { AdminEmailControlCenter } from "@/components/admin/AdminEmailControlCenter";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { Shield, Database, Lock, Server, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
@@ -39,6 +40,9 @@ export const AdminSettingsPage: React.FC = () => {
 
         {/* Global Maintenance Mode Control */}
         <AdminMaintenanceControl />
+
+        {/* Email Infrastructure & Control Center */}
+        <AdminEmailControlCenter />
 
         {/* System & Infrastructure Posture */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

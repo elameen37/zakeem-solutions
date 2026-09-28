@@ -1,10 +1,11 @@
-﻿/**
+/**
  * Zakeem Solutions — Transactional Notification & Outbound Dispatch Architecture
- * Phase 45: Controlled Commercial Pilot & Notification Architecture
+ * Phase 45 & Phase 69: Provider-Agnostic Transactional Email Infrastructure
  * 
  * Provider-neutral typed data models for enterprise outbound communications,
  * supporting multi-channel dispatch (Email, SMS, WhatsApp, Webhooks),
- * idempotent delivery, retry backoff tracking, and zero-leak masking.
+ * first-class email providers (Resend, SendGrid, Mailtrap), future-ready adapters
+ * (SES, Postmark, Brevo, Mailgun, SMTP), idempotent delivery, and zero-leak masking.
  */
 
 export type TransactionalChannel = "email" | "sms" | "whatsapp" | "webhook";
@@ -34,6 +35,7 @@ export type CommercialPilotNotificationEventType =
   | "commercial_demo_scheduled"
   | "commercial_agreement_ready"
   | "system_alert"
+  | "test_email"
   | "custom_transactional";
 
 export type NotificationEventType =
@@ -41,12 +43,105 @@ export type NotificationEventType =
   | InvitationNotificationEventType
   | CommercialPilotNotificationEventType;
 
+/**
+ * Supported email provider types:
+ * First-class: resend, sendgrid, mailtrap
+ * Future-ready: ses, postmark, brevo, mailgun, smtp
+ */
 export type EmailProviderType =
   | "resend"
   | "sendgrid"
+  | "mailtrap"
+  | "ses"
+  | "postmark"
+  | "brevo"
+  | "mailgun"
   | "smtp"
   | "webhook"
   | "mock";
+
+export type EmailProviderStatus =
+  | "configured"
+  | "not_configured"
+  | "degraded"
+  | "error";
+
+export type EmailDomainVerificationStatus =
+  | "verified"
+  | "pending"
+  | "not_configured"
+  | "unknown";
+
+export interface EmailDnsRecord {
+  type: "TXT" | "CNAME" | "MX";
+  name: string;
+  value: string;
+  status: EmailDomainVerificationStatus;
+  description: string;
+}
+
+export interface EmailProviderMetadata {
+  id: EmailProviderType;
+  displayName: string;
+  isFirstClass: boolean;
+  isConfigured: boolean;
+  status: EmailProviderStatus;
+  isDefault: boolean;
+  capabilities: string[];
+  recommendedFor: "production" | "staging" | "development" | "all";
+  documentationUrl?: string;
+  note?: string;
+}
+
+export interface EmailInfrastructureConfig {
+  environment: "development" | "staging" | "production";
+  activeProvider: EmailProviderType;
+  deliveryEnabled: boolean;
+  senderEmail: string;
+  senderName: string;
+  replyToEmail: string;
+  lastHealthCheck: string | null;
+  lastHealthStatus: "healthy" | "degraded" | "error" | "unverified";
+  domain: string;
+  domainVerification: {
+    spf: EmailDomainVerificationStatus;
+    dkim: EmailDomainVerificationStatus;
+    dmarc: EmailDomainVerificationStatus;
+    domain: string;
+  };
+  dnsRequirements: EmailDnsRecord[];
+  providers: Record<EmailProviderType, EmailProviderMetadata>;
+  metrics: {
+    queuedCount: number;
+    sentCount: number;
+    failedCount: number;
+    retryCount: number;
+    lastSuccessfulDelivery: string | null;
+  };
+}
+
+export interface TestEmailRequest {
+  recipientEmail: string;
+  provider?: EmailProviderType;
+  note?: string;
+}
+
+export interface TestEmailResult {
+  success: boolean;
+  provider: EmailProviderType;
+  messageId?: string;
+  error?: string;
+  timestamp: string;
+}
+
+export interface HealthCheckResult {
+  success: boolean;
+  provider: EmailProviderType;
+  status: "healthy" | "degraded" | "error";
+  latencyMs?: number;
+  error?: string;
+  timestamp: string;
+}
 
 export interface DeliveryAttempt {
   attemptNumber: number;

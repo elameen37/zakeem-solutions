@@ -199,7 +199,7 @@ export async function getEmailInfrastructureConfig(): Promise<EmailInfrastructur
 
   let activeProvider: EmailProviderType = defaultProvider;
   let deliveryEnabled = true;
-  let senderEmail = "admin@zakeemsolutions.com";
+  let senderEmail = "info@zakeemsolutions.com";
   let senderName = "Zakeem Solutions Operations";
   let replyToEmail = "support@zakeemsolutions.com";
   let lastHealthCheck: string | null = null;

@@ -511,7 +511,7 @@ serve(async (req: Request) => {
     const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
     const mailtrapApiKey = Deno.env.get("MAILTRAP_API_KEY");
     const mailtrapInboxId = Deno.env.get("MAILTRAP_INBOX_ID");
-    const fromAddress = Deno.env.get("OUTBOUND_FROM_EMAIL") || "admin@zakeemsolutions.com";
+    const fromAddress = Deno.env.get("OUTBOUND_FROM_EMAIL") || "info@zakeemsolutions.com";
 
     // -------------------------------------------------------------------------
     // ACTION: GET_STATUS (Sanitized Metadata — Zero Secrets Leaked)

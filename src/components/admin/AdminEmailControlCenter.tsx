@@ -57,7 +57,7 @@ export const AdminEmailControlCenter: React.FC = () => {
   const [isTogglingDelivery, setIsTogglingDelivery] = useState(false);
 
   // Test email state
-  const [testRecipient, setTestRecipient] = useState("admin@zakeemsolutions.com");
+  const [testRecipient, setTestRecipient] = useState("info@zakeemsolutions.com");
   const [testProvider, setTestProvider] = useState<EmailProviderType>("resend");
   const [testNote, setTestNote] = useState("Administrative transport integrity test");
   const [isSendingTest, setIsSendingTest] = useState(false);
@@ -881,7 +881,7 @@ export const AdminEmailControlCenter: React.FC = () => {
                     required
                     value={testRecipient}
                     onChange={(e) => setTestRecipient(e.target.value)}
-                    placeholder="admin@zakeemsolutions.com"
+                    placeholder="info@zakeemsolutions.com"
                     className="w-full px-3.5 py-2.5 rounded-lg text-xs bg-slate-50 dark:bg-[#030d1c] border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-[#e57804] font-mono"
                   />
                 </div>

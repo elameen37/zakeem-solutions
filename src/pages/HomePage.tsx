@@ -121,7 +121,7 @@ export const HomePage: React.FC = () => {
 
             {/* Value Proposition */}
             <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-200 font-normal leading-relaxed max-w-2xl mx-auto mb-10">
-              Zakeem Solutions engineers high-consequence software, deployable AI automation, and proprietary enterprise platforms designed for the world’s most demanding industries.
+              Zakeem Solutions builds custom enterprise software, AI automation, and business platforms, including CRM, scheduling, and client portals, that help teams work faster and serve customers better.
             </p>
 
             {/* Core Action Group */}

@@ -421,7 +421,14 @@ async function pingProvider(provider: string): Promise<{ success: boolean; statu
           headers: { Authorization: `Bearer ${resendApiKey}` },
         });
         if (res.ok) return { success: true, status: "healthy" };
-        return { success: false, status: "degraded", error: `Resend ping returned status ${res.status}` };
+        const data = await res.json().catch(() => null);
+        // Resend API keys restricted to sending access return HTTP 401 with name: "restricted_api_key".
+        // This confirms the API key is authentic, valid, and active with transactional send permissions.
+        if (res.status === 401 && data?.name === "restricted_api_key") {
+          return { success: true, status: "healthy" };
+        }
+        const errMessage = data?.message || `Resend ping returned status ${res.status}`;
+        return { success: false, status: "degraded", error: errMessage };
       } catch (err) {
         return { success: false, status: "error", error: err instanceof Error ? err.message : "Resend ping network failure" };
       }

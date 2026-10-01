@@ -42,6 +42,7 @@ import {
 
 export const RequestDemoPage: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const rescheduleRef = searchParams.get("reschedule") || searchParams.get("ref");
   const commercialParams = normalizeCommercialParams(searchParams);
   const contextSummary = getCommercialContextSummary(commercialParams);
 
@@ -72,7 +73,9 @@ export const RequestDemoPage: React.FC = () => {
   const [deploymentType, setDeploymentType] = useState<
     "cloud" | "private-vpc" | "on-premise"
   >(getInitialDeployment());
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(
+    rescheduleRef ? `Rescheduling request for prior booking reference: ${rescheduleRef}` : ""
+  );
   const [honeypot, setHoneypot] = useState(""); // Anti-spam trap
 
   // Self-managed scheduling state
@@ -503,6 +506,23 @@ export const RequestDemoPage: React.FC = () => {
                       Available Times — WAT
                     </span>
                   </div>
+
+                  {rescheduleRef && (
+                    <div className="p-3.5 rounded-xl bg-[#e57804]/10 border border-[#e57804]/30 flex items-start gap-3">
+                      <Calendar className="w-5 h-5 text-[#e57804] shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-white uppercase tracking-wider">Rescheduling Consultation</p>
+                          <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-[#e57804]/20 text-[#e57804] font-semibold">
+                            {rescheduleRef}
+                          </span>
+                        </div>
+                        <p className="text-[12px] text-slate-300 leading-relaxed">
+                          Your previous booking was cancelled. Select a new preferred business date and time slot below to secure your consultation.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {contextSummary && (
                     <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5">

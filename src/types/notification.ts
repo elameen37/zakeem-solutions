@@ -38,10 +38,15 @@ export type CommercialPilotNotificationEventType =
   | "test_email"
   | "custom_transactional";
 
+export type TrainingNotificationEventType =
+  | "it_training_internal_notification"
+  | "it_training_applicant_confirmation";
+
 export type NotificationEventType =
   | BookingNotificationEventType
   | InvitationNotificationEventType
-  | CommercialPilotNotificationEventType;
+  | CommercialPilotNotificationEventType
+  | TrainingNotificationEventType;
 
 /**
  * Supported email provider types:

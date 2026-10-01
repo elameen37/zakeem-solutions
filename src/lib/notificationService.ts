@@ -358,3 +358,260 @@ export async function retryNotificationDispatch(
 
   return dispatchNotification(dispatchPayload);
 }
+
+export interface DispatchBookingNotificationParams {
+  bookingId: string;
+  referenceId: string;
+  eventType: "booking_confirmed" | "booking_cancelled" | "booking_rescheduled";
+  recipientEmail: string;
+  recipientName: string;
+  product?: string;
+  bookingDate?: string;
+  startTime?: string;
+  endTime?: string;
+  timezone?: string;
+  cancellationReason?: string;
+}
+
+/**
+ * Dispatches an automated booking lifecycle notification (confirmation, cancellation, or reschedule).
+ */
+export async function dispatchBookingNotification(
+  params: DispatchBookingNotificationParams
+): Promise<NotificationDispatchResult> {
+  const maskedEmail = maskRecipientEmail(params.recipientEmail);
+  const cleanRef = sanitizeEmailHeaderValue(params.referenceId);
+  const cleanReason = sanitizeEmailHeaderValue(params.cancellationReason || "Operational adjustment");
+
+  let subject = `Confirmed: Enterprise Consultation (${cleanRef}) — Zakeem Solutions`;
+  let message = `Thank you for scheduling with Zakeem Solutions. Your enterprise architecture consultation has been reserved for ${params.bookingDate || "the scheduled date"} at ${params.startTime || "the scheduled time"} (${params.timezone || "Africa/Lagos WAT"}). Topic: ${params.product || "Enterprise Consultation"}.`;
+  if (params.eventType === "booking_cancelled") {
+    subject = `Cancelled: Enterprise Consultation (${cleanRef}) — Zakeem Solutions`;
+    message = `Your scheduled consultation with reference ${cleanRef} has been cancelled. Reason: ${cleanReason}. If you wish to reschedule, our advisory desk remains at your disposal.`;
+  } else if (params.eventType === "booking_rescheduled") {
+    subject = `Rescheduled: Enterprise Consultation (${cleanRef}) — Zakeem Solutions`;
+    message = `Your enterprise architecture consultation (${cleanRef}) has been rescheduled to ${params.bookingDate || "the updated date"} at ${params.startTime || "the updated time"} (${params.timezone || "Africa/Lagos WAT"}). Topic: ${params.product || "Enterprise Consultation"}.`;
+  }
+
+  const idempotencyKey = generateNotificationIdempotencyKey(
+    params.eventType,
+    params.referenceId,
+    String(Date.now())
+  );
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://www.zakeemsolutions.com";
+  const rescheduleUrl = `${origin}/request-demo?reschedule=${encodeURIComponent(cleanRef)}`;
+
+  const templateData: Record<string, unknown> = {
+    referenceId: params.referenceId,
+    product: params.product || "Enterprise Consultation",
+    bookingDate: params.bookingDate || "",
+    startTime: params.startTime || "",
+    endTime: params.endTime || "",
+    timezone: params.timezone || "Africa/Lagos (WAT)",
+    cancellationReason: cleanReason,
+    rescheduleUrl: params.eventType === "booking_cancelled" ? rescheduleUrl : undefined,
+    subject,
+    message,
+  };
+
+  const dispatchPayload: NotificationDispatchPayload = {
+    eventType: params.eventType,
+    recipientEmail: params.recipientEmail,
+    recipientName: params.recipientName,
+    subject,
+    templateData,
+    referenceId: params.referenceId,
+    bookingId: params.bookingId,
+    idempotencyKey,
+  };
+
+  const result = await dispatchNotification(dispatchPayload);
+
+  if (!result.success) {
+    recordAuditEvent({
+      eventType: "booking.notification_failed",
+      entityType: "booking",
+      entityId: params.bookingId,
+      metadata: {
+        eventType: params.eventType,
+        recipient: maskedEmail,
+        referenceId: cleanRef,
+        provider: result.provider,
+        status: result.status,
+        error: result.error,
+      },
+      errorCategory: "NETWORK",
+    });
+  }
+
+  return result;
+}
+
+export interface DispatchLeadWelcomeNotificationParams {
+  leadId: string;
+  recipientEmail: string;
+  recipientName: string;
+  company: string;
+  product?: string;
+  formType?: string;
+}
+
+/**
+ * Dispatches an automated commercial welcome / acknowledgment notification to an inbound CRM lead.
+ */
+export async function dispatchLeadWelcomeNotification(
+  params: DispatchLeadWelcomeNotificationParams
+): Promise<NotificationDispatchResult> {
+  const maskedEmail = maskRecipientEmail(params.recipientEmail);
+  const cleanCompany = sanitizeEmailHeaderValue(params.company);
+  const cleanProduct = sanitizeEmailHeaderValue(params.product || "Enterprise Platform");
+  const cleanFormType = sanitizeEmailHeaderValue(params.formType || "Inquiry");
+
+  const subject = `Welcome to Zakeem Solutions — Inbound Inquiry (${cleanCompany})`;
+  const message = `Thank you for contacting Zakeem Solutions Limited regarding ${cleanProduct}. Our solutions architecture and client advisory team has received your inquiry for ${cleanCompany} and is preparing an initial technical brief. An enterprise consultant will contact you shortly.`;
+
+  const idempotencyKey = generateNotificationIdempotencyKey(
+    "lead_welcome",
+    params.leadId,
+    String(Date.now())
+  );
+
+  const templateData: Record<string, unknown> = {
+    company: cleanCompany,
+    product: cleanProduct,
+    formType: cleanFormType,
+    subject,
+    message,
+  };
+
+  const dispatchPayload: NotificationDispatchPayload = {
+    eventType: "commercial_pilot_welcome",
+    recipientEmail: params.recipientEmail,
+    recipientName: params.recipientName,
+    subject,
+    templateData,
+    referenceId: params.leadId,
+    leadId: params.leadId,
+    idempotencyKey,
+  };
+
+  return dispatchNotification(dispatchPayload);
+}
+
+export interface DispatchTrainingNotificationsParams {
+  applicationReference: string;
+  applicantType: "individual" | "organization";
+  fullName?: string;
+  email?: string;
+  organizationName?: string;
+  businessEmail?: string;
+  course: string;
+  customTrainingRequest?: string;
+  preferredStartDate: string;
+  trainingDays: string[];
+  sessionDurationMinutes?: number;
+  preferredTime: string;
+  timezone?: string;
+  submittedAt?: string;
+}
+
+/**
+ * Dispatches internal admissions notification and applicant confirmation for Zakeem IT Training.
+ * Uses deterministic idempotency keys to prevent duplicate sends on retries.
+ */
+export async function dispatchTrainingApplicationNotifications(
+  params: DispatchTrainingNotificationsParams
+): Promise<{
+  internalResult: NotificationDispatchResult;
+  applicantResult: NotificationDispatchResult;
+}> {
+  const isOrg = params.applicantType === "organization";
+  const applicantEmail = sanitizeEmailHeaderValue(
+    (isOrg ? params.businessEmail : params.email) || ""
+  );
+  const applicantName = sanitizeEmailHeaderValue(
+    (isOrg ? params.organizationName : params.fullName) || "Candidate"
+  );
+  const internalRecipient = "info@zakeemsolutions.com";
+  const cleanRef = sanitizeEmailHeaderValue(params.applicationReference);
+  const duration = params.sessionDurationMinutes || 120;
+  const timezone = params.timezone || "Africa/Lagos";
+  const submittedAt = params.submittedAt || new Date().toISOString();
+
+  // 1. Dispatch Internal Notification to info@zakeemsolutions.com
+  const internalSubject = `New Zakeem IT Training Application — ${cleanRef}`;
+  const internalIdempotencyKey = generateNotificationIdempotencyKey(
+    "training_internal",
+    cleanRef
+  );
+
+  const internalPayload: NotificationDispatchPayload = {
+    eventType: "it_training_internal_notification",
+    recipientEmail: internalRecipient,
+    recipientName: "Zakeem Admissions Desk",
+    subject: internalSubject,
+    templateData: {
+      applicationReference: cleanRef,
+      applicantType: params.applicantType,
+      fullName: params.fullName ? sanitizeEmailHeaderValue(params.fullName) : undefined,
+      email: params.email ? sanitizeEmailHeaderValue(params.email) : undefined,
+      organizationName: params.organizationName ? sanitizeEmailHeaderValue(params.organizationName) : undefined,
+      businessEmail: params.businessEmail ? sanitizeEmailHeaderValue(params.businessEmail) : undefined,
+      course: sanitizeEmailHeaderValue(params.course),
+      customTrainingRequest: params.customTrainingRequest ? sanitizeEmailHeaderValue(params.customTrainingRequest) : undefined,
+      preferredStartDate: sanitizeEmailHeaderValue(params.preferredStartDate),
+      trainingDays: params.trainingDays,
+      sessionDurationMinutes: duration,
+      preferredTime: sanitizeEmailHeaderValue(params.preferredTime),
+      timezone,
+      submittedAt,
+    },
+    referenceId: cleanRef,
+    idempotencyKey: internalIdempotencyKey,
+  };
+
+  const internalResult = await dispatchNotification(internalPayload);
+
+  // 2. Dispatch Confirmation Email to Applicant
+  let applicantResult: NotificationDispatchResult;
+  if (applicantEmail) {
+    const applicantSubject = `Zakeem IT Training Application Received — ${cleanRef}`;
+    const applicantIdempotencyKey = generateNotificationIdempotencyKey(
+      "training_applicant",
+      cleanRef
+    );
+
+    const applicantPayload: NotificationDispatchPayload = {
+      eventType: "it_training_applicant_confirmation",
+      recipientEmail: applicantEmail,
+      recipientName: applicantName,
+      subject: applicantSubject,
+      templateData: {
+        applicationReference: cleanRef,
+        course: sanitizeEmailHeaderValue(params.course),
+        preferredStartDate: sanitizeEmailHeaderValue(params.preferredStartDate),
+        trainingDays: params.trainingDays,
+        sessionDurationMinutes: duration,
+        preferredTime: sanitizeEmailHeaderValue(params.preferredTime),
+        timezone,
+      },
+      referenceId: cleanRef,
+      idempotencyKey: applicantIdempotencyKey,
+    };
+
+    applicantResult = await dispatchNotification(applicantPayload);
+  } else {
+    applicantResult = {
+      success: false,
+      notificationId: cleanRef,
+      status: "failed",
+      error: "Missing applicant email address",
+      attempts: [],
+    };
+  }
+
+  return { internalResult, applicantResult };
+}
+
+

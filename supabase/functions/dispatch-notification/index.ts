@@ -200,17 +200,25 @@ function renderTemplate(
     }
 
     case "booking_created":
-    case "booking_confirmed": {
+    case "booking_confirmed":
+    case "booking_rescheduled": {
+      const isRescheduled = eventType === "booking_rescheduled";
       const ref = (templateData.referenceId as string) || "ZK-CONSULT";
       const date = (templateData.bookingDate as string) || "Scheduled Date";
       const time = (templateData.startTime as string) || "Scheduled Time";
       const tz = (templateData.timezone as string) || "Africa/Lagos (WAT)";
       const product = (templateData.product as string) || "Executive Architecture Consultation";
-      const subject = `Confirmed: Enterprise Consultation (${ref}) — Zakeem Solutions`;
+      const subject = isRescheduled
+        ? `Rescheduled: Enterprise Consultation (${ref}) — Zakeem Solutions`
+        : `Confirmed: Enterprise Consultation (${ref}) — Zakeem Solutions`;
+      const headline = isRescheduled ? "Consultation Rescheduled" : "Consultation Confirmed";
+      const intro = isRescheduled
+        ? `Your enterprise architecture consultation has been rescheduled to a new confirmed time slot in our calendar.`
+        : `Thank you for scheduling with Zakeem Solutions. Your enterprise architecture consultation has been reserved in our calendar.`;
       const body = `
-        <h1>Consultation Confirmed</h1>
+        <h1>${headline}</h1>
         <p>Hello ${safeName},</p>
-        <p>Thank you for scheduling with Zakeem Solutions. Your enterprise architecture consultation has been reserved in our calendar.</p>
+        <p>${intro}</p>
         <div class="info-card">
           <div class="info-row"><span class="info-label">Reference ID</span><span class="info-val">${ref}</span></div>
           <div class="info-row"><span class="info-label">Topic</span><span class="info-val">${product}</span></div>
@@ -219,14 +227,47 @@ function renderTemplate(
         </div>
         <p>A calendar invitation with secure video conference credentials will follow shortly.</p>
       `;
-      const text = `Hello ${safeName},\n\nYour consultation (${ref}) is confirmed for ${date} at ${time} (${tz}).\nTopic: ${product}\n\nZakeem Solutions`;
+      const text = `Hello ${safeName},\n\nYour consultation (${ref}) is ${isRescheduled ? "rescheduled for" : "confirmed for"} ${date} at ${time} (${tz}).\nTopic: ${product}\n\nZakeem Solutions`;
       return {
         subject,
         html: buildEmailHtml({
           title: subject,
-          preheader: `Consultation confirmed for ${date}`,
+          preheader: `Consultation ${isRescheduled ? "rescheduled" : "confirmed"} for ${date}`,
           bodyContent: body,
           referenceBadge: ref,
+        }),
+        text,
+      };
+    }
+
+    case "commercial_pilot_welcome": {
+      const org = (templateData.company as string) || (templateData.organization as string) || "Your Enterprise";
+      const product = (templateData.product as string) || "Enterprise Platform";
+      const formType = (templateData.formType as string) || "Commercial Pilot Inquiry";
+      const subject = `Welcome to Zakeem Solutions — Inbound Inquiry (${org})`;
+      const body = `
+        <h1>Commercial Inquiry Received</h1>
+        <p>Hello ${safeName},</p>
+        <p>Thank you for reaching out to <strong>Zakeem Solutions Limited</strong> regarding <strong>${product}</strong>.</p>
+        <p>Our solutions architecture and client advisory team has received your submission and is preparing an initial technical brief.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Organization</span><span class="info-val">${org}</span></div>
+          <div class="info-row"><span class="info-label">Product / Track</span><span class="info-val">${product}</span></div>
+          <div class="info-row"><span class="info-label">Inquiry Type</span><span class="info-val">${formType}</span></div>
+          <div class="info-row"><span class="info-label">Advisory Desk</span><span class="info-val">Lagos, Nigeria (WAT)</span></div>
+        </div>
+        <p>An enterprise architecture consultant will review your specifications and contact you directly.</p>
+      `;
+      const text = `Hello ${safeName},\n\nThank you for reaching out to Zakeem Solutions regarding ${product}.\nOur team has received your submission for ${org} and will contact you directly.\n\nZakeem Solutions Limited\ninfo@zakeemsolutions.com`;
+      return {
+        subject,
+        html: buildEmailHtml({
+          title: subject,
+          preheader: `Thank you for contacting Zakeem Solutions (${org})`,
+          bodyContent: body,
+          ctaText: "Explore Enterprise Solutions",
+          ctaUrl: "https://www.zakeemsolutions.com/products",
+          referenceBadge: "Commercial Inquiry",
         }),
         text,
       };
@@ -235,6 +276,7 @@ function renderTemplate(
     case "booking_cancelled": {
       const ref = (templateData.referenceId as string) || "ZK-CONSULT";
       const reason = (templateData.cancellationReason as string) || "Scheduling conflict";
+      const rescheduleUrl = (templateData.rescheduleUrl as string) || `https://www.zakeemsolutions.com/request-demo?reschedule=${encodeURIComponent(ref)}`;
       const subject = `Cancelled: Enterprise Consultation (${ref}) — Zakeem Solutions`;
       const body = `
         <h1>Consultation Cancelled</h1>
@@ -246,7 +288,7 @@ function renderTemplate(
         </div>
         <p>If you wish to reschedule or have further questions, our advisory desk remains at your disposal.</p>
       `;
-      const text = `Hello ${safeName},\n\nYour consultation (${ref}) has been cancelled. Reason: ${reason}.\n\nZakeem Solutions`;
+      const text = `Hello ${safeName},\n\nYour consultation (${ref}) has been cancelled. Reason: ${reason}.\n\nReschedule: ${rescheduleUrl}\n\nZakeem Solutions`;
       return {
         subject,
         html: buildEmailHtml({
@@ -254,7 +296,134 @@ function renderTemplate(
           preheader: `Consultation ${ref} cancelled`,
           bodyContent: body,
           ctaText: "Reschedule Consultation",
-          ctaUrl: "https://www.zakeemsolutions.com/scheduling",
+          ctaUrl: rescheduleUrl,
+          referenceBadge: ref,
+        }),
+        text,
+      };
+    }
+
+    case "it_training_internal_notification": {
+      const ref = (templateData.applicationReference as string) || "ZIT-APP";
+      const applicantType = (templateData.applicantType as string) || "individual";
+      const isOrg = applicantType === "organization";
+      const entityName = isOrg
+        ? (templateData.organizationName as string) || "Corporate Applicant"
+        : (templateData.fullName as string) || "Individual Applicant";
+      const email = (templateData.email as string) || (templateData.businessEmail as string) || "";
+      const course = (templateData.course as string) || "IT Training";
+      const customRequest = templateData.customTrainingRequest as string | undefined;
+      const startDate = (templateData.preferredStartDate as string) || "TBD";
+      const days = Array.isArray(templateData.trainingDays)
+        ? (templateData.trainingDays as string[]).join(", ")
+        : (templateData.trainingDays as string) || "3 days/week";
+      const time = (templateData.preferredTime as string) || "10:00";
+      const tz = (templateData.timezone as string) || "Africa/Lagos (WAT)";
+      const submittedAt = (templateData.submittedAt as string) || new Date().toISOString();
+
+      const subject = `New Zakeem IT Training Application — ${ref}`;
+      const customSection = customRequest
+        ? `<div class="info-row"><span class="info-label">Custom Request</span><span class="info-val">${customRequest}</span></div>`
+        : "";
+
+      const body = `
+        <h1>New IT Training Application</h1>
+        <p>A new candidate application has been submitted for <strong>Zakeem IT Training</strong> (Fully Online Programme).</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Application Reference</span><span class="info-val">${ref}</span></div>
+          <div class="info-row"><span class="info-label">Applicant Type</span><span class="info-val">${isOrg ? "Organization" : "Individual"}</span></div>
+          <div class="info-row"><span class="info-label">${isOrg ? "Organization Name" : "Candidate Name"}</span><span class="info-val">${entityName}</span></div>
+          <div class="info-row"><span class="info-label">Contact Email</span><span class="info-val">${email}</span></div>
+          <div class="info-row"><span class="info-label">Selected Course</span><span class="info-val">${course}</span></div>
+          ${customSection}
+          <div class="info-row"><span class="info-label">Preferred Start Date</span><span class="info-val">${startDate}</span></div>
+          <div class="info-row"><span class="info-label">Training Days</span><span class="info-val">${days}</span></div>
+          <div class="info-row"><span class="info-label">Duration</span><span class="info-val">2 hours per session</span></div>
+          <div class="info-row"><span class="info-label">Preferred Time</span><span class="info-val">${time} (${tz})</span></div>
+          <div class="info-row"><span class="info-label">Acknowledgement</span><span class="info-val">Accepted (Fully Online & Certificate Terms)</span></div>
+          <div class="info-row"><span class="info-label">Submission Timestamp</span><span class="info-val">${submittedAt}</span></div>
+        </div>
+      `;
+
+      const text = `New Zakeem IT Training Application — ${ref}\n\n` +
+        `Application Reference: ${ref}\n` +
+        `Applicant Type: ${isOrg ? "Organization" : "Individual"}\n` +
+        `Name / Organization: ${entityName}\n` +
+        `Email: ${email}\n` +
+        `Selected Course: ${course}\n` +
+        (customRequest ? `Custom Training Request: ${customRequest}\n` : "") +
+        `Preferred Start Date: ${startDate}\n` +
+        `Training Days: ${days}\n` +
+        `Duration: 2 hours per session\n` +
+        `Preferred Time: ${time} (${tz})\n` +
+        `Timezone: ${tz}\n` +
+        `Acknowledgement: Accepted\n` +
+        `Submission Timestamp: ${submittedAt}\n`;
+
+      return {
+        subject,
+        html: buildEmailHtml({
+          title: subject,
+          preheader: `New training application from ${entityName} (${ref})`,
+          bodyContent: body,
+          referenceBadge: ref,
+        }),
+        text,
+      };
+    }
+
+    case "it_training_applicant_confirmation": {
+      const ref = (templateData.applicationReference as string) || "ZIT-APP";
+      const course = (templateData.course as string) || "IT Training";
+      const startDate = (templateData.preferredStartDate as string) || "Your Selected Date";
+      const days = Array.isArray(templateData.trainingDays)
+        ? (templateData.trainingDays as string[]).join(", ")
+        : (templateData.trainingDays as string) || "3 Selected Days";
+      const time = (templateData.preferredTime as string) || "10:00";
+      const tz = (templateData.timezone as string) || "Africa/Lagos (WAT)";
+
+      const subject = `Zakeem IT Training Application Received — ${ref}`;
+      const body = `
+        <h1>Application Received</h1>
+        <p>Hello ${safeName},</p>
+        <p>Thank you for applying to <strong>Zakeem IT Training</strong>. We have received your application for <strong>${course}</strong>.</p>
+        <p><strong>Training is fully online</strong> with live structured instruction delivered by Zakeem senior technical leads.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Application Reference</span><span class="info-val">${ref}</span></div>
+          <div class="info-row"><span class="info-label">Enrolled Course</span><span class="info-val">${course}</span></div>
+          <div class="info-row"><span class="info-label">Delivery Mode</span><span class="info-val">Fully Online (Live / Structured)</span></div>
+          <div class="info-row"><span class="info-label">Preferred Start Date</span><span class="info-val">${startDate}</span></div>
+          <div class="info-row"><span class="info-label">Weekly Schedule</span><span class="info-val">${days}</span></div>
+          <div class="info-row"><span class="info-label">Session Duration</span><span class="info-val">2 hours per session</span></div>
+          <div class="info-row"><span class="info-label">Preferred Time</span><span class="info-val">${time} (${tz})</span></div>
+        </div>
+        <div style="background: rgba(229, 120, 4, 0.1); border: 1px solid rgba(229, 120, 4, 0.3); border-radius: 8px; padding: 14px; margin: 20px 0; font-size: 13px; color: #f3f4f6;">
+          <strong>&#127891; Certificate of Completion:</strong> A Certificate of Completion will be issued upon successful completion of the selected training programme and course requirements.
+        </div>
+        <p>Our solutions advisory and admissions desk will review your selected schedule and contact you with your cohort timetable and virtual classroom access details.</p>
+      `;
+
+      const text = `Hello ${safeName},\n\n` +
+        `Thank you for applying to Zakeem IT Training (${ref}).\n` +
+        `We have received your application for: ${course}.\n\n` +
+        `Training Details:\n` +
+        `- Delivery Mode: Fully Online (Live Structured)\n` +
+        `- Preferred Start Date: ${startDate}\n` +
+        `- Training Days: ${days}\n` +
+        `- Session Duration: 2 hours per session\n` +
+        `- Preferred Time: ${time} (${tz})\n\n` +
+        `A Certificate of Completion will be issued upon successful completion of the selected training programme.\n\n` +
+        `Our admissions desk will review your schedule and reach out with your calendar credentials.\n\n` +
+        `Zakeem Solutions Limited\ninfo@zakeemsolutions.com`;
+
+      return {
+        subject,
+        html: buildEmailHtml({
+          title: subject,
+          preheader: `Training application confirmed for ${course} (${ref})`,
+          bodyContent: body,
+          ctaText: "Explore Enterprise Solutions",
+          ctaUrl: "https://www.zakeemsolutions.com/products",
           referenceBadge: ref,
         }),
         text,

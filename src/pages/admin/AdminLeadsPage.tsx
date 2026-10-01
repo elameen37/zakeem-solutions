@@ -54,6 +54,12 @@ import {
   assignLeadOwner,
   getAdminUsers,
 } from "@/lib/crmService";
+import {
+  dispatchLeadWelcomeNotification,
+  dispatchInvitationNotification,
+  maskRecipientEmail,
+} from "@/lib/notificationService";
+import { createAdminInvitation } from "@/lib/invitationService";
 import { ZAKEEM_APPLICATIONS } from "@/data/ecosystem";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -92,6 +98,11 @@ export const AdminLeadsPage: React.FC = () => {
   const [leadActivities, setLeadActivities] = useState<CRMActivity[]>([]);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
+  const [isDispatchingEmail, setIsDispatchingEmail] = useState(false);
+  const [emailDispatchResult, setEmailDispatchResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   // Load admin users for filter dropdown
   useEffect(() => {
@@ -172,6 +183,7 @@ export const AdminLeadsPage: React.FC = () => {
   const handleSelectLead = (lead: CRMLead) => {
     setSelectedLeadId(lead.id);
     setSelectedLead(lead);
+    setEmailDispatchResult(null);
     loadLeadDetails(lead.id);
     const newParams = new URLSearchParams(searchParams);
     newParams.set("leadId", lead.id);
@@ -181,6 +193,7 @@ export const AdminLeadsPage: React.FC = () => {
   const handleCloseDrawer = () => {
     setSelectedLeadId(null);
     setSelectedLead(null);
+    setEmailDispatchResult(null);
     setLeadActivities([]);
     setInternalNoteInput("");
     const newParams = new URLSearchParams(searchParams);
@@ -332,6 +345,113 @@ export const AdminLeadsPage: React.FC = () => {
       setError("Error saving note.");
     } finally {
       setIsSavingNote(false);
+    }
+  };
+
+  // Outbound Email Dispatch Handlers
+  const handleSendWelcomeEmail = async () => {
+    if (!selectedLead || !selectedLead.contact?.email) return;
+    setIsDispatchingEmail(true);
+    setEmailDispatchResult(null);
+    try {
+      const orgName = selectedLead.organization?.name || "Enterprise Lead";
+      const res = await dispatchLeadWelcomeNotification({
+        leadId: selectedLead.id,
+        recipientEmail: selectedLead.contact.email,
+        recipientName: selectedLead.contact.fullName || "Valued Partner",
+        company: orgName,
+        product: selectedLead.productInterest || undefined,
+        formType: selectedLead.formType,
+      });
+
+      if (res.success) {
+        setEmailDispatchResult({
+          success: true,
+          message: `Enterprise inquiry welcome dispatched to ${maskRecipientEmail(selectedLead.contact.email)} via ${res.provider || "Resend"}.`,
+        });
+        // Auto-record note in CRM
+        await addCRMNote({
+          leadId: selectedLead.id,
+          organizationId: selectedLead.organization?.id || selectedLead.organizationId || undefined,
+          contactId: selectedLead.contact?.id || selectedLead.contactId || undefined,
+          title: `Welcome email dispatched via ${res.provider || "email service"}`,
+          notes: `Official transactional inquiry acknowledgment sent to ${selectedLead.contact.email} (Ref: ${res.notificationId || selectedLead.referenceId}).`,
+        });
+        await loadLeadDetails(selectedLead.id);
+      } else {
+        setEmailDispatchResult({
+          success: false,
+          message: `Dispatch failed: ${res.error || "Email service error"}`,
+        });
+      }
+    } catch {
+      setEmailDispatchResult({
+        success: false,
+        message: "An unexpected error occurred during email dispatch.",
+      });
+    } finally {
+      setIsDispatchingEmail(false);
+    }
+  };
+
+  const handleInviteLeadToPortal = async () => {
+    if (!selectedLead || !selectedLead.contact?.email) return;
+    setIsDispatchingEmail(true);
+    setEmailDispatchResult(null);
+    try {
+      const orgName = selectedLead.organization?.name || "Enterprise Client";
+      const inviteRes = await createAdminInvitation({
+        email: selectedLead.contact.email,
+        fullName: selectedLead.contact.fullName || "Enterprise Client",
+        organization: orgName,
+        leadId: selectedLead.id,
+        organizationId: selectedLead.organization?.id || selectedLead.organizationId || undefined,
+        contactId: selectedLead.contact?.id || selectedLead.contactId || undefined,
+        expiresInDays: 7,
+      });
+
+      if (inviteRes.success && inviteRes.token) {
+        const notifRes = await dispatchInvitationNotification({
+          email: selectedLead.contact.email,
+          fullName: selectedLead.contact.fullName || "Enterprise Client",
+          organization: orgName,
+          inviteToken: inviteRes.token,
+          expiresAt: inviteRes.expiresAt || new Date(Date.now() + 7 * 86400000).toISOString(),
+          leadId: selectedLead.id,
+        });
+
+        if (notifRes.success) {
+          setEmailDispatchResult({
+            success: true,
+            message: `Portal invitation dispatched to ${maskRecipientEmail(selectedLead.contact.email)} via ${notifRes.provider || "Resend"}.`,
+          });
+          await addCRMNote({
+            leadId: selectedLead.id,
+            organizationId: selectedLead.organization?.id || selectedLead.organizationId || undefined,
+            contactId: selectedLead.contact?.id || selectedLead.contactId || undefined,
+            title: `Client Portal Invitation dispatched via ${notifRes.provider || "email service"}`,
+            notes: `Single-use activation link generated and dispatched to ${selectedLead.contact.email}.`,
+          });
+          await loadLeadDetails(selectedLead.id);
+        } else {
+          setEmailDispatchResult({
+            success: false,
+            message: `Invitation generated (Token: ${inviteRes.token.substring(0, 8)}...), but email dispatch failed: ${notifRes.error || "Provider error"}.`,
+          });
+        }
+      } else {
+        setEmailDispatchResult({
+          success: false,
+          message: `Failed to generate invitation: ${inviteRes.error || "Unknown error"}`,
+        });
+      }
+    } catch {
+      setEmailDispatchResult({
+        success: false,
+        message: "An unexpected error occurred during portal invitation creation.",
+      });
+    } finally {
+      setIsDispatchingEmail(false);
     }
   };
 
@@ -1057,6 +1177,73 @@ export const AdminLeadsPage: React.FC = () => {
                       {selectedLead.organization?.domain || selectedLead.organization?.industry || "Commercial B2B"}
                     </span>
                   </div>
+                </div>
+              </div>
+
+              {/* 1.5. Commercial Communications & Email Dispatch */}
+              <div data-surface="dark" className="p-4 rounded-2xl bg-[#081c38] border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <Send className="w-3.5 h-3.5 text-[#e57804]" />
+                    Commercial Communications
+                  </h4>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    Resend Active
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Dispatch official transactional communications directly to this lead's verified work email.
+                </p>
+
+                {emailDispatchResult && (
+                  <div
+                    className={cn(
+                      "p-2.5 rounded-lg text-xs border flex items-start gap-2",
+                      emailDispatchResult.success
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
+                        : "bg-red-500/10 border-red-500/20 text-red-300"
+                    )}
+                  >
+                    {emailDispatchResult.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    )}
+                    <span className="flex-1">{emailDispatchResult.message}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSendWelcomeEmail}
+                    disabled={isDispatchingEmail || !selectedLead.contact?.email}
+                    className="text-xs border-white/10 hover:border-[#e57804] text-slate-200 hover:text-white"
+                  >
+                    {isDispatchingEmail ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                    ) : (
+                      <Mail className="w-3.5 h-3.5 text-[#e57804] mr-1.5" />
+                    )}
+                    Send Welcome Email
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleInviteLeadToPortal}
+                    disabled={isDispatchingEmail || !selectedLead.contact?.email}
+                    className="text-xs border-white/10 hover:border-emerald-500/50 text-slate-200 hover:text-white"
+                  >
+                    {isDispatchingEmail ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                    ) : (
+                      <UserCheck className="w-3.5 h-3.5 text-emerald-400 mr-1.5" />
+                    )}
+                    Invite to Client Portal
+                  </Button>
                 </div>
               </div>
 

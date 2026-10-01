@@ -80,6 +80,7 @@ import {
   maskRecipientEmail,
   dispatchInvitationNotification,
   retryNotificationDispatch,
+  dispatchBookingNotification,
 } from "@/lib/notificationService";
 import { ClientInvitation, CreateInvitationResult } from "@/types/auth";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
@@ -400,7 +401,45 @@ export const AdminSchedulingPage: React.FC = () => {
     try {
       const res = await updateAdminBookingStatus(booking.id, newStatus, reason, "solutions-admin");
       if (res.success) {
-        setActionSuccess(`Reservation ${booking.referenceId} transitioned to ${newStatus.toUpperCase()}.`);
+        let dispatchNotice = "";
+        if (newStatus === "cancelled" && booking.email) {
+          try {
+            const notifRes = await dispatchBookingNotification({
+              bookingId: booking.id,
+              referenceId: booking.referenceId,
+              eventType: "booking_cancelled",
+              recipientEmail: booking.email,
+              recipientName: booking.fullName,
+              cancellationReason: reason || "Operational update by solutions administrator",
+            });
+            if (notifRes.success) {
+              dispatchNotice = ` Client notified via ${notifRes.provider || "email"}.`;
+            }
+          } catch (notifErr) {
+            console.warn("[Scheduling] Cancellation notification dispatch notice:", notifErr);
+          }
+        } else if (newStatus === "confirmed" && booking.email) {
+          try {
+            const notifRes = await dispatchBookingNotification({
+              bookingId: booking.id,
+              referenceId: booking.referenceId,
+              eventType: "booking_confirmed",
+              recipientEmail: booking.email,
+              recipientName: booking.fullName,
+              product: booking.product,
+              bookingDate: booking.bookingDate,
+              startTime: booking.startTime,
+              endTime: booking.endTime,
+            });
+            if (notifRes.success) {
+              dispatchNotice = ` Confirmation dispatched via ${notifRes.provider || "email"}.`;
+            }
+          } catch (notifErr) {
+            console.warn("[Scheduling] Confirmation notification dispatch notice:", notifErr);
+          }
+        }
+
+        setActionSuccess(`Reservation ${booking.referenceId} transitioned to ${newStatus.toUpperCase()}.${dispatchNotice}`);
         setTimeout(() => setActionSuccess(null), 4000);
 
         // Dispatch analytics custom DOM events
@@ -457,10 +496,33 @@ export const AdminSchedulingPage: React.FC = () => {
       });
 
       if (res.success) {
+        let dispatchNotice = "";
+        if (selectedBooking.email) {
+          try {
+            const notifRes = await dispatchBookingNotification({
+              bookingId: selectedBooking.id,
+              referenceId: selectedBooking.referenceId,
+              eventType: "booking_rescheduled",
+              recipientEmail: selectedBooking.email,
+              recipientName: selectedBooking.fullName,
+              product: selectedBooking.product,
+              bookingDate: rescheduleDate,
+              startTime: selectedRescheduleSlot.startTime,
+              endTime: selectedRescheduleSlot.endTime,
+              cancellationReason: rescheduleReason.trim() || undefined,
+            });
+            if (notifRes.success) {
+              dispatchNotice = ` Client notified via ${notifRes.provider || "email"}.`;
+            }
+          } catch (notifErr) {
+            console.warn("[Scheduling] Reschedule notification dispatch notice:", notifErr);
+          }
+        }
+
         setActionSuccess(
           `Reservation ${selectedBooking.referenceId} successfully rescheduled to ${formatDisplayDate(
             rescheduleDate
-          )} (${selectedRescheduleSlot.displayTime} WAT).`
+          )} (${selectedRescheduleSlot.displayTime} WAT).${dispatchNotice}`
         );
         setTimeout(() => setActionSuccess(null), 5000);
 

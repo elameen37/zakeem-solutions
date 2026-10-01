@@ -129,7 +129,15 @@ export async function dispatchNotification(
     const client = getSupabaseClient();
     if (client && client.functions) {
       try {
+        const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || "").trim();
+        const session = client.auth ? (await client.auth.getSession()).data.session : null;
+        const authHeader = session?.access_token ? `Bearer ${session.access_token}` : `Bearer ${anonKey}`;
+
         const { data, error } = await client.functions.invoke("dispatch-notification", {
+          headers: {
+            apikey: anonKey,
+            Authorization: authHeader,
+          },
           body: {
             ...payload,
             subject: sanitizedSubject,
@@ -582,6 +590,11 @@ export async function dispatchTrainingApplicationNotifications(
       cleanRef
     );
 
+    const origin = typeof window !== "undefined" && window.location.origin
+      ? window.location.origin
+      : "https://www.zakeemsolutions.com";
+    const statusUrl = `${origin}/training/status?ref=${encodeURIComponent(cleanRef)}&email=${encodeURIComponent(applicantEmail)}`;
+
     const applicantPayload: NotificationDispatchPayload = {
       eventType: "it_training_applicant_confirmation",
       recipientEmail: applicantEmail,
@@ -589,12 +602,16 @@ export async function dispatchTrainingApplicationNotifications(
       subject: applicantSubject,
       templateData: {
         applicationReference: cleanRef,
+        applicantType: params.applicantType,
         course: sanitizeEmailHeaderValue(params.course),
         preferredStartDate: sanitizeEmailHeaderValue(params.preferredStartDate),
         trainingDays: params.trainingDays,
         sessionDurationMinutes: duration,
         preferredTime: sanitizeEmailHeaderValue(params.preferredTime),
         timezone,
+        statusUrl,
+        origin,
+        status: "submitted",
       },
       referenceId: cleanRef,
       idempotencyKey: applicantIdempotencyKey,

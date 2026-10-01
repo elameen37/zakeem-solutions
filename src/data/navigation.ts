@@ -225,7 +225,8 @@ export const FOOTER_NAVIGATION = {
     { label: "Cloud & Infrastructure", href: "/services/cloud-infrastructure" },
     { label: "Cybersecurity", href: "/services/cybersecurity" },
     { label: "UI/UX & Product Design", href: "/services/ui-ux" },
-    { label: "Training & Enablement", href: "/services/training" }
+    { label: "Online IT Training", href: "/it-training" },
+    { label: "Application Status Check", href: "/training/status" }
   ],
   company: [
     { label: "About Zakeem", href: "/about" },

@@ -375,13 +375,19 @@ function renderTemplate(
     case "it_training_applicant_confirmation": {
       const ref = (templateData.applicationReference as string) || "ZIT-APP";
       const course = (templateData.course as string) || "IT Training";
+      const applicantType = (templateData.applicantType as string) || "individual";
+      const isOrg = applicantType === "organization";
       const startDate = (templateData.preferredStartDate as string) || "Your Selected Date";
       const days = Array.isArray(templateData.trainingDays)
         ? (templateData.trainingDays as string[]).join(", ")
         : (templateData.trainingDays as string) || "3 Selected Days";
+      const duration = (templateData.sessionDurationMinutes as number) || 120;
       const time = (templateData.preferredTime as string) || "10:00";
       const tz = (templateData.timezone as string) || "Africa/Lagos (WAT)";
       const isConfirmed = templateData.isConfirmed === true || templateData.status === "confirmed";
+
+      const origin = (templateData.origin as string) || "https://www.zakeemsolutions.com";
+      const statusUrl = (templateData.statusUrl as string) || `${origin}/training/status?ref=${encodeURIComponent(ref)}`;
 
       const subject = isConfirmed
         ? `Zakeem IT Training Application Confirmed — ${ref}`
@@ -398,11 +404,12 @@ function renderTemplate(
         <p><strong>Training is fully online</strong> with live structured instruction delivered by Zakeem senior technical leads.</p>
         <div class="info-card">
           <div class="info-row"><span class="info-label">Application Reference</span><span class="info-val">${ref}</span></div>
+          <div class="info-row"><span class="info-label">Applicant Type</span><span class="info-val">${isOrg ? "Organization" : "Individual"}</span></div>
           <div class="info-row"><span class="info-label">Enrolled Course</span><span class="info-val">${course}</span></div>
           <div class="info-row"><span class="info-label">Delivery Mode</span><span class="info-val">Fully Online (Live / Structured)</span></div>
           <div class="info-row"><span class="info-label">Preferred Start Date</span><span class="info-val">${startDate}</span></div>
           <div class="info-row"><span class="info-label">Weekly Schedule</span><span class="info-val">${days}</span></div>
-          <div class="info-row"><span class="info-label">Session Duration</span><span class="info-val">2 hours per session</span></div>
+          <div class="info-row"><span class="info-label">Session Duration</span><span class="info-val">2 hours per session (${duration} mins)</span></div>
           <div class="info-row"><span class="info-label">Preferred Time</span><span class="info-val">${time} (${tz})</span></div>
           ${isConfirmed ? `<div class="info-row"><span class="info-label">Admissions Status</span><span class="info-val" style="color: #10b981; font-weight: bold;">Confirmed</span></div>` : ""}
         </div>
@@ -410,6 +417,9 @@ function renderTemplate(
           <strong>&#127891; Certificate of Completion:</strong> A Certificate of Completion will be issued upon successful completion of the selected training programme and course requirements.
         </div>
         <p>${isConfirmed ? "Your cohort calendar invite, orientation schedule, and virtual classroom credentials will be issued prior to your start date." : "Our solutions advisory and admissions desk will review your selected schedule and contact you with your cohort timetable and virtual classroom access details."}</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 15px;">
+          You can track your admission status at any time using your application reference and registered email address at: <a href="${statusUrl}" style="color: #e57804; text-decoration: underline;">${statusUrl}</a>
+        </p>
       `;
 
       const text = `Hello ${safeName},\n\n` +
@@ -417,12 +427,16 @@ function renderTemplate(
           ? `Zakeem Solutions has officially confirmed your training application for: ${course} (${ref}).\n\n`
           : `Thank you for applying to Zakeem IT Training (${ref}).\nWe have received your application for: ${course}.\n\n`) +
         `Training Details:\n` +
-        `- Delivery Mode: Fully Online (Live Structured)\n` +
+        `- Application Reference: ${ref}\n` +
+        `- Applicant Type: ${isOrg ? "Organization" : "Individual"}\n` +
+        `- Enrolled Course: ${course}\n` +
+        `- Delivery Mode: Fully Online (Live / Structured)\n` +
         `- Preferred Start Date: ${startDate}\n` +
-        `- Training Days: ${days}\n` +
-        `- Session Duration: 2 hours per session\n` +
+        `- Weekly Schedule: ${days}\n` +
+        `- Session Duration: 2 hours per session (${duration} mins)\n` +
         `- Preferred Time: ${time} (${tz})\n` +
         (isConfirmed ? `- Admissions Status: Confirmed\n\n` : `\n`) +
+        `Track your application status: ${statusUrl}\n\n` +
         `A Certificate of Completion will be issued upon successful completion of the selected training programme.\n\n` +
         (isConfirmed
           ? `Your virtual classroom credentials will be dispatched prior to your start date.\n\n`
@@ -437,8 +451,8 @@ function renderTemplate(
             ? `Your training application for ${course} has been officially confirmed (${ref})`
             : `Training application confirmed for ${course} (${ref})`,
           bodyContent: body,
-          ctaText: "Explore Enterprise Solutions",
-          ctaUrl: "https://www.zakeemsolutions.com/products",
+          ctaText: "Check Application Status",
+          ctaUrl: statusUrl,
           referenceBadge: ref,
         }),
         text,
@@ -678,23 +692,103 @@ serve(async (req: Request) => {
     const body: DispatchRequestBody = await req.json();
     const action = body.action || "dispatch";
 
-    // Supabase Auth Verification
+    // Supabase Auth & Client Verification
     const authHeader = req.headers.get("Authorization");
+    const apiKeyHeader = req.headers.get("apikey");
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false },
-      global: { headers: { Authorization: authHeader || "" } },
-    });
+    const rawToken = authHeader ? authHeader.replace(/^Bearer\s+/i, "").trim() : "";
+    const isServiceRole = Boolean(rawToken && supabaseServiceKey && rawToken === supabaseServiceKey);
+    
+    function isProjectAnonToken(token?: string | null, expectedKey?: string): boolean {
+      if (!token) return false;
+      if (expectedKey && token === expectedKey) return true;
+      try {
+        const parts = token.split(".");
+        if (parts.length !== 3) return false;
+        const base64Url = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const jsonStr = atob(base64Url);
+        const payload = JSON.parse(jsonStr);
+        return payload.iss === "supabase" && payload.ref === "atrevctosjcimszirdcc" && payload.role === "anon";
+      } catch {
+        return false;
+      }
+    }
 
-    const { data: userData, error: authError } = await userClient.auth.getUser();
-    if (authError || !userData?.user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized: Valid authentication token required" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const isProjectAnonClient = Boolean(
+      isProjectAnonToken(rawToken, supabaseAnonKey) ||
+      isProjectAnonToken(apiKeyHeader, supabaseAnonKey) ||
+      req.headers.get("sb-project-ref") === "atrevctosjcimszirdcc"
+    );
+
+    let authUser: any = null;
+    let isAdmin = isServiceRole;
+
+    // Check user JWT if token is provided and distinct from service role / anon keys
+    if (rawToken && !isServiceRole && !isProjectAnonClient) {
+      try {
+        const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: { persistSession: false },
+          global: { headers: { Authorization: authHeader || "" } },
+        });
+        const { data: userData } = await userClient.auth.getUser();
+        if (userData?.user) {
+          authUser = userData.user;
+          const email = authUser.email || "";
+          if (email.endsWith("@zakeemsolutions.com")) {
+            isAdmin = true;
+          } else {
+            const { data: profile } = await userClient
+              .from("profiles")
+              .select("role")
+              .eq("id", authUser.id)
+              .maybeSingle();
+            if (profile?.role === "admin") {
+              isAdmin = true;
+            }
+          }
+        }
+      } catch {
+        // Continue with non-user session evaluation
+      }
+    }
+
+    // Role-based Access Control
+    if (action === "get_status" || action === "health_check" || action === "send_test") {
+      if (!isAdmin && !authUser) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized: Valid authentication token required" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // For public dispatch events, require project client credentials (anon key or auth token)
+    const ALLOWED_ANON_EVENTS = [
+      "it_training_applicant_confirmation",
+      "it_training_internal_notification",
+      "commercial_pilot_welcome",
+      "lead_welcome",
+      "booking_confirmed",
+    ];
+
+    if (action === "dispatch") {
+      if (!authUser && !isAdmin) {
+        if (!isProjectAnonClient) {
+          return new Response(
+            JSON.stringify({ error: "Unauthorized: Valid authentication token required" }),
+            { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (!ALLOWED_ANON_EVENTS.includes(body.eventType || "")) {
+          return new Response(
+            JSON.stringify({ error: `Forbidden: Event type "${body.eventType}" requires authentication` }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
     }
 
     const environment = Deno.env.get("ENVIRONMENT") || Deno.env.get("DENO_ENV") || "production";
@@ -763,7 +857,7 @@ serve(async (req: Request) => {
       const testTemplate = renderTemplate("test_email", "Administrator", {
         provider: targetProvider.toUpperCase(),
         environment,
-        adminEmail: userData.user.email || "Platform Admin",
+        adminEmail: authUser?.email || "Platform Admin",
         note: sanitizeHeader(body.note || "Live transactional route verification test"),
       });
 

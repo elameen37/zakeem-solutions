@@ -721,13 +721,32 @@ export async function updateAdminTrainingStatus(params: {
             .eq("application_reference", current.applicationReference);
         }
 
-        // If CRM Lead exists, record activity
-        if (current.crmLeadId) {
+        // If CRM Lead exists for an organization applicant, synchronize lead status
+        if (current.applicantType === "organization" && current.crmLeadId) {
+          let newLeadStatus: string | null = null;
+          if (newStatus === "confirmed") {
+            newLeadStatus = "qualified";
+          } else if (newStatus === "cancelled") {
+            newLeadStatus = "disqualified";
+          }
+
+          if (newLeadStatus) {
+            await client
+              .from("crm_leads")
+              .update({
+                status: newLeadStatus,
+                updated_at: nowIso,
+              })
+              .eq("id", current.crmLeadId);
+          }
+
+          // Record CRM activity
           await client.from("crm_activities").insert({
             activity_type: newStatus === "confirmed" ? "proposal" : (newStatus === "cancelled" ? "follow_up" : "note_added"),
             lead_id: current.crmLeadId,
+            organization_id: current.organizationName ? undefined : undefined,
             title: `Training Application ${newStatus.toUpperCase()}`,
-            description: `Application status transitioned from ${current.status} to ${newStatus}.${cleanReason ? ` Reason: ${cleanReason}` : ""}`,
+            description: `Application status transitioned from ${current.status} to ${newStatus}.${cleanReason ? ` Reason: ${cleanReason}` : ""}${newLeadStatus ? ` [CRM Lead updated to ${newLeadStatus}]` : ""}`,
             status: "completed",
             completed_at: nowIso,
           });
@@ -816,7 +835,11 @@ export async function confirmAdminTrainingApplication(params: {
     const timezone = confirmedApp.timezone || "Africa/Lagos";
 
     // Deterministic idempotency key prevents duplicate sends
-    const idempotencyKey = `zk_notif_training_confirmed_${cleanRef}`;
+    const origin = typeof window !== "undefined" && window.location.origin
+      ? window.location.origin
+      : "https://www.zakeemsolutions.com";
+    const statusUrl = `${origin}/training/status?ref=${encodeURIComponent(cleanRef)}&email=${encodeURIComponent(applicantEmail)}`;
+    const idempotencyKey = `confirm-${cleanRef}`;
 
     const notifResult = await dispatchNotification({
       eventType: "it_training_applicant_confirmation",
@@ -825,12 +848,15 @@ export async function confirmAdminTrainingApplication(params: {
       subject: `Zakeem IT Training Application Confirmed — ${cleanRef}`,
       templateData: {
         applicationReference: cleanRef,
+        applicantType: confirmedApp.applicantType,
         course: confirmedApp.course,
         preferredStartDate: confirmedApp.preferredStartDate,
         trainingDays: confirmedApp.trainingDays,
         sessionDurationMinutes: duration,
         preferredTime: confirmedApp.preferredTime,
         timezone,
+        statusUrl,
+        origin,
         isConfirmed: true,
         status: "confirmed",
       },
@@ -1020,4 +1046,140 @@ export async function retryOrganizationTrainingCRM(
   });
 
   return { success: true, leadId };
+}
+
+// -----------------------------------------------------------------------------
+// PHASE 73: PUBLIC APPLICANT STATUS VERIFICATION
+// -----------------------------------------------------------------------------
+
+export interface PublicTrainingStatusData {
+  reference: string;
+  applicantType: "individual" | "organization";
+  applicantDisplayName?: string;
+  course: string;
+  preferredStartDate: string;
+  trainingDays: string[];
+  sessionDuration: string;
+  sessionDurationMinutes: number;
+  preferredTime: string;
+  timezone: string;
+  status: TrainingApplicationStatus;
+  statusMessage: string;
+  deliveryMode: string;
+  certificateEligible: boolean;
+  submittedAt: string;
+}
+
+export interface PublicTrainingStatusResult {
+  success: boolean;
+  data?: PublicTrainingStatusData;
+  error?: string;
+}
+
+let lastPublicStatusCheckTimestamp = 0;
+const STATUS_CHECK_COOLDOWN_MS = 1000;
+
+/**
+ * Public applicant status inquiry. Requires BOTH application reference and matching email.
+ * Rejects mismatched inputs with zero enumeration leakage (does not disclose if reference exists).
+ * Never exposes admin notes, cancellation reasons, or internal CRM identifiers.
+ */
+export async function checkPublicTrainingStatus(
+  reference: string,
+  email: string
+): Promise<PublicTrainingStatusResult> {
+  const cleanRef = sanitizeInput(reference || "").trim().toUpperCase();
+  const cleanEmail = sanitizeInput(email || "").trim().toLowerCase();
+
+  if (!cleanRef || !cleanEmail) {
+    return {
+      success: false,
+      error: "Please enter both your Application Reference and registered Email address.",
+    };
+  }
+
+  // Rate limiting / abuse prevention
+  const now = Date.now();
+  if (now - lastPublicStatusCheckTimestamp < STATUS_CHECK_COOLDOWN_MS) {
+    return {
+      success: false,
+      error: "Please wait a moment before querying application status again.",
+    };
+  }
+  lastPublicStatusCheckTimestamp = now;
+
+  // 1. Authoritative PostgreSQL RPC invocation (Security Definer)
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (client) {
+      try {
+        const { data, error } = await client.rpc("get_public_training_status", {
+          p_reference: cleanRef,
+          p_email: cleanEmail,
+        });
+
+        if (!error && data) {
+          if (data.success && data.data) {
+            return {
+              success: true,
+              data: data.data,
+            };
+          }
+          return {
+            success: false,
+            error: data.error || "No matching application located. Please verify your reference ID and the email address used during submission.",
+          };
+        }
+      } catch (err) {
+        console.warn("[checkPublicTrainingStatus RPC notice]:", err);
+      }
+    }
+  }
+
+  // 2. Local resilient fallback (strictly checks matching reference AND email)
+  const stored = getStoredTrainingApplications();
+  const match = stored.find((a) => {
+    const refMatch = a.applicationReference.toUpperCase() === cleanRef;
+    const emailMatch =
+      (a.applicantType === "individual" && a.email?.toLowerCase() === cleanEmail) ||
+      (a.applicantType === "organization" && a.businessEmail?.toLowerCase() === cleanEmail);
+    return refMatch && emailMatch;
+  });
+
+  if (match) {
+    let statusMessage = "Application received and queued for review by the Zakeem Admissions Desk.";
+    if (match.status === "in_review") {
+      statusMessage = "Application is currently under technical review and scheduling alignment.";
+    } else if (match.status === "confirmed") {
+      statusMessage = "Application officially confirmed! Cohort onboarding and virtual classroom credentials will be dispatched prior to your start date.";
+    } else if (match.status === "cancelled") {
+      statusMessage = "Application was cancelled. Please contact admissions@zakeemsolutions.com for assistance.";
+    }
+
+    return {
+      success: true,
+      data: {
+        reference: match.applicationReference,
+        applicantType: match.applicantType,
+        applicantDisplayName: match.applicantType === "organization" ? match.organizationName : match.fullName,
+        course: match.course,
+        preferredStartDate: match.preferredStartDate,
+        trainingDays: match.trainingDays,
+        sessionDuration: "2 hours per session",
+        sessionDurationMinutes: match.sessionDurationMinutes || 120,
+        preferredTime: match.preferredTime,
+        timezone: match.timezone || "Africa/Lagos",
+        status: match.status,
+        statusMessage,
+        deliveryMode: "Fully Online (Live / Structured)",
+        certificateEligible: true,
+        submittedAt: match.createdAt,
+      },
+    };
+  }
+
+  return {
+    success: false,
+    error: "No matching application located. Please verify your reference ID and the email address used during submission.",
+  };
 }

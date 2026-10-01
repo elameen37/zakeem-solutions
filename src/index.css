@@ -399,3 +399,54 @@ html:not(.dark) {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   PRINT MEDIA STYLES (IT Training Blank Form & Clean Document Export)
+   ========================================================================== */
+@media print {
+  @page {
+    margin: 12mm 15mm;
+    size: A4 portrait;
+  }
+
+  body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide screen chrome, navigation, footer, back-to-top, overlays, widgets */
+  header,
+  footer,
+  nav,
+  aside,
+  #back-to-top,
+  .print-hide,
+  .no-print,
+  [data-print-hide="true"],
+  [role="dialog"],
+  .glow-amber,
+  .bg-dot-pattern,
+  button:not(.print-keep) {
+    display: none !important;
+  }
+
+  main {
+    padding-top: 0 !important;
+    margin: 0 !important;
+  }
+
+  .printable-document {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+}

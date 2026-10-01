@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Check,
   BookOpen,
+  Printer,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
@@ -188,7 +189,7 @@ export const TrainingPage: React.FC = () => {
         canonical="https://www.zakeemsolutions.com/training"
       />
 
-      <section className="pt-12 pb-20 md:pt-20 md:pb-28 border-b border-white/10">
+      <section className="pt-12 pb-20 md:pt-20 md:pb-28 border-b border-white/10 print:hidden">
         <div className="container mx-auto px-4 md:px-6 max-w-5xl">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             {/* Left Context Column */}
@@ -216,6 +217,19 @@ export const TrainingPage: React.FC = () => {
                 </div>
                 <span className="text-[#e57804] font-semibold flex items-center gap-1 group-hover:underline">
                   View All Courses <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </Link>
+
+              <Link
+                to="/training/status"
+                className="group flex items-center justify-between p-3 rounded-xl bg-[#06152b] border border-white/10 hover:border-emerald-500/40 transition-colors text-xs"
+              >
+                <div className="flex items-center gap-2 text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Already applied for a cohort?</span>
+                </div>
+                <span className="text-emerald-400 font-semibold flex items-center gap-1 group-hover:underline">
+                  Check Status <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </span>
               </Link>
 
@@ -341,6 +355,15 @@ export const TrainingPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                    <Link
+                      to={`/training/status?ref=${encodeURIComponent(submissionResult.reference || "")}`}
+                      className="w-full sm:w-auto"
+                    >
+                      <Button variant="primary" size="sm" className="w-full bg-[#e57804] hover:bg-[#cf6a02]">
+                        <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                        Check Application Status
+                      </Button>
+                    </Link>
                     <Button
                       variant="outline"
                       size="sm"
@@ -350,7 +373,7 @@ export const TrainingPage: React.FC = () => {
                       Apply for Another Course
                     </Button>
                     <Link to="/" className="w-full sm:w-auto">
-                      <Button variant="primary" size="sm" className="w-full">
+                      <Button variant="outline" size="sm" className="w-full text-slate-300 border-white/20 hover:bg-white/10">
                         Return to Homepage <ArrowRight className="w-4 h-4 ml-1" />
                       </Button>
                     </Link>
@@ -360,14 +383,34 @@ export const TrainingPage: React.FC = () => {
                 /* Multi-Step Form */
                 <form onSubmit={handleSubmit} noValidate className="space-y-6">
                   {/* Form Header */}
-                  <div className="border-b border-white/10 pb-4">
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                      <BookOpen className="w-5 h-5 text-[#e57804]" />
-                      Online Training Application
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Complete the details below to reserve your training schedule.
-                    </p>
+                  <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <BookOpen className="w-5 h-5 text-[#e57804]" />
+                        Online Training Application
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Complete the details below to reserve your training schedule.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.print()}
+                      className="border-white/20 text-slate-200 hover:text-white hover:bg-white/10 shrink-0 self-start sm:self-auto text-xs"
+                    >
+                      <Printer className="w-3.5 h-3.5 mr-1.5 text-[#e57804]" />
+                      Print Form / Save as PDF
+                    </Button>
+                  </div>
+
+                  {/* Hardcopy Instruction Note */}
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 flex items-start gap-2.5">
+                    <Printer className="w-4 h-4 text-[#e57804] shrink-0 mt-0.5" />
+                    <span>
+                      Prefer a hardcopy? Print this form or save it as PDF, complete it, and submit it through the indicated Zakeem channel.
+                    </span>
                   </div>
 
                   {errors.general && (
@@ -737,17 +780,29 @@ export const TrainingPage: React.FC = () => {
                   </div>
 
                   {/* STEP 6: SUBMISSION */}
-                  <div className="pt-2">
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      size="lg"
-                      disabled={isSubmitting}
-                      className="w-full text-base font-bold shadow-xl"
-                    >
-                      {isSubmitting ? "Submitting Application..." : "Apply for IT Training"}
-                    </Button>
-                    <p className="text-center text-[11px] text-slate-400 mt-2">
+                  <div className="pt-2 space-y-3">
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        size="lg"
+                        disabled={isSubmitting}
+                        className="w-full sm:flex-1 text-base font-bold shadow-xl"
+                      >
+                        {isSubmitting ? "Submitting Application..." : "Apply for IT Training"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        onClick={() => window.print()}
+                        className="w-full sm:w-auto text-sm px-5 py-3 border-white/20 text-white hover:bg-white/10 shrink-0"
+                      >
+                        <Printer className="w-4 h-4 mr-2 text-[#e57804]" />
+                        Print Form / Save as PDF
+                      </Button>
+                    </div>
+                    <p className="text-center text-[11px] text-slate-400">
                       Applications are processed securely. You will receive a confirmation email upon submission.
                     </p>
                   </div>
@@ -757,6 +812,232 @@ export const TrainingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* ================================================================= */}
+      {/* PRINTABLE BLANK FORM LAYOUT (Rendered ONLY when printing)        */}
+      {/* ================================================================= */}
+      <div className="hidden print:block printable-document bg-white text-slate-900 font-sans p-6 max-w-4xl mx-auto space-y-6">
+        {/* Header with Logo & Institution Branding */}
+        <div className="border-b-2 border-slate-900 pb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img
+              src="/assets/logos/logo-color.png"
+              alt="Zakeem Solutions"
+              className="h-12 w-auto object-contain"
+            />
+            <div>
+              <div className="text-xl font-extrabold tracking-tight text-slate-900">
+                ZAKEEM SOLUTIONS
+              </div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                Enterprise Technology & IT Training Directorate
+              </div>
+            </div>
+          </div>
+          <div className="text-right text-[11px] text-slate-600 space-y-0.5">
+            <div className="font-semibold text-slate-800">Admissions Desk</div>
+            <div>admissions@zakeemsolutions.com</div>
+            <div>www.zakeemsolutions.com/training</div>
+          </div>
+        </div>
+
+        {/* Title & Official Notice */}
+        <div className="text-center space-y-1 py-1">
+          <h1 className="text-xl font-bold uppercase tracking-wide text-slate-950">
+            Online IT Training Application Form
+          </h1>
+          <p className="text-xs text-slate-700 italic max-w-2xl mx-auto">
+            Prefer a hardcopy? Print this form or save it as PDF, complete it, and submit it through the indicated Zakeem channel.
+          </p>
+        </div>
+
+        {/* SECTION 1: PARTICIPANT TYPE */}
+        <div className="border border-slate-300 rounded-lg p-3.5 space-y-2">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1 flex justify-between">
+            <span>Step 1: Participant Classification (Select One)</span>
+            <span className="text-[10px] text-slate-500 font-normal">* Mandatory</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-xs pt-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-4 h-4 border-2 border-slate-800 rounded-sm" />
+              <span className="font-semibold">Individual Applicant</span>
+              <span className="text-slate-500 text-[11px]">(Personal career growth)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-4 h-4 border-2 border-slate-800 rounded-sm" />
+              <span className="font-semibold">Organization / Corporate</span>
+              <span className="text-slate-500 text-[11px]">(Team cohort)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 2: BIODATA & CONTACT INFORMATION */}
+        <div className="border border-slate-300 rounded-lg p-3.5 space-y-3">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1 flex justify-between">
+            <span>Step 2: Candidate & Organization Biodata</span>
+            <span className="text-[10px] text-slate-500 font-normal">* Mandatory</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="space-y-1">
+              <div className="text-slate-700 font-medium">Full Name (Individual / Contact Person):</div>
+              <div className="border-b border-slate-400 min-h-[26px]" />
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-700 font-medium">Organization / Company Name (if corporate):</div>
+              <div className="border-b border-slate-400 min-h-[26px]" />
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-700 font-medium">Email Address (Business or Personal):</div>
+              <div className="border-b border-slate-400 min-h-[26px]" />
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-700 font-medium">Phone / WhatsApp Number:</div>
+              <div className="border-b border-slate-400 min-h-[26px]" />
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 3: COURSE SELECTION */}
+        <div className="border border-slate-300 rounded-lg p-3.5 space-y-2.5">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1 flex justify-between">
+            <span>Step 3: Training Course Selection (Select One)</span>
+            <span className="text-[10px] text-slate-500 font-normal">* Mandatory</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs pt-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-4 h-4 border-2 border-slate-800 rounded-sm shrink-0" />
+              <span>Digital Literacy <span className="text-slate-500 text-[11px]">(Foundational)</span></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-4 h-4 border-2 border-slate-800 rounded-sm shrink-0" />
+              <span>FutureReadyAI <span className="text-slate-500 text-[11px]">(Prompting & Automation)</span></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-4 h-4 border-2 border-slate-800 rounded-sm shrink-0" />
+              <span>Web Development using AI <span className="text-slate-500 text-[11px]">(Full-Stack)</span></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-4 h-4 border-2 border-slate-800 rounded-sm shrink-0" />
+              <span>Python Programming & Data Automation</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-4 h-4 border-2 border-slate-800 rounded-sm shrink-0" />
+              <span>Prompt Engineering & Generative AI for Business</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-4 h-4 border-2 border-slate-800 rounded-sm shrink-0" />
+              <span>Customized Training <span className="text-slate-500 text-[11px]">(Bespoke Cohort)</span></span>
+            </div>
+          </div>
+
+          <div className="pt-2 space-y-1">
+            <div className="text-[11px] text-slate-700 font-medium">
+              If Customized Training is selected, please specify required modules or goals:
+            </div>
+            <div className="border-b border-slate-400 min-h-[24px]" />
+          </div>
+        </div>
+
+        {/* SECTION 4: TRAINING SCHEDULE */}
+        <div className="border border-slate-300 rounded-lg p-3.5 space-y-3">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1 flex justify-between">
+            <span>Step 4: Training Schedule & Delivery Mode</span>
+            <span className="text-[10px] text-slate-500 font-normal">Fully Online • 2h / session</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="space-y-1">
+              <div className="text-slate-700 font-medium">Preferred Start Date (YYYY-MM-DD):</div>
+              <div className="border-b border-slate-400 min-h-[26px]" />
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-700 font-medium">Delivery Mode:</div>
+              <div className="font-semibold text-slate-800 pt-1">
+                100% Fully Online (Virtual Interactive Classroom)
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1.5 pt-1">
+            <div className="text-xs text-slate-800 font-medium">
+              Select Exactly 3 Training Days Per Week (Tick 3 boxes):
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center text-xs">
+              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((d) => (
+                <div key={d} className="border border-slate-300 rounded p-1">
+                  <div className="text-[10px] font-bold text-slate-700">{d.slice(0, 3)}</div>
+                  <div className="pt-1 flex justify-center">
+                    <span className="inline-block w-3.5 h-3.5 border border-slate-800 rounded-sm" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5 pt-1">
+            <div className="text-xs text-slate-800 font-medium">
+              Preferred Training Time Slot (2 hours per session, WAT / Africa-Lagos):
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-[11px]">
+              {["09:00 AM", "11:00 AM", "02:00 PM", "04:00 PM", "06:00 PM", "08:00 PM"].map((t) => (
+                <div key={t} className="flex items-center gap-1.5">
+                  <span className="inline-block w-3.5 h-3.5 border border-slate-800 rounded-sm shrink-0" />
+                  <span>{t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 5: ACKNOWLEDGEMENT & CERTIFICATION */}
+        <div className="border border-slate-300 rounded-lg p-3.5 space-y-2">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">
+            Step 5: Terms & Acknowledgement
+          </div>
+          <div className="flex items-start gap-2 text-xs text-slate-800 leading-relaxed pt-1">
+            <span className="inline-block w-4 h-4 border-2 border-slate-800 rounded-sm shrink-0 mt-0.5" />
+            <div>
+              <strong>Mandatory Acknowledgement:</strong> I acknowledge that the training is fully online and I agree to participate according to the selected schedule and complete the requirements for the programme.
+            </div>
+          </div>
+          <div className="text-[11px] text-slate-700 pl-6 border-t border-slate-100 pt-1.5">
+            <strong>Certificate Statement:</strong> Certificate of completion will be issued upon successful completion of the selected training programme.
+          </div>
+        </div>
+
+        {/* SECTION 6: SIGNATURE & MANUAL SUBMISSION */}
+        <div className="border border-slate-300 rounded-lg p-3.5 space-y-3">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">
+            Step 6: Applicant / Signatory Authorization
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 text-xs pt-1">
+            <div className="space-y-1">
+              <div className="text-slate-700 font-medium">Print Applicant Name:</div>
+              <div className="border-b border-slate-400 min-h-[26px]" />
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-700 font-medium">Authorized Signature:</div>
+              <div className="border-b border-slate-400 min-h-[26px]" />
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-700 font-medium">Date (YYYY-MM-DD):</div>
+              <div className="border-b border-slate-400 min-h-[26px]" />
+            </div>
+          </div>
+
+          <div className="pt-2 text-[10px] text-slate-600 border-t border-slate-200 flex justify-between items-center">
+            <span>
+              Submit completed forms to: <strong>admissions@zakeemsolutions.com</strong> or online at <strong>www.zakeemsolutions.com/training</strong>
+            </span>
+            <span>
+              Track application status at: <strong>www.zakeemsolutions.com/training/status</strong>
+            </span>
+          </div>
+        </div>
+      </div>
     </>
   );
 };

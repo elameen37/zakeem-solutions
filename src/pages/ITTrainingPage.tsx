@@ -298,6 +298,15 @@ export const ITTrainingPage: React.FC = () => {
                 <BookOpen className="w-4 h-4 mr-2 text-[#e57804]" />
                 Explore All 6 Courses
               </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                href="/training/status"
+                className="w-full sm:w-auto text-sm px-7 py-3.5 border-white/20 text-slate-200 hover:text-white hover:bg-white/10"
+              >
+                <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-400" />
+                Track Application Status
+              </Button>
             </div>
           </section>
 
@@ -771,6 +780,15 @@ export const ITTrainingPage: React.FC = () => {
               >
                 Go to Online Application Form
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                href="/training/status"
+                className="w-full sm:w-auto text-sm px-7 py-3.5 border-white/20 text-white hover:bg-white/10"
+              >
+                <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-400" />
+                Track Application Status
               </Button>
               <Button
                 variant="outline"

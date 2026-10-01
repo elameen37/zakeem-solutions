@@ -63,14 +63,35 @@ export interface TrainingApplicationPayload {
   honeypot?: string;
 }
 
+export type TrainingApplicationStatus = "submitted" | "in_review" | "confirmed" | "cancelled";
+
+export const VALID_TRAINING_STATUS_TRANSITIONS: Record<
+  TrainingApplicationStatus,
+  TrainingApplicationStatus[]
+> = {
+  submitted: ["in_review", "confirmed", "cancelled"],
+  in_review: ["confirmed", "cancelled"],
+  confirmed: [], // Terminal
+  cancelled: [], // Terminal
+};
+
 export interface TrainingApplicationRecord extends TrainingApplicationPayload {
   id: string;
   applicationReference: string;
   acknowledgementAcceptedAt: string;
-  status: "submitted" | "in_review" | "confirmed" | "cancelled";
+  status: TrainingApplicationStatus;
   crmLeadId?: string;
+  cancellationReason?: string;
+  adminNotes?: string;
+  reviewedAt?: string;
+  confirmedAt?: string;
+  cancelledAt?: string;
   createdAt: string;
   updatedAt: string;
+  // CRM expansion metadata (if joined)
+  crmOrganizationName?: string;
+  crmContactName?: string;
+  crmLeadStatus?: string;
 }
 
 export interface TrainingSubmissionResult {
@@ -81,4 +102,24 @@ export interface TrainingSubmissionResult {
   crmLeadId?: string;
   internalEmailDispatched?: boolean;
   applicantEmailDispatched?: boolean;
+}
+
+export interface TrainingApplicationFilter {
+  applicantType?: "all" | ApplicantType;
+  status?: "all" | TrainingApplicationStatus;
+  course?: "all" | TrainingCourse;
+  crmStatus?: "all" | "linked" | "unlinked";
+  search?: string;
+  startDateFrom?: string;
+  startDateTo?: string;
+}
+
+export interface TrainingKPIStats {
+  totalApplications: number;
+  submitted: number;
+  inReview: number;
+  confirmed: number;
+  cancelled: number;
+  organizations: number;
+  individuals: number;
 }

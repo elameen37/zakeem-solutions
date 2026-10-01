@@ -13,12 +13,13 @@ import {
   UserPlus,
   ChevronLeft,
   ChevronRight,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AdminNavProps {
-  currentTab?: "operations" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "invitations" | "reports" | "settings";
-  activeDesk?: "operations" | "workspace" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "invitations" | "pipeline" | "accounts" | "reports" | "settings";
+  currentTab?: "operations" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "invitations" | "training" | "reports" | "settings";
+  activeDesk?: "operations" | "workspace" | "leads" | "opportunities" | "organizations" | "contacts" | "scheduling" | "invitations" | "training" | "pipeline" | "accounts" | "reports" | "settings";
 }
 
 export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) => {
@@ -37,6 +38,7 @@ export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) =>
   const isContacts = active === "contacts" || path.startsWith("/admin/crm/contacts");
   const isScheduling = (active === "scheduling" && !location.search.includes("tab=invitations")) || (path.startsWith("/admin/scheduling") && !location.search.includes("tab=invitations"));
   const isInvitations = active === "invitations" || path === "/admin/invitations" || (path.startsWith("/admin/scheduling") && location.search.includes("tab=invitations"));
+  const isTraining = active === "training" || path === "/admin/training" || path.startsWith("/admin/training");
   const isReports = active === "reports" || path.startsWith("/admin/crm/reports");
   const isSettings = active === "settings" || path.startsWith("/admin/settings");
 
@@ -263,6 +265,21 @@ export const AdminNav: React.FC<AdminNavProps> = ({ currentTab, activeDesk }) =>
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>Invitations</span>
+            </Link>
+
+            {/* IT Training Admissions Desk */}
+            <Link
+              to="/admin/training"
+              data-active={isTraining ? "true" : undefined}
+              className={cn(
+                "px-3.5 py-2 rounded-xl text-xs font-mono font-medium transition-all flex items-center gap-2 whitespace-nowrap shrink-0",
+                isTraining
+                  ? "bg-[#e57804] text-white shadow-lg shadow-[#e57804]/20"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
+              )}
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>IT Training</span>
             </Link>
 
             {/* Commercial Intelligence & Reports */}

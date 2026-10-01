@@ -44,6 +44,7 @@ const AdminLoginPage = React.lazy(() => import("@/pages/admin/AdminLoginPage").t
 const NotFoundPage = React.lazy(() => import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 const TrainingPage = React.lazy(() => import("@/pages/TrainingPage").then((m) => ({ default: m.TrainingPage })));
 const ITTrainingPage = React.lazy(() => import("@/pages/ITTrainingPage").then((m) => ({ default: m.ITTrainingPage })));
+const AdminTrainingPage = React.lazy(() => import("@/pages/admin/AdminTrainingPage").then((m) => ({ default: m.AdminTrainingPage })));
 
 import { PageSkeleton } from "@/components/ui/Skeleton";
 
@@ -185,6 +186,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <AdminSchedulingPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/training"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminTrainingPage />
                   </ProtectedRoute>
                 }
               />

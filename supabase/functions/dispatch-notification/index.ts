@@ -381,12 +381,20 @@ function renderTemplate(
         : (templateData.trainingDays as string) || "3 Selected Days";
       const time = (templateData.preferredTime as string) || "10:00";
       const tz = (templateData.timezone as string) || "Africa/Lagos (WAT)";
+      const isConfirmed = templateData.isConfirmed === true || templateData.status === "confirmed";
 
-      const subject = `Zakeem IT Training Application Received — ${ref}`;
+      const subject = isConfirmed
+        ? `Zakeem IT Training Application Confirmed — ${ref}`
+        : `Zakeem IT Training Application Received — ${ref}`;
+      const heading = isConfirmed ? "Application Confirmed" : "Application Received";
+      const introMessage = isConfirmed
+        ? `We are pleased to inform you that Zakeem Solutions has officially <strong>confirmed</strong> your training application for <strong>${course}</strong>.`
+        : `Thank you for applying to <strong>Zakeem IT Training</strong>. We have received your application for <strong>${course}</strong>.`;
+
       const body = `
-        <h1>Application Received</h1>
+        <h1>${heading}</h1>
         <p>Hello ${safeName},</p>
-        <p>Thank you for applying to <strong>Zakeem IT Training</strong>. We have received your application for <strong>${course}</strong>.</p>
+        <p>${introMessage}</p>
         <p><strong>Training is fully online</strong> with live structured instruction delivered by Zakeem senior technical leads.</p>
         <div class="info-card">
           <div class="info-row"><span class="info-label">Application Reference</span><span class="info-val">${ref}</span></div>
@@ -396,31 +404,38 @@ function renderTemplate(
           <div class="info-row"><span class="info-label">Weekly Schedule</span><span class="info-val">${days}</span></div>
           <div class="info-row"><span class="info-label">Session Duration</span><span class="info-val">2 hours per session</span></div>
           <div class="info-row"><span class="info-label">Preferred Time</span><span class="info-val">${time} (${tz})</span></div>
+          ${isConfirmed ? `<div class="info-row"><span class="info-label">Admissions Status</span><span class="info-val" style="color: #10b981; font-weight: bold;">Confirmed</span></div>` : ""}
         </div>
         <div style="background: rgba(229, 120, 4, 0.1); border: 1px solid rgba(229, 120, 4, 0.3); border-radius: 8px; padding: 14px; margin: 20px 0; font-size: 13px; color: #f3f4f6;">
           <strong>&#127891; Certificate of Completion:</strong> A Certificate of Completion will be issued upon successful completion of the selected training programme and course requirements.
         </div>
-        <p>Our solutions advisory and admissions desk will review your selected schedule and contact you with your cohort timetable and virtual classroom access details.</p>
+        <p>${isConfirmed ? "Your cohort calendar invite, orientation schedule, and virtual classroom credentials will be issued prior to your start date." : "Our solutions advisory and admissions desk will review your selected schedule and contact you with your cohort timetable and virtual classroom access details."}</p>
       `;
 
       const text = `Hello ${safeName},\n\n` +
-        `Thank you for applying to Zakeem IT Training (${ref}).\n` +
-        `We have received your application for: ${course}.\n\n` +
+        (isConfirmed
+          ? `Zakeem Solutions has officially confirmed your training application for: ${course} (${ref}).\n\n`
+          : `Thank you for applying to Zakeem IT Training (${ref}).\nWe have received your application for: ${course}.\n\n`) +
         `Training Details:\n` +
         `- Delivery Mode: Fully Online (Live Structured)\n` +
         `- Preferred Start Date: ${startDate}\n` +
         `- Training Days: ${days}\n` +
         `- Session Duration: 2 hours per session\n` +
-        `- Preferred Time: ${time} (${tz})\n\n` +
+        `- Preferred Time: ${time} (${tz})\n` +
+        (isConfirmed ? `- Admissions Status: Confirmed\n\n` : `\n`) +
         `A Certificate of Completion will be issued upon successful completion of the selected training programme.\n\n` +
-        `Our admissions desk will review your schedule and reach out with your calendar credentials.\n\n` +
+        (isConfirmed
+          ? `Your virtual classroom credentials will be dispatched prior to your start date.\n\n`
+          : `Our admissions desk will review your schedule and reach out with your calendar credentials.\n\n`) +
         `Zakeem Solutions Limited\ninfo@zakeemsolutions.com`;
 
       return {
         subject,
         html: buildEmailHtml({
           title: subject,
-          preheader: `Training application confirmed for ${course} (${ref})`,
+          preheader: isConfirmed
+            ? `Your training application for ${course} has been officially confirmed (${ref})`
+            : `Training application confirmed for ${course} (${ref})`,
           bodyContent: body,
           ctaText: "Explore Enterprise Solutions",
           ctaUrl: "https://www.zakeemsolutions.com/products",

@@ -59,12 +59,22 @@ export type NotificationAuditEventType =
   | "email.health_check_passed"
   | "email.test_dispatched";
 
+export type TrainingAuditEventType =
+  | "training.application.submitted"
+  | "training.application.status_changed"
+  | "training.application.reviewed"
+  | "training.application.confirmed"
+  | "training.application.cancelled"
+  | "training.application.note_added"
+  | "training.crm_linkage.retried";
+
 export type AuditEventType =
   | AuthAuditEventType
   | CRMAuditEventType
   | SchedulingAuditEventType
   | PlatformAuditEventType
-  | NotificationAuditEventType;
+  | NotificationAuditEventType
+  | TrainingAuditEventType;
 
 export type ErrorCategory =
   | "AUTHENTICATION"
@@ -89,7 +99,8 @@ export type AuditEntityType =
   | "notification"
   | "email_infrastructure"
   | "system"
-  | "application";
+  | "application"
+  | "training_application";
 
 export interface AuditEventPayload {
   eventType: AuditEventType;

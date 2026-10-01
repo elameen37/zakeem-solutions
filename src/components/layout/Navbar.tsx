@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { 
   ChevronDown, Menu, X, ArrowRight, Building2, BrainCircuit, Workflow, ShieldCheck,
   Building, Landmark, Home, Coins, Activity, Zap, Code2, Bot, Layers, Cloud, Shield, Compass, Search, Scale, BookOpen,
-  Linkedin, Facebook, Instagram, Youtube, Globe, LogOut, Fuel, UserCheck, CalendarDays, Briefcase
+  Linkedin, Facebook, Instagram, Youtube, Globe, LogOut, Fuel, UserCheck, CalendarDays, Briefcase, GraduationCap
 } from "lucide-react";
 import { MAIN_NAVIGATION } from "@/data/navigation";
 import { SOCIAL_LINKS } from "@/data/social";
@@ -190,6 +190,7 @@ export const Navbar: React.FC = () => {
       case "UserCheck": return <UserCheck className={iconClass} />;
       case "CalendarDays": return <CalendarDays className={iconClass} />;
       case "Briefcase": return <Briefcase className={iconClass} />;
+      case "GraduationCap": return <GraduationCap className={iconClass} />;
       default: return <Layers className={iconClass} />;
     }
   };

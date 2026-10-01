@@ -43,6 +43,7 @@ const AdminSettingsPage = React.lazy(() => import("@/pages/admin/AdminSettingsPa
 const AdminLoginPage = React.lazy(() => import("@/pages/admin/AdminLoginPage").then((m) => ({ default: m.AdminLoginPage })));
 const NotFoundPage = React.lazy(() => import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 const TrainingPage = React.lazy(() => import("@/pages/TrainingPage").then((m) => ({ default: m.TrainingPage })));
+const ITTrainingPage = React.lazy(() => import("@/pages/ITTrainingPage").then((m) => ({ default: m.ITTrainingPage })));
 
 import { PageSkeleton } from "@/components/ui/Skeleton";
 
@@ -84,8 +85,11 @@ export const App: React.FC = () => {
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/request-demo" element={<RequestDemoPage />} />
+              <Route path="/it-training" element={<ITTrainingPage />} />
+              <Route path="/it-training/courses" element={<ITTrainingPage />} />
               <Route path="/training" element={<TrainingPage />} />
-              <Route path="/it-training" element={<TrainingPage />} />
+              <Route path="/training/apply" element={<TrainingPage />} />
+              <Route path="/it-training/apply" element={<TrainingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/zakeem-admin3100" element={<AdminLoginPage />} />
               <Route path="/accept-invite" element={<AcceptInvitationPage />} />

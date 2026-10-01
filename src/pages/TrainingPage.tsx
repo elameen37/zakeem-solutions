@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   GraduationCap,
   Laptop,
@@ -44,8 +44,23 @@ const TIME_OPTIONS = [
 ];
 
 export const TrainingPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const paramCourse = searchParams.get("course");
+  const paramType = searchParams.get("type");
+
+  const initialCourse = useMemo<TrainingCourse | "">(() => {
+    if (paramCourse && (TRAINING_COURSES as readonly string[]).includes(paramCourse)) {
+      return paramCourse as TrainingCourse;
+    }
+    return "";
+  }, [paramCourse]);
+
+  const initialType = useMemo<ApplicantType>(() => {
+    return paramType === "organization" ? "organization" : "individual";
+  }, [paramType]);
+
   // Step 1: Participant Type
-  const [applicantType, setApplicantType] = useState<ApplicantType>("individual");
+  const [applicantType, setApplicantType] = useState<ApplicantType>(initialType);
 
   // Step 2: Biodata
   const [fullName, setFullName] = useState("");
@@ -54,7 +69,7 @@ export const TrainingPage: React.FC = () => {
   const [businessEmail, setBusinessEmail] = useState("");
 
   // Step 3: Course Selection
-  const [course, setCourse] = useState<TrainingCourse | "">("");
+  const [course, setCourse] = useState<TrainingCourse | "">(initialCourse);
   const [customTrainingRequest, setCustomTrainingRequest] = useState("");
 
   // Step 4: Schedule
@@ -190,6 +205,19 @@ export const TrainingPage: React.FC = () => {
               <p className="text-sm md:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
                 Accelerate your technological capabilities or upskill your enterprise workforce. Live, structured training delivered directly online by senior software engineers and AI architects.
               </p>
+
+              <Link
+                to="/it-training"
+                className="group flex items-center justify-between p-3 rounded-xl bg-[#06152b] border border-white/10 hover:border-[#e57804]/40 transition-colors text-xs"
+              >
+                <div className="flex items-center gap-2 text-slate-300">
+                  <BookOpen className="w-4 h-4 text-[#e57804]" />
+                  <span>Need course details and syllabus?</span>
+                </div>
+                <span className="text-[#e57804] font-semibold flex items-center gap-1 group-hover:underline">
+                  View All Courses <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </Link>
 
               {/* Core Highlights */}
               <div className="space-y-4 pt-2">

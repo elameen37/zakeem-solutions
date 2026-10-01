@@ -175,6 +175,13 @@ export const MAIN_NAVIGATION: NavItem[] = [
         icon: "BookOpen"
       },
       {
+        label: "IT Training",
+        href: "/it-training",
+        description: "Structured, 100% online technology & AI certification programmes.",
+        icon: "GraduationCap",
+        badge: "Online"
+      },
+      {
         label: "Careers & Fellowship",
         href: "/careers",
         description: "Join our engineering pods, fellowship cohorts, and research labs.",

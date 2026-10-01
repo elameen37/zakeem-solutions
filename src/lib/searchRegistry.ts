@@ -73,6 +73,23 @@ export const STATIC_PAGES: SearchItem[] = [
     href: "/contact",
     tags: ["rfp", "sales", "support", "inquiry", "procurement", "office", "email"],
   },
+  {
+    id: "page-it-training",
+    title: "IT Training & Certification Programmes",
+    category: "Page",
+    description: "100% online, live structured technology training in AI, digital literacy, and modern web development.",
+    href: "/it-training",
+    tags: ["training", "courses", "ai", "futurereadyai", "web development", "digital literacy", "certificate", "certification", "classes", "online"],
+    badge: "100% Online",
+  },
+  {
+    id: "page-training-application",
+    title: "IT Training Application Portal",
+    category: "Page",
+    description: "Submit online application for Zakeem IT Training programmes with preferred schedule and course selection.",
+    href: "/training",
+    tags: ["apply", "training form", "registration", "enroll", "schedule", "wat"],
+  },
 ];
 
 export function getAllSearchItems(): SearchItem[] {

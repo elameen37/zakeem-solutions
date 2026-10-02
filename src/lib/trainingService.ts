@@ -1063,11 +1063,14 @@ export interface PublicTrainingStatusData {
   sessionDurationMinutes: number;
   preferredTime: string;
   timezone: string;
-  status: TrainingApplicationStatus;
+  status: TrainingApplicationStatus | string;
   statusMessage: string;
   deliveryMode: string;
   certificateEligible: boolean;
   submittedAt: string;
+  reviewedAt?: string | null;
+  confirmedAt?: string | null;
+  cancelledAt?: string | null;
 }
 
 export interface PublicTrainingStatusResult {
@@ -1174,6 +1177,9 @@ export async function checkPublicTrainingStatus(
         deliveryMode: "Fully Online (Live / Structured)",
         certificateEligible: true,
         submittedAt: match.createdAt,
+        reviewedAt: match.reviewedAt || null,
+        confirmedAt: match.confirmedAt || null,
+        cancelledAt: match.cancelledAt || null,
       },
     };
   }

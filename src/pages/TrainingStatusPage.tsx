@@ -94,37 +94,94 @@ export const TrainingStatusPage: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Admissions Confirmed
-          </span>
-        );
+  const getStatusConfig = (status: string | undefined) => {
+    const normalized = (status || "").toLowerCase().trim();
+    switch (normalized) {
+      case "submitted":
+        return {
+          label: "Application Submitted",
+          badgeLabel: "Application Submitted",
+          badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+          bannerClass: "border-amber-500/30 bg-amber-500/5",
+          icon: <Clock className="w-4 h-4 text-amber-400" />,
+          overviewDescription:
+            "Your application has been received and queued for review by the Zakeem Admissions Desk.",
+        };
       case "in_review":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
-            <Clock className="w-3.5 h-3.5" />
-            Under Admissions Review
-          </span>
-        );
+        return {
+          label: "Under Review",
+          badgeLabel: "Under Review",
+          badgeClass: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+          bannerClass: "border-sky-500/30 bg-sky-500/5",
+          icon: <Clock className="w-4 h-4 text-sky-400" />,
+          overviewDescription:
+            "Your application is currently under technical review and scheduling alignment with our admissions team.",
+        };
+      case "confirmed":
+        return {
+          label: "Confirmed",
+          badgeLabel: "Confirmed",
+          badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+          bannerClass: "border-emerald-500/30 bg-emerald-500/5",
+          icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
+          overviewDescription:
+            "Application officially confirmed! Cohort onboarding and virtual classroom credentials will be dispatched prior to your start date.",
+        };
       case "cancelled":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
-            <XCircle className="w-3.5 h-3.5" />
-            Application Cancelled
-          </span>
-        );
+        return {
+          label: "Cancelled",
+          badgeLabel: "Cancelled",
+          badgeClass: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+          bannerClass: "border-rose-500/30 bg-rose-500/5",
+          icon: <XCircle className="w-4 h-4 text-rose-400" />,
+          overviewDescription:
+            "Application was cancelled. Please contact admissions@zakeemsolutions.com for assistance or re-application guidance.",
+        };
       default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-            <Clock className="w-3.5 h-3.5" />
-            Application Received
-          </span>
-        );
+        return {
+          label: "Status Update Available",
+          badgeLabel: "Status Update Available",
+          badgeClass: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+          bannerClass: "border-indigo-500/30 bg-indigo-500/5",
+          icon: <AlertCircle className="w-4 h-4 text-indigo-400" />,
+          overviewDescription:
+            "A status update is available for your application. Please review the details below or contact the admissions desk.",
+          isUnknown: true,
+        };
     }
+  };
+
+  const formatTimestamp = (isoString?: string | null): string | null => {
+    if (!isoString) return null;
+    try {
+      const d = new Date(isoString);
+      if (isNaN(d.getTime())) return null;
+      return d.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const cfg = getStatusConfig(status);
+    return (
+      <span
+        data-testid="status-badge"
+        className={cn(
+          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold border",
+          cfg.badgeClass
+        )}
+      >
+        {cfg.icon}
+        {cfg.badgeLabel}
+      </span>
+    );
   };
 
   return (
@@ -244,16 +301,237 @@ export const TrainingStatusPage: React.FC = () => {
                   <div>{getStatusBadge(statusData.status)}</div>
                 </div>
 
-                {/* Status Message Highlight */}
-                <div className="p-4 rounded-2xl bg-[#06152b] border border-white/10 space-y-2">
-                  <div className="text-xs font-bold text-[#e57804] flex items-center gap-1.5">
-                    <Laptop className="w-4 h-4" />
-                    <span>Admissions Overview</span>
-                  </div>
-                  <p className="text-sm text-slate-200 leading-relaxed">
-                    {statusData.statusMessage}
-                  </p>
-                </div>
+                {/* PROMINENT CURRENT STATUS HERO CARD */}
+                {(() => {
+                  const statusCfg = getStatusConfig(statusData.status);
+
+                  return (
+                    <div
+                      data-testid="current-status-card"
+                      data-raw-status={statusData.status}
+                      className={cn(
+                        "p-6 rounded-2xl border transition-all space-y-4",
+                        statusCfg.bannerClass
+                      )}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-start sm:items-center gap-3.5">
+                          <div className="p-2.5 rounded-xl bg-black/30 border border-white/10 shrink-0">
+                            {statusCfg.icon}
+                          </div>
+                          <div>
+                            <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+                              Current Application Status
+                            </div>
+                            <h3 className="text-2xl font-black text-white tracking-tight">
+                              {statusCfg.label}
+                            </h3>
+                          </div>
+                        </div>
+                        <div>
+                          <span
+                            data-testid="status-badge"
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold border",
+                              statusCfg.badgeClass
+                            )}
+                          >
+                            {statusCfg.icon}
+                            {statusCfg.badgeLabel}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Application Acknowledgement / Context */}
+                      <div className="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-300">Application Received:</span>
+                          <span className="font-mono text-slate-200">
+                            {formatTimestamp(statusData.submittedAt) || "Recorded in Registry"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400">Reference:</span>
+                          <span className="font-mono font-bold text-[#e57804]">{statusData.reference}</span>
+                        </div>
+                      </div>
+
+                      {/* Status Overview / Message */}
+                      <p className="text-sm text-slate-200 leading-relaxed pt-1">
+                        {statusData.statusMessage || statusCfg.overviewDescription}
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                {/* ADMISSIONS LIFECYCLE TIMELINE */}
+                {(() => {
+                  const normalizedStatus = (statusData.status || "").toLowerCase().trim();
+
+                  return (
+                    <div className="p-6 rounded-2xl bg-[#06152b] border border-white/10 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-mono uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-[#e57804]" />
+                          Admissions Lifecycle Progress
+                        </h4>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          {statusData.reference}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                        {/* Stage 1: Application Submitted */}
+                        <div className="relative p-4 rounded-xl bg-black/25 border border-emerald-500/30 flex flex-col justify-between space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                              1. Application Submitted
+                            </span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              Completed
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-300 leading-relaxed">
+                            Application received and registered in Zakeem admissions system.
+                          </p>
+                          {statusData.submittedAt && (
+                            <div className="text-[10px] font-mono text-slate-400 pt-1 border-t border-white/5">
+                              {formatTimestamp(statusData.submittedAt)}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Stage 2: Under Review */}
+                        {(() => {
+                          const isCurrent = normalizedStatus === "in_review";
+                          const isPast = normalizedStatus === "confirmed" || normalizedStatus === "cancelled";
+
+                          return (
+                            <div
+                              className={cn(
+                                "relative p-4 rounded-xl bg-black/25 flex flex-col justify-between space-y-2 border",
+                                isCurrent
+                                  ? "border-sky-500/50 bg-sky-500/5 shadow-lg shadow-sky-500/10"
+                                  : isPast
+                                  ? "border-emerald-500/30"
+                                  : "border-white/10 opacity-70"
+                              )}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                                  {isPast ? (
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                  ) : isCurrent ? (
+                                    <Clock className="w-4 h-4 text-sky-400 animate-pulse" />
+                                  ) : (
+                                    <Clock className="w-4 h-4 text-slate-500" />
+                                  )}
+                                  2. Under Review
+                                </span>
+                                <span
+                                  className={cn(
+                                    "text-[10px] font-mono px-2 py-0.5 rounded border",
+                                    isCurrent
+                                      ? "bg-sky-500/15 text-sky-300 border-sky-500/30"
+                                      : isPast
+                                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                      : "bg-white/5 text-slate-400 border-white/10"
+                                  )}
+                                >
+                                  {isCurrent ? "In Progress" : isPast ? "Completed" : "Pending"}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-300 leading-relaxed">
+                                {isCurrent
+                                  ? "Technical evaluation and schedule verification underway."
+                                  : isPast
+                                  ? "Admissions evaluation completed."
+                                  : "Awaiting technical review by admissions lead."}
+                              </p>
+                              {statusData.reviewedAt && (
+                                <div className="text-[10px] font-mono text-slate-400 pt-1 border-t border-white/5">
+                                  {formatTimestamp(statusData.reviewedAt)}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {/* Stage 3: Confirmed / Cancelled */}
+                        {(() => {
+                          if (normalizedStatus === "cancelled") {
+                            return (
+                              <div className="relative p-4 rounded-xl bg-black/25 border border-rose-500/40 bg-rose-500/5 flex flex-col justify-between space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
+                                    <XCircle className="w-4 h-4 text-rose-400" />
+                                    3. Cancelled
+                                  </span>
+                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                                    Closed
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-300 leading-relaxed">
+                                  Application was cancelled. Contact admissions desk for assistance.
+                                </p>
+                                {statusData.cancelledAt && (
+                                  <div className="text-[10px] font-mono text-slate-400 pt-1 border-t border-white/5">
+                                    {formatTimestamp(statusData.cancelledAt)}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+
+                          const isConfirmed = normalizedStatus === "confirmed";
+
+                          return (
+                            <div
+                              className={cn(
+                                "relative p-4 rounded-xl bg-black/25 flex flex-col justify-between space-y-2 border",
+                                isConfirmed
+                                  ? "border-emerald-500/50 bg-emerald-500/5 shadow-lg shadow-emerald-500/10"
+                                  : "border-white/10 opacity-70"
+                              )}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                                  {isConfirmed ? (
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                  ) : (
+                                    <Award className="w-4 h-4 text-slate-500" />
+                                  )}
+                                  3. Confirmed
+                                </span>
+                                <span
+                                  className={cn(
+                                    "text-[10px] font-mono px-2 py-0.5 rounded border",
+                                    isConfirmed
+                                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                      : "bg-white/5 text-slate-400 border-white/10"
+                                  )}
+                                >
+                                  {isConfirmed ? "Confirmed" : "Pending"}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-300 leading-relaxed">
+                                {isConfirmed
+                                  ? "Cohort seat secured. Virtual classroom onboarding prepared."
+                                  : "Cohort seat allocation and final registration confirmation."}
+                              </p>
+                              {statusData.confirmedAt && (
+                                <div className="text-[10px] font-mono text-slate-400 pt-1 border-t border-white/5">
+                                  {formatTimestamp(statusData.confirmedAt)}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Detailed Information Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

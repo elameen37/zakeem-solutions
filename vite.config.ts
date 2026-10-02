@@ -28,9 +28,6 @@ export default defineConfig({
             ) {
               return "vendor-react";
             }
-            if (normalized.includes("/node_modules/motion/")) {
-              return "vendor-motion";
-            }
             if (normalized.includes("/node_modules/lucide-react/")) {
               return "vendor-icons";
             }

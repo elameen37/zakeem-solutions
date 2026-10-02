@@ -1,5 +1,4 @@
 import React from "react";
-import { motion } from "motion/react";
 import {
   Building2, BrainCircuit, ShieldCheck, DollarSign, BarChart3,
   Cloud, Workflow, Cpu, Layers, Database,
@@ -242,31 +241,45 @@ const ICONS_CONFIG: FloatingIconConfig[] = [
 export const HeroFloatingIcons: React.FC = () => {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-[2]">
+      <style>{`
+        @keyframes heroFloatKeyframe {
+          0% {
+            opacity: 0;
+            transform: translateY(10px) scale(0.75);
+          }
+          12% {
+            opacity: 0.95;
+            transform: translateY(0px) scale(1);
+          }
+          50% {
+            opacity: 0.95;
+            transform: translateY(-6px) scale(1.04);
+          }
+          60% {
+            opacity: 0;
+            transform: translateY(-12px) scale(0.75);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(10px) scale(0.75);
+          }
+        }
+      `}</style>
       {ICONS_CONFIG.map((item) => {
         const IconComponent = item.icon;
 
         return (
-          <motion.div
+          <div
             key={item.id}
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{
-              // Sequence: Appear (0.8s), Stay visible (2.8s), Disappear (0.8s), Delay pause (3.0s)
-              opacity: [0, 0.95, 0.95, 0, 0],
-              scale: [0.75, 1, 1.04, 0.75, 0.75],
-              y: [10, 0, -6, -12, 10]
-            }}
-            transition={{
-              duration: item.duration,
-              times: [0, 0.12, 0.50, 0.60, 1],
-              repeat: Infinity,
-              delay: item.initialDelay,
-              ease: "easeInOut"
-            }}
             style={{
               top: item.top,
               left: item.left,
               right: item.right,
-              bottom: item.bottom
+              bottom: item.bottom,
+              animation: `heroFloatKeyframe ${item.duration}s ease-in-out ${item.initialDelay}s infinite`,
+              opacity: 0,
+              transform: "translateY(10px) scale(0.75)",
+              willChange: "transform, opacity",
             }}
             className={`absolute ${item.hiddenOnMobile ? "hidden lg:block" : "hidden md:block"}`}
           >
@@ -276,7 +289,7 @@ export const HeroFloatingIcons: React.FC = () => {
             >
               <IconComponent className="w-6 h-6 md:w-7 md:h-7" strokeWidth={2.25} />
             </div>
-          </motion.div>
+          </div>
         );
       })}
     </div>

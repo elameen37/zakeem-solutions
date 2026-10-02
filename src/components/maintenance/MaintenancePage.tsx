@@ -39,6 +39,9 @@ export const MaintenancePage: React.FC = () => {
             <img
               src={isDark ? "/assets/logos/logo-white.png" : "/assets/logos/logo-color.png"}
               alt="Zakeem Solutions"
+              width={180}
+              height={36}
+              decoding="async"
               className="h-8 md:h-9 w-auto object-contain transition-transform group-hover:scale-105"
             />
           </div>

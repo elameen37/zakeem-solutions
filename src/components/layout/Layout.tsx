@@ -3,10 +3,15 @@ import { useLocation } from "react-router-dom";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { BackToTop } from "@/components/ui/BackToTop";
-import { GlobalSearchModal } from "@/components/search/GlobalSearchModal";
-import { ZakkyAIChatWidget } from "@/components/zakky/ZakkyAIChatWidget";
 import { FontSizeControl } from "@/components/ui/FontSizeControl";
 import { CookieConsentBanner } from "@/components/cookie/CookieConsentBanner";
+
+const GlobalSearchModal = React.lazy(() =>
+  import("@/components/search/GlobalSearchModal").then((m) => ({ default: m.GlobalSearchModal }))
+);
+const ZakkyAIChatWidget = React.lazy(() =>
+  import("@/components/zakky/ZakkyAIChatWidget").then((m) => ({ default: m.ZakkyAIChatWidget }))
+);
 import { useMaintenance } from "@/context/MaintenanceContext";
 import { AdminMaintenanceBanner } from "@/components/maintenance/AdminMaintenanceBanner";
 import { MaintenancePage } from "@/components/maintenance/MaintenancePage";
@@ -41,8 +46,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <main className="flex-1 pt-24 md:pt-28">{children}</main>
       <Footer />
       <BackToTop />
-      <GlobalSearchModal />
-      <ZakkyAIChatWidget />
+      <React.Suspense fallback={null}>
+        <GlobalSearchModal />
+        <ZakkyAIChatWidget />
+      </React.Suspense>
       <FontSizeControl />
       <CookieConsentBanner />
     </div>

@@ -1,3 +1,21 @@
+@keyframes shinyTextShimmer {
+  0% {
+    background-position: 150% center;
+  }
+  100% {
+    background-position: -50% center;
+  }
+}
+
 .shiny-text {
   display: inline-block;
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  will-change: background-position;
+}
+
+.shiny-text:hover {
+  animation-play-state: paused;
 }

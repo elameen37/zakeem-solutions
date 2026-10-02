@@ -5,14 +5,8 @@ import { getAllSearchItems, searchItems, SearchItem, SearchCategory } from "../.
 import { cn } from "../../lib/utils";
 import { useTheme } from "../../context/ThemeContext";
 
-export const OPEN_SEARCH_EVENT = "zakeem:open-global-search";
-
-export function openGlobalSearch(initialQuery?: unknown): void {
-  const query = typeof initialQuery === "string" ? initialQuery : undefined;
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(OPEN_SEARCH_EVENT, { detail: { query } }));
-  }
-}
+import { OPEN_SEARCH_EVENT, openGlobalSearch } from "../../lib/searchEvents";
+export { OPEN_SEARCH_EVENT, openGlobalSearch };
 
 const CATEGORY_COLORS: Record<SearchCategory, { badge: string; icon: React.ReactNode }> = {
   Product: {

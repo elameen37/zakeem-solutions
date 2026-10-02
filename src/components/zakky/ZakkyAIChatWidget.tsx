@@ -214,6 +214,10 @@ export const ZakkyAIChatWidget: React.FC = () => {
             <img
               src="/assets/logos/zakky-ai.png"
               alt="ZakkyAI"
+              width={32}
+              height={32}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-contain"
               onError={(e) => {
                 // Fallback to bot icon if image fails to load
@@ -272,6 +276,10 @@ export const ZakkyAIChatWidget: React.FC = () => {
                 <img
                   src="/assets/logos/zakky-ai.png"
                   alt="ZakkyAI"
+                  width={36}
+                  height={36}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";

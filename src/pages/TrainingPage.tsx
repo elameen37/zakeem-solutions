@@ -823,6 +823,9 @@ export const TrainingPage: React.FC = () => {
             <img
               src="/assets/logos/logo-color.png"
               alt="Zakeem Solutions"
+              width={103}
+              height={48}
+              decoding="async"
               className="h-12 w-auto object-contain"
             />
             <div>

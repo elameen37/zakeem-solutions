@@ -127,14 +127,23 @@ export function initGA(): void {
     cookie_flags: "SameSite=None;Secure",
   });
 
-  // 5. Inject script asynchronously into document head
-  const script = document.createElement("script");
-  script.id = GA_SCRIPT_ID;
-  script.type = "text/javascript";
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA_MEASUREMENT_ID)}`;
+  // 5. Defer script tag injection to idle period so it does not compete with main-thread hydration
+  const injectScript = () => {
+    if (document.getElementById(GA_SCRIPT_ID)) return;
+    const script = document.createElement("script");
+    script.id = GA_SCRIPT_ID;
+    script.type = "text/javascript";
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA_MEASUREMENT_ID)}`;
+    document.head.appendChild(script);
+  };
 
-  document.head.appendChild(script);
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(injectScript, { timeout: 2000 });
+  } else {
+    setTimeout(injectScript, 1500);
+  }
+
   window.__ga4_initialized = true;
 
   // 6. Listen for dynamic cookie consent updates across the session

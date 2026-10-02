@@ -1,15 +1,14 @@
 import React, { Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { HomePage } from "@/pages/HomePage";
-
 import { AuthProvider } from "@/context/AuthContext";
 import { MaintenanceProvider } from "@/context/MaintenanceContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
-// Lazy-loaded non-critical route pages for optimized initial payload
+// Lazy-loaded route pages for optimized initial payload
+const HomePage = React.lazy(() => import("@/pages/HomePage").then((m) => ({ default: m.HomePage })));
 const AboutPage = React.lazy(() => import("@/pages/AboutPage").then((m) => ({ default: m.AboutPage })));
 const ProductsIndexPage = React.lazy(() => import("@/pages/products/ProductsIndexPage").then((m) => ({ default: m.ProductsIndexPage })));
 const ZakeemRealtyERPPage = React.lazy(() => import("@/pages/products/ZakeemRealtyERPPage").then((m) => ({ default: m.ZakeemRealtyERPPage })));

@@ -63,6 +63,10 @@ export const Footer: React.FC = () => {
                 <img
                   src="/assets/logos/footer-logo.png"
                   alt="Zakeem Solutions"
+                  width={180}
+                  height={48}
+                  loading="lazy"
+                  decoding="async"
                   className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-[1.02]"
                 />
               </div>

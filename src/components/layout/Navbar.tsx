@@ -10,7 +10,7 @@ import { SOCIAL_LINKS } from "@/data/social";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
-import { openGlobalSearch } from "@/components/search/GlobalSearchModal";
+import { openGlobalSearch } from "@/lib/searchEvents";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/context/AuthContext";
@@ -224,6 +224,9 @@ export const Navbar: React.FC = () => {
               <img
                 src={isDark ? "/assets/logos/logo-white.png" : "/assets/logos/logo-color.png"}
                 alt="Zakeem Solutions"
+                width={180}
+                height={36}
+                decoding="async"
                 className="h-8 md:h-9 w-auto object-contain transition-all duration-300 group-hover:scale-[1.02]"
               />
             </div>

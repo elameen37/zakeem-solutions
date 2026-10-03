@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
+import { MobileTabBar } from "./MobileTabBar";
 import { BackToTop } from "@/components/ui/BackToTop";
 import { FontSizeControl } from "@/components/ui/FontSizeControl";
 import { CookieConsentBanner } from "@/components/cookie/CookieConsentBanner";
@@ -43,8 +44,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] selection:bg-[#e57804] selection:text-white transition-colors duration-200">
       <AdminMaintenanceBanner />
       <Navbar />
-      <main className="flex-1 pt-24 md:pt-28">{children}</main>
+      <main className="flex-1 pt-24 md:pt-28 pb-20 md:pb-0">{children}</main>
       <Footer />
+      <MobileTabBar />
       <BackToTop />
       <React.Suspense fallback={null}>
         <GlobalSearchModal />

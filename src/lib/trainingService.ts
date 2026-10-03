@@ -839,7 +839,7 @@ export async function confirmAdminTrainingApplication(params: {
       ? window.location.origin
       : "https://www.zakeemsolutions.com";
     const statusUrl = `${origin}/training/status?ref=${encodeURIComponent(cleanRef)}&email=${encodeURIComponent(applicantEmail)}`;
-    const idempotencyKey = `confirm-${cleanRef}`;
+    const idempotencyKey = `zk_notif_training_confirmed_${cleanRef}`;
 
     const notifResult = await dispatchNotification({
       eventType: "it_training_applicant_confirmation",

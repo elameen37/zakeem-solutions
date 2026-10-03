@@ -396,7 +396,7 @@ export const ITTrainingPage: React.FC = () => {
                 return (
                   <div
                     key={course.id}
-                    className="p-6 sm:p-8 rounded-3xl bg-[#06152b] border border-white/10 hover:border-[#e57804]/40 transition-all duration-300 flex flex-col justify-between space-y-6 shadow-xl relative group"
+                    className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-[#06152b] border border-white/10 hover:border-[#e57804]/40 active:scale-[0.99] transition-all duration-300 flex flex-col justify-between space-y-6 shadow-xl relative group"
                   >
                     <div className="space-y-5">
                       {/* Top Header */}
@@ -477,7 +477,7 @@ export const ITTrainingPage: React.FC = () => {
                     </div>
 
                     {/* Card Action Link to Form */}
-                    <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-4">
+                    <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                       <span className="text-xs text-slate-400 font-mono">
                         Applications open for next cohort
                       </span>
@@ -485,7 +485,7 @@ export const ITTrainingPage: React.FC = () => {
                         variant="primary"
                         size="sm"
                         href={applyUrl}
-                        className="text-xs px-4 py-2 group/btn"
+                        className="text-xs px-4 py-2.5 group/btn justify-center"
                       >
                         Apply for this Course
                         <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover/btn:translate-x-1 transition-transform" />
@@ -500,7 +500,7 @@ export const ITTrainingPage: React.FC = () => {
           {/* ================================================================= */}
           {/* 4. AUDIENCE TRACKS (INDIVIDUALS VS ORGANIZATIONS)                 */}
           {/* ================================================================= */}
-          <section className="p-8 sm:p-10 rounded-3xl bg-gradient-to-br from-[#06152b] via-[#081c38] to-[#06152b] border border-white/15 space-y-8">
+          <section className="p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-3xl bg-gradient-to-br from-[#06152b] via-[#081c38] to-[#06152b] border border-white/15 space-y-8">
             <div className="text-center max-w-2xl mx-auto space-y-2">
               <Badge variant="outline" className="border-blue-400/40 text-blue-400">
                 Enrollment Pathways

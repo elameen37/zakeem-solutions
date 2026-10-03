@@ -292,7 +292,7 @@ export const TrainingPage: React.FC = () => {
             {/* Right Form Card */}
             <div
               data-surface="dark"
-              className="lg:col-span-7 p-6 sm:p-8 md:p-10 rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl relative"
+              className="lg:col-span-7 p-4 sm:p-8 md:p-10 rounded-2xl md:rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl relative"
             >
               {submissionResult ? (
                 /* Success State */

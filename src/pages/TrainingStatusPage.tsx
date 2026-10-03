@@ -210,7 +210,7 @@ export const TrainingStatusPage: React.FC = () => {
           {/* Verification Form Card */}
           <div
             data-surface="dark"
-            className="p-6 md:p-8 rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl space-y-6"
+            className="p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl space-y-6"
           >
             <form onSubmit={onSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

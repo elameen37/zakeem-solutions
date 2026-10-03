@@ -190,7 +190,7 @@ export const ZakkyAIChatWidget: React.FC = () => {
   return (
     <div
       className={cn(
-        "fixed bottom-6 right-6 md:bottom-8 md:right-8 z-40 transition-all duration-300",
+        "fixed bottom-20 right-4 sm:right-6 md:bottom-8 md:right-8 z-40 transition-all duration-300",
         !isOpen && isMobileHidden
           ? "max-md:translate-y-28 max-md:opacity-0 max-md:pointer-events-none"
           : "max-md:translate-y-0 max-md:opacity-100 max-md:pointer-events-auto"

@@ -33,7 +33,7 @@ export const SolutionCard: React.FC<SolutionCardProps> = ({ solution }) => {
     <Link
       to={`/solutions/${solution.slug}`}
       data-surface="dark"
-      className="group relative flex flex-col justify-between p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/10 hover:border-[#e57804]/60 hover:bg-[#0c254c] transition-all duration-300"
+      className="group relative flex flex-col justify-between p-5 sm:p-6 md:p-8 rounded-2xl bg-[#081c38] border border-white/10 hover:border-[#e57804]/60 hover:bg-[#0c254c] active:scale-[0.99] transition-all duration-300"
     >
       <div>
         <div className="flex items-center justify-between mb-6">

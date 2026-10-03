@@ -84,7 +84,7 @@ export const ClientPortalPage: React.FC = () => {
           </header>
 
           {/* 2. Enterprise Onboarding & Engagement Milestone Horizon */}
-          <section data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 space-y-5" aria-labelledby="milestone-heading">
+          <section data-surface="dark" className="p-4 sm:p-6 rounded-2xl md:rounded-3xl bg-[#081c38] border border-white/10 space-y-5" aria-labelledby="milestone-heading">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
@@ -176,7 +176,7 @@ export const ClientPortalPage: React.FC = () => {
           </section>
 
           {/* 3. Commercial Engagement Summary Dossier */}
-          <section data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 space-y-4" aria-labelledby="commercial-dossier-heading">
+          <section data-surface="dark" className="p-4 sm:p-6 rounded-2xl md:rounded-3xl bg-[#081c38] border border-white/10 space-y-4" aria-labelledby="commercial-dossier-heading">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
@@ -220,7 +220,7 @@ export const ClientPortalPage: React.FC = () => {
           </section>
 
           {/* 4. Active Solution Engagement Context: Zakeem Forecourt */}
-          <section data-surface="dark" className="p-6 md:p-8 rounded-3xl bg-[#06152b] border border-[#e57804]/30 space-y-6" aria-labelledby="forecourt-heading">
+          <section data-surface="dark" className="p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl bg-[#06152b] border border-[#e57804]/30 space-y-6" aria-labelledby="forecourt-heading">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-[#e57804]/15 border border-[#e57804]/30 flex items-center justify-center text-[#e57804] shrink-0 mt-0.5">
@@ -304,7 +304,7 @@ export const ClientPortalPage: React.FC = () => {
           </section>
 
           {/* 5. Executive Consultation & Walkthrough Desk */}
-          <section data-surface="dark" className="p-6 rounded-3xl bg-[#081c38] border border-white/10 space-y-5" aria-labelledby="consultation-desk-heading">
+          <section data-surface="dark" className="p-4 sm:p-6 rounded-2xl md:rounded-3xl bg-[#081c38] border border-white/10 space-y-5" aria-labelledby="consultation-desk-heading">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400">

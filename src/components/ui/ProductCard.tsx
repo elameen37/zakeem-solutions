@@ -107,7 +107,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
       data-product-id={product.id}
       data-surface="dark"
       className={cn(
-        "group relative flex flex-col justify-between rounded-2xl border transition-all duration-300 p-6 md:p-8 scroll-mt-24",
+        "group relative flex flex-col justify-between rounded-2xl border transition-all duration-300 p-5 sm:p-6 md:p-8 active:scale-[0.99] scroll-mt-24",
         featured
           ? "bg-gradient-to-b from-[#0a2347] to-[#06152b] border-[#e57804]/50 shadow-xl shadow-[#e57804]/10 hover:border-[#e57804]"
           : "bg-[#081c38] border-white/10 hover:border-white/20 hover:bg-[#0c254c]"

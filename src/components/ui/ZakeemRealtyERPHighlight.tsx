@@ -156,7 +156,7 @@ export const ZakeemRealtyERPHighlight: React.FC = () => {
         </div>
 
         {/* Showcase Canvas Card */}
-        <div className="rounded-3xl border border-white/15 bg-gradient-to-b from-[#091f3d] to-[#040e1d] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+        <div className="rounded-2xl md:rounded-3xl border border-white/15 bg-gradient-to-b from-[#091f3d] to-[#040e1d] p-4 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             {/* Left Content Column */}
             <div className="lg:col-span-6 space-y-6">

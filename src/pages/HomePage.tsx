@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   ArrowRight, ShieldCheck, Cpu, Code2, Bot, Layers, 
-  CheckCircle2, Building2, BarChart2, Globe, Server, Terminal, Lock
+  CheckCircle2, Building2, BarChart2, Globe, Server, Terminal, Lock, GraduationCap
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Button } from "@/components/ui/Button";
@@ -112,7 +112,7 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* Hero Main Heading */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-[1.1] mb-6">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-[1.1] mb-5 sm:mb-6">
               Technology that moves{" "}
               <span className="bg-gradient-to-r from-slate-950 via-amber-700 to-[#e57804] dark:from-white dark:via-amber-200 dark:to-[#e57804] bg-clip-text text-transparent">
                 enterprises forward.
@@ -120,12 +120,12 @@ export const HomePage: React.FC = () => {
             </h1>
 
             {/* Value Proposition */}
-            <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-200 font-normal leading-relaxed max-w-2xl mx-auto mb-10">
+            <p className="text-sm sm:text-lg md:text-xl text-slate-600 dark:text-slate-200 font-normal leading-relaxed max-w-2xl mx-auto mb-8 sm:mb-10">
               Zakeem Solutions builds custom enterprise software, AI automation, and business platforms, including CRM, scheduling, and client portals, that help teams work faster and serve customers better.
             </p>
 
             {/* Core Action Group */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6 md:mb-16">
               <Button
                 variant="primary"
                 size="lg"
@@ -145,6 +145,79 @@ export const HomePage: React.FC = () => {
               >
                 Explore Solutions
               </Button>
+            </div>
+
+            {/* Mobile App-Style Quick Navigation Hub (Activates ONLY at mobile width < md) */}
+            <div className="block md:hidden mb-8 w-full text-left">
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  to="/services"
+                  className="p-3 rounded-2xl bg-[#081c38]/90 border border-white/10 hover:border-[#e57804]/50 active:scale-[0.98] transition-all flex items-center gap-2.5 backdrop-blur-md"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-[#e57804]/15 border border-[#e57804]/30 flex items-center justify-center shrink-0 text-[#e57804]">
+                    <Code2 className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[9px] font-mono text-[#e57804] uppercase font-bold tracking-wider block">
+                      Services
+                    </span>
+                    <span className="text-xs font-bold text-white block truncate">
+                      Tech & Delivery
+                    </span>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/products/zakeem-realty-erp"
+                  className="p-3 rounded-2xl bg-[#081c38]/90 border border-white/10 hover:border-[#e57804]/50 active:scale-[0.98] transition-all flex items-center gap-2.5 backdrop-blur-md"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[9px] font-mono text-amber-300 uppercase font-bold tracking-wider block">
+                      Flagship
+                    </span>
+                    <span className="text-xs font-bold text-white block truncate">
+                      Realty ERP
+                    </span>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/it-training"
+                  className="p-3 rounded-2xl bg-[#081c38]/90 border border-white/10 hover:border-[#e57804]/50 active:scale-[0.98] transition-all flex items-center gap-2.5 backdrop-blur-md"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-400">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[9px] font-mono text-cyan-400 uppercase font-bold tracking-wider block">
+                      Academy
+                    </span>
+                    <span className="text-xs font-bold text-white block truncate">
+                      IT Training
+                    </span>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/portal"
+                  className="p-3 rounded-2xl bg-[#081c38]/90 border border-white/10 hover:border-[#e57804]/50 active:scale-[0.98] transition-all flex items-center gap-2.5 backdrop-blur-md"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[9px] font-mono text-emerald-400 uppercase font-bold tracking-wider block">
+                      Portal
+                    </span>
+                    <span className="text-xs font-bold text-white block truncate">
+                      Client Access
+                    </span>
+                  </div>
+                </Link>
+              </div>
             </div>
 
             {/* Four Strategic Pillars Bar */}
@@ -259,7 +332,7 @@ export const HomePage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Pillar 1: Enterprise Technology Services */}
-            <div data-surface="dark" className="p-8 md:p-10 rounded-3xl bg-gradient-to-b from-[#081c38] to-[#040e1d] border border-white/15 relative overflow-hidden group hover:border-[#e57804]/60 transition-all">
+            <div data-surface="dark" className="p-5 sm:p-7 md:p-10 rounded-2xl md:rounded-3xl bg-gradient-to-b from-[#081c38] to-[#040e1d] border border-white/15 relative overflow-hidden group hover:border-[#e57804]/60 transition-all">
               <div className="flex items-center justify-between mb-6">
                 <div className="w-12 h-12 rounded-2xl bg-[#e57804]/15 border border-[#e57804]/30 flex items-center justify-center">
                   <Code2 className="w-6 h-6 text-[#e57804]" />
@@ -302,7 +375,7 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* Pillar 2: Proprietary Digital Products */}
-            <div data-surface="dark" className="p-8 md:p-10 rounded-3xl bg-gradient-to-b from-[#081c38] to-[#040e1d] border border-white/15 relative overflow-hidden group hover:border-[#e57804]/60 transition-all">
+            <div data-surface="dark" className="p-5 sm:p-7 md:p-10 rounded-2xl md:rounded-3xl bg-gradient-to-b from-[#081c38] to-[#040e1d] border border-white/15 relative overflow-hidden group hover:border-[#e57804]/60 transition-all">
               <div className="flex items-center justify-between mb-6">
                 <div className="w-12 h-12 rounded-2xl bg-[#e57804]/20 border border-[#e57804]/40 flex items-center justify-center">
                   <Layers className="w-6 h-6 text-[#e57804]" />
@@ -439,6 +512,45 @@ export const HomePage: React.FC = () => {
             >
               View All Engineering & Advisory Services
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* 7B. MOBILE-ONLY IT TRAINING SPOTLIGHT CARD (< md only) */}
+      <section data-surface="dark" className="block md:hidden py-10 bg-[#06152b] border-y border-white/10">
+        <div className="container mx-auto px-4">
+          <div className="p-6 rounded-3xl bg-gradient-to-b from-[#081c38] to-[#040e1d] border border-cyan-500/30 relative overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+              <Badge variant="blue" className="bg-cyan-500/10 text-cyan-300 border-cyan-500/30">
+                Zakeem IT Training
+              </Badge>
+              <span className="text-[10px] font-mono text-cyan-400">100% Online</span>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">
+              Technology & AI Skills for the Modern Workplace
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed mb-6">
+              Hands-on practical training in Digital Literacy, FutureReadyAI, and Full-Stack Engineering for individuals and corporate teams.
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <Button
+                variant="primary"
+                size="md"
+                href="/training"
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+                className="w-full"
+              >
+                Apply for Training
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                href="/it-training"
+                className="w-full text-slate-200 border-white/20 hover:bg-white/5"
+              >
+                Explore All Courses
+              </Button>
+            </div>
           </div>
         </div>
       </section>

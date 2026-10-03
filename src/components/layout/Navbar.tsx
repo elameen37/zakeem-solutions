@@ -11,6 +11,12 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import { openGlobalSearch } from "@/lib/searchEvents";
+import { 
+  TOGGLE_MOBILE_MENU_EVENT, 
+  OPEN_MOBILE_MENU_EVENT, 
+  CLOSE_MOBILE_MENU_EVENT, 
+  notifyMobileMenuState 
+} from "@/lib/navEvents";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/context/AuthContext";
@@ -68,6 +74,27 @@ export const Navbar: React.FC = () => {
     setIsSearchExpanded(false);
     setSearchQuery("");
   }, [location.pathname]);
+
+  // Sync mobile bottom tab bar and external nav events
+  useEffect(() => {
+    const handleToggle = () => setIsOpen((prev) => !prev);
+    const handleOpen = () => setIsOpen(true);
+    const handleClose = () => setIsOpen(false);
+
+    window.addEventListener(TOGGLE_MOBILE_MENU_EVENT, handleToggle);
+    window.addEventListener(OPEN_MOBILE_MENU_EVENT, handleOpen);
+    window.addEventListener(CLOSE_MOBILE_MENU_EVENT, handleClose);
+
+    return () => {
+      window.removeEventListener(TOGGLE_MOBILE_MENU_EVENT, handleToggle);
+      window.removeEventListener(OPEN_MOBILE_MENU_EVENT, handleOpen);
+      window.removeEventListener(CLOSE_MOBILE_MENU_EVENT, handleClose);
+    };
+  }, []);
+
+  useEffect(() => {
+    notifyMobileMenuState(isOpen);
+  }, [isOpen]);
 
   // Handle scroll styling
   useEffect(() => {
@@ -549,12 +576,30 @@ export const Navbar: React.FC = () => {
             aria-modal="true"
             aria-label="Mobile Navigation"
             className={cn(
-              "lg:hidden mt-4 p-5 rounded-2xl backdrop-blur-2xl backdrop-saturate-150 border space-y-5 max-h-[75vh] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200",
+              "lg:hidden mt-3 p-4 sm:p-5 rounded-3xl backdrop-blur-2xl backdrop-saturate-150 border space-y-4 max-h-[78vh] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200 shadow-2xl",
               isDark
-                ? "bg-[#081b37]/90 border-white/20 shadow-2xl shadow-black/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] text-white"
-                : "bg-[#06152b]/95 border-white/15 shadow-2xl shadow-navy-950/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] text-white"
+                ? "bg-[#081b37]/95 border-white/20 shadow-black/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] text-white"
+                : "bg-[#06152b]/98 border-white/15 shadow-navy-950/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] text-white"
             )}
           >
+            {/* Native Mobile Sheet Header with Close Button */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#e57804] animate-pulse" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
+                  Navigation & Services
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                aria-label="Close navigation menu"
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
             {/* Quick Search in Mobile Menu */}
             <button
               type="button"
@@ -562,7 +607,7 @@ export const Navbar: React.FC = () => {
                 setIsOpen(false);
                 openGlobalSearch();
               }}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 text-xs font-medium transition-colors cursor-pointer"
+              className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 text-xs font-medium transition-colors cursor-pointer min-h-[44px]"
             >
               <div className="flex items-center gap-2">
                 <Search className="w-4 h-4 text-[#e57804]" />
@@ -578,17 +623,20 @@ export const Navbar: React.FC = () => {
                 <div key={item.label} className="border-b border-white/10 pb-3">
                   <Link
                     to={item.href}
-                    className="text-base font-bold block mb-2 text-white hover:text-[#e57804] transition-colors"
+                    onClick={() => setIsOpen(false)}
+                    className="text-base font-bold flex items-center justify-between py-1 text-white hover:text-[#e57804] transition-colors"
                   >
-                    {item.label}
+                    <span>{item.label}</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
                   </Link>
                   {item.children && (
-                    <div className="pl-3 space-y-2.5">
+                    <div className="pl-2 space-y-1 mt-1">
                       {item.children.map((sub) => (
                         <Link
                           key={sub.label}
                           to={sub.href}
-                          className="flex items-center justify-between text-xs py-1.5 text-slate-300 hover:text-white transition-colors"
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center justify-between text-xs py-2 px-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 min-h-[44px] transition-colors"
                         >
                           <span>{sub.label}</span>
                           {sub.badge && (
@@ -605,10 +653,22 @@ export const Navbar: React.FC = () => {
             </div>
 
             <div className="pt-2 space-y-3 pb-2">
-              <Button variant="primary" size="md" href="/request-demo" className="w-full">
+              <Button
+                variant="primary"
+                size="md"
+                href="/request-demo"
+                className="w-full"
+                onClick={() => setIsOpen(false)}
+              >
                 Request a Demo
               </Button>
-              <Button variant="outline" size="md" href="/contact" className="w-full border-white/20 text-white hover:bg-white/10">
+              <Button
+                variant="outline"
+                size="md"
+                href="/contact"
+                className="w-full border-white/20 text-white hover:bg-white/10"
+                onClick={() => setIsOpen(false)}
+              >
                 Contact Sales
               </Button>
               {isAuthenticated ? (

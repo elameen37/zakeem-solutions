@@ -576,7 +576,7 @@ export const Navbar: React.FC = () => {
             aria-modal="true"
             aria-label="Mobile Navigation"
             className={cn(
-              "lg:hidden mt-3 p-4 sm:p-5 rounded-3xl backdrop-blur-2xl backdrop-saturate-150 border space-y-4 max-h-[78vh] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200 shadow-2xl",
+              "lg:hidden mt-3 p-4 sm:p-5 rounded-3xl backdrop-blur-2xl backdrop-saturate-150 border space-y-4 max-h-[calc(100vh-6.5rem)] pb-6 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200 shadow-2xl",
               isDark
                 ? "bg-[#081b37]/95 border-white/20 shadow-black/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] text-white"
                 : "bg-[#06152b]/98 border-white/15 shadow-navy-950/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] text-white"

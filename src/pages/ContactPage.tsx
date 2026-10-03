@@ -326,7 +326,7 @@ export const ContactPage: React.FC = () => {
             </div>
 
             {/* Form Container */}
-            <div data-surface="dark" className="lg:col-span-7 p-8 rounded-3xl bg-[#081c38] border border-white/15">
+            <div data-surface="dark" className="lg:col-span-7 p-5 sm:p-8 rounded-2xl md:rounded-3xl bg-[#081c38] border border-white/15">
               {submissionResult && submittedData ? (
                 <div className="text-center py-6 space-y-6">
                   <div className="w-14 h-14 rounded-full bg-[#e57804]/20 border border-[#e57804]/40 flex items-center justify-center mx-auto text-[#e57804]">

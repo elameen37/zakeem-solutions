@@ -190,7 +190,10 @@ export const ZakkyAIChatWidget: React.FC = () => {
   return (
     <div
       className={cn(
-        "fixed bottom-20 right-4 sm:right-6 md:bottom-8 md:right-8 z-40 transition-all duration-300",
+        "fixed transition-all duration-300",
+        isOpen
+          ? "bottom-2 sm:bottom-4 md:bottom-8 right-2 sm:right-4 md:right-8 z-50"
+          : "bottom-20 right-4 sm:right-6 md:bottom-8 md:right-8 z-40",
         !isOpen && isMobileHidden
           ? "max-md:translate-y-28 max-md:opacity-0 max-md:pointer-events-none"
           : "max-md:translate-y-0 max-md:opacity-100 max-md:pointer-events-auto"
@@ -255,7 +258,7 @@ export const ZakkyAIChatWidget: React.FC = () => {
       {isOpen && (
         <div
           className={cn(
-            "w-[94vw] sm:w-[420px] max-w-[440px] h-[580px] max-h-[84vh]",
+            "w-[calc(100vw-1rem)] sm:w-[420px] max-w-[440px] h-[560px] max-h-[calc(100vh-2rem)] sm:max-h-[84vh]",
             "backdrop-blur-2xl border rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200",
             isDark
               ? "bg-[#07172e]/95 border-white/15 text-white shadow-black/80"

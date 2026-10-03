@@ -399,7 +399,7 @@ export const RequestDemoPage: React.FC = () => {
             </div>
 
             {/* Right Form Card */}
-            <div data-surface="dark" className="lg:col-span-7 p-8 md:p-10 rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl">
+            <div data-surface="dark" className="lg:col-span-7 p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl">
               {confirmedBooking ? (
                 <div className="text-center py-6 space-y-6">
                   <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-400">

@@ -260,7 +260,7 @@ export const TrainingStatusPage: React.FC = () => {
                   size="md"
                   disabled={isLoading}
                   leftIcon={<Search className="w-4 h-4" />}
-                  className="w-full sm:w-auto font-bold px-8 shadow-lg"
+                  className="w-full sm:w-auto font-bold px-8 shadow-lg min-h-[48px]"
                 >
                   {isLoading ? "Verifying..." : "Verify Application Status"}
                 </Button>
@@ -547,7 +547,7 @@ export const TrainingStatusPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleCopyRef(statusData.reference)}
-                        className="text-slate-400 hover:text-[#e57804] transition-colors p-1"
+                        className="text-slate-400 hover:text-[#e57804] transition-colors p-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer"
                         aria-label="Copy application reference"
                         title="Copy Reference"
                       >

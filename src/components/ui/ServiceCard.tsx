@@ -63,7 +63,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service }) => {
       <div className="pt-3 border-t border-white/5 flex items-center justify-between">
         <Link
           to={`/services/${service.slug}`}
-          className="text-xs font-semibold text-slate-200 group-hover:text-white flex items-center gap-2 transition-colors py-1.5 min-h-[44px]"
+          className="text-xs font-semibold text-slate-200 group-hover:text-white flex items-center gap-2 transition-colors py-2 min-h-[48px]"
         >
           <span>Service Details</span>
           <ArrowRight className="w-3.5 h-3.5 text-[#e57804] group-hover:translate-x-1 transition-transform" />

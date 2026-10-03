@@ -92,7 +92,7 @@ export const MobileTabBar: React.FC = () => {
         <Link
           to="/request-demo"
           aria-label="Request a Demo"
-          className="flex-1 flex flex-col items-center justify-center min-h-[48px] relative group -mt-4 active:scale-90 transition-transform duration-200 focus:outline-none"
+          className="flex-1 flex flex-col items-center justify-center min-h-[48px] relative group -mt-4 active:scale-90 transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e57804]/60 rounded-full"
         >
           <div className="relative flex items-center justify-center">
             {/* Glow backing */}
@@ -103,7 +103,7 @@ export const MobileTabBar: React.FC = () => {
           </div>
           <span
             className={cn(
-              "text-[9px] font-mono font-bold tracking-wider mt-1 uppercase",
+              "text-[9px] font-mono font-bold tracking-wider mt-1 uppercase truncate max-w-[56px] text-center",
               isDemoActive ? "text-[#e57804]" : "text-amber-300 group-hover:text-[#e57804]"
             )}
           >

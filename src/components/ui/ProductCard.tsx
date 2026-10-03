@@ -176,7 +176,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
           size="md"
           href={targetPath}
           data-analytics-id={`product-${product.slug}-cta`}
-          className={cn("flex-1", !featured && "bg-white/10 hover:bg-white/15 text-white border-white/15")}
+          className={cn("flex-1 min-h-[48px]", !featured && "bg-white/10 hover:bg-white/15 text-white border-white/15")}
           rightIcon={<ArrowUpRight className="w-4 h-4" />}
         >
           {product.ctaText || (featured ? "Explore Flagship Platform" : "View Architecture")}
@@ -190,7 +190,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
             data-analytics-id={`product-${product.slug}-launch`}
             rightIcon={<ExternalLink className="w-4 h-4" />}
             title="Launch live web application"
-            className="text-white border-white/20 hover:border-[#e57804] hover:bg-white/10"
+            className="text-white border-white/20 hover:border-[#e57804] hover:bg-white/10 min-h-[48px]"
           >
             Launch App
           </Button>

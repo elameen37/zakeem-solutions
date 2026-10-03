@@ -538,7 +538,7 @@ export const HomePage: React.FC = () => {
                 size="md"
                 href="/training"
                 rightIcon={<ArrowRight className="w-4 h-4" />}
-                className="w-full"
+                className="w-full min-h-[48px]"
               >
                 Apply for Training
               </Button>
@@ -546,7 +546,7 @@ export const HomePage: React.FC = () => {
                 variant="outline"
                 size="md"
                 href="/it-training"
-                className="w-full text-slate-200 border-white/20 hover:bg-white/5"
+                className="w-full min-h-[48px] text-slate-200 border-white/20 hover:bg-white/5"
               >
                 Explore All Courses
               </Button>

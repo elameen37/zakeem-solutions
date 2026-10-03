@@ -376,7 +376,7 @@ export const ITTrainingPage: React.FC = () => {
                   type="button"
                   onClick={() => setActiveCategory(tab.id)}
                   className={cn(
-                    "px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer",
+                    "px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer min-h-[44px] flex items-center justify-center",
                     activeCategory === tab.id
                       ? "bg-[#e57804] text-white shadow-lg shadow-[#e57804]/30"
                       : "bg-[#06152b] border border-white/10 text-slate-300 hover:text-white hover:border-white/20"
@@ -485,7 +485,7 @@ export const ITTrainingPage: React.FC = () => {
                         variant="primary"
                         size="sm"
                         href={applyUrl}
-                        className="text-xs px-4 py-2.5 group/btn justify-center"
+                        className="text-xs px-4 py-2.5 group/btn justify-center min-h-[48px]"
                       >
                         Apply for this Course
                         <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover/btn:translate-x-1 transition-transform" />

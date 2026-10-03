@@ -60,7 +60,7 @@ export const ClientPortalPage: React.FC = () => {
                 <span>•</span>
                 <span className="text-slate-500 dark:text-slate-400">{displayJobTitle}</span>
                 <span>•</span>
-                <span className="font-mono text-slate-500 dark:text-slate-400">{displayEmail}</span>
+                <span className="font-mono text-slate-500 dark:text-slate-400 break-all">{displayEmail}</span>
               </p>
             </div>
 

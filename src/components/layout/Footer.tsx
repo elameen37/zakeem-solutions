@@ -54,7 +54,7 @@ export const Footer: React.FC = () => {
       <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[#e57804]/50 to-transparent" />
 
       {/* Main Enterprise Footer Content */}
-      <div className="container mx-auto px-4 md:px-6 py-16 lg:py-20 max-w-7xl">
+      <div className="container mx-auto px-4 md:px-6 pt-14 pb-28 md:py-16 lg:py-20 max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10 lg:gap-8 pb-14 border-b border-white/10">
           {/* Brand & Mission Column */}
           <div className="lg:col-span-2 space-y-6">

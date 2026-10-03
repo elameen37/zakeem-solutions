@@ -436,7 +436,7 @@ export const TrainingPage: React.FC = () => {
                     <label className="block text-xs font-bold text-white uppercase tracking-wider">
                       Step 1: I am applying as <span className="text-[#e57804]">*</span>
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                       <button
                         type="button"
                         onClick={() => {
@@ -444,16 +444,16 @@ export const TrainingPage: React.FC = () => {
                           setErrors((e) => ({ ...e, applicantType: undefined }));
                         }}
                         className={cn(
-                          "p-3.5 rounded-xl border text-left transition-all flex items-center gap-3",
+                          "p-2.5 sm:p-3.5 rounded-xl border text-left transition-all flex items-center gap-2.5 sm:gap-3 min-h-[52px]",
                           applicantType === "individual"
                             ? "bg-[#e57804]/15 border-[#e57804] text-white shadow-lg"
                             : "bg-[#06152b] border-white/10 text-slate-400 hover:text-white hover:border-white/20"
                         )}
                       >
-                        <User className={cn("w-5 h-5", applicantType === "individual" ? "text-[#e57804]" : "text-slate-500")} />
-                        <div>
-                          <div className="text-sm font-bold">Individual</div>
-                          <div className="text-[11px] text-slate-400">Personal career growth</div>
+                        <User className={cn("w-5 h-5 shrink-0", applicantType === "individual" ? "text-[#e57804]" : "text-slate-500")} />
+                        <div className="min-w-0">
+                          <div className="text-xs sm:text-sm font-bold truncate">Individual</div>
+                          <div className="text-[10px] sm:text-[11px] text-slate-400 truncate">Personal career</div>
                         </div>
                       </button>
 
@@ -464,16 +464,16 @@ export const TrainingPage: React.FC = () => {
                           setErrors((e) => ({ ...e, applicantType: undefined }));
                         }}
                         className={cn(
-                          "p-3.5 rounded-xl border text-left transition-all flex items-center gap-3",
+                          "p-2.5 sm:p-3.5 rounded-xl border text-left transition-all flex items-center gap-2.5 sm:gap-3 min-h-[52px]",
                           applicantType === "organization"
                             ? "bg-[#e57804]/15 border-[#e57804] text-white shadow-lg"
                             : "bg-[#06152b] border-white/10 text-slate-400 hover:text-white hover:border-white/20"
                         )}
                       >
-                        <Building2 className={cn("w-5 h-5", applicantType === "organization" ? "text-[#e57804]" : "text-slate-500")} />
-                        <div>
-                          <div className="text-sm font-bold">Organization</div>
-                          <div className="text-[11px] text-slate-400">Team / Corporate cohort</div>
+                        <Building2 className={cn("w-5 h-5 shrink-0", applicantType === "organization" ? "text-[#e57804]" : "text-slate-500")} />
+                        <div className="min-w-0">
+                          <div className="text-xs sm:text-sm font-bold truncate">Organization</div>
+                          <div className="text-[10px] sm:text-[11px] text-slate-400 truncate">Team cohort</div>
                         </div>
                       </button>
                     </div>
@@ -686,7 +686,7 @@ export const TrainingPage: React.FC = () => {
                               type="button"
                               onClick={() => toggleTrainingDay(day)}
                               className={cn(
-                                "py-2 px-3 rounded-lg border text-xs text-center transition-all",
+                                "min-h-[44px] py-2 px-3 rounded-xl border text-xs text-center transition-all flex items-center justify-center font-medium",
                                 isSelected
                                   ? "bg-[#e57804] border-[#e57804] text-white font-bold shadow"
                                   : "bg-[#06152b] border-white/10 text-slate-400 hover:text-white hover:border-white/20"

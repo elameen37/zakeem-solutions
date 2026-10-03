@@ -560,7 +560,10 @@ export const Navbar: React.FC = () => {
               aria-label={isOpen ? "Close menu" : "Open menu"}
               aria-expanded={isOpen}
               aria-controls="mobile-navigation"
-              className={cn("min-w-[44px] min-h-[44px] p-2.5 flex items-center justify-center", isDark ? "text-white hover:bg-white/10" : "text-slate-900 hover:bg-slate-100")}
+              className={cn(
+                "hidden md:flex min-w-[44px] min-h-[44px] p-2.5 items-center justify-center",
+                isDark ? "text-white hover:bg-white/10" : "text-slate-900 hover:bg-slate-100"
+              )}
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </Button>

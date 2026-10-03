@@ -97,14 +97,68 @@ export const ServiceDetailPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <Button variant="primary" size="lg" href="/request-demo" rightIcon={<ArrowRight className="w-4 h-4" />}>
-              Initiate Project Scoping
-            </Button>
-            <Button variant="outline" size="lg" href="/contact">
-              Talk to Engineering Lead
-            </Button>
-          </div>
+          {service.slug === "training" ? (
+            <div className="space-y-6">
+              {/* IT Training Academy Conversion Card / Bridge */}
+              <div
+                data-surface="dark"
+                className="p-6 md:p-8 rounded-2xl bg-gradient-to-r from-[#081c38] to-[#0c2850] border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-6"
+              >
+                <div className="space-y-1.5 max-w-xl">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="blue" className="bg-cyan-500/10 text-cyan-300 border-cyan-500/30">
+                      Zakeem IT Training Academy
+                    </Badge>
+                    <span className="text-[11px] font-mono text-cyan-400">100% Online</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white">
+                    Explore Cohort Programs & Admissions
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Browse our live curriculum in Digital Literacy, FutureReadyAI, and Web Development using AI, or submit your direct admission application.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    href="/training"
+                    rightIcon={<ArrowRight className="w-4 h-4" />}
+                    className="w-full sm:w-auto min-h-[44px]"
+                  >
+                    Apply for Training
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="md"
+                    href="/it-training"
+                    className="w-full sm:w-auto min-h-[44px] text-white border-white/20 hover:border-cyan-400 hover:bg-white/10"
+                  >
+                    Explore IT Training
+                  </Button>
+                </div>
+              </div>
+
+              {/* Enterprise Consultation Actions */}
+              <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-4">
+                <Button variant="secondary" size="md" href="/request-demo" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                  Initiate Corporate Scoping
+                </Button>
+                <Button variant="ghost" size="md" href="/contact" className="text-slate-300 hover:text-white">
+                  Talk to Engineering Lead
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-4">
+              <Button variant="primary" size="lg" href="/request-demo" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                Initiate Project Scoping
+              </Button>
+              <Button variant="outline" size="lg" href="/contact">
+                Talk to Engineering Lead
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 

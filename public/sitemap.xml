@@ -66,6 +66,21 @@
     <changefreq>monthly</changefreq>
   </url>
   <url>
+    <loc>https://www.zakeemsolutions.com/it-training</loc>
+    <priority>0.85</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.zakeemsolutions.com/training</loc>
+    <priority>0.85</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.zakeemsolutions.com/training/status</loc>
+    <priority>0.80</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
     <loc>https://www.zakeemsolutions.com/services/software-development</loc>
     <priority>0.85</priority>
     <changefreq>monthly</changefreq>

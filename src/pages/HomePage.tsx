@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   ArrowRight, ShieldCheck, Cpu, Code2, Bot, Layers, 
-  CheckCircle2, Building2, BarChart2, Globe, Server, Terminal, Lock, GraduationCap
+  CheckCircle2, Building2, BarChart2, Globe, Server, Terminal, Lock, GraduationCap,
+  Laptop, Award
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Button } from "@/components/ui/Button";
@@ -516,29 +517,68 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 7B. MOBILE-ONLY IT TRAINING SPOTLIGHT CARD (< md only) */}
-      <section data-surface="dark" className="block md:hidden py-10 bg-[#06152b] border-y border-white/10">
-        <div className="container mx-auto px-4">
-          <div className="p-6 rounded-3xl bg-gradient-to-b from-[#081c38] to-[#040e1d] border border-cyan-500/30 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
-              <Badge variant="blue" className="bg-cyan-500/10 text-cyan-300 border-cyan-500/30">
-                Zakeem IT Training
-              </Badge>
-              <span className="text-[10px] font-mono text-cyan-400">100% Online</span>
+      {/* 7B. IT TRAINING SPOTLIGHT — RESPONSIVE PARITY (MOBILE, TABLET & DESKTOP) */}
+      <section
+        data-surface="dark"
+        className="py-10 md:py-16 lg:py-20 bg-[#06152b] border-y border-white/10 relative overflow-hidden"
+        aria-label="Zakeem IT Training Academy Spotlight"
+      >
+        {/* Subtle Ambient Background Glow for Desktop / Tablet */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none" />
+
+        <div className="container mx-auto px-4 md:px-6 max-w-7xl relative z-10">
+          <div className="p-6 sm:p-8 md:p-10 lg:p-12 rounded-3xl bg-gradient-to-b from-[#081c38] to-[#040e1d] md:bg-gradient-to-r md:from-[#081c38] md:via-[#092244] md:to-[#040e1d] border border-cyan-500/30 relative overflow-hidden shadow-2xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 lg:gap-10">
+            {/* Ambient Corner Accent */}
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] pointer-events-none" />
+
+            {/* Content Block */}
+            <div className="space-y-3.5 max-w-3xl relative z-10">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                <Badge variant="blue" className="bg-cyan-500/10 text-cyan-300 border-cyan-500/30">
+                  Zakeem IT Training Academy
+                </Badge>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[11px] font-mono text-cyan-400 font-semibold">
+                  100% Fully Online
+                </span>
+                <span className="hidden sm:inline-flex items-center text-[11px] font-mono text-slate-300">
+                  • Live Cohort-Driven
+                </span>
+              </div>
+
+              <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                Technology & AI Skills for the Modern Workplace
+              </h3>
+
+              <p className="text-xs sm:text-sm md:text-base text-slate-300 leading-relaxed max-w-2xl">
+                Hands-on practical training in Digital Literacy, FutureReadyAI, and Web Development using AI for ambitious individuals and forward-thinking corporate teams.
+              </p>
+
+              {/* Program Tracks & Highlights */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-200">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-200">
+                  <Laptop className="w-3.5 h-3.5 text-cyan-400" /> Digital Literacy
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-200">
+                  <Cpu className="w-3.5 h-3.5 text-amber-400" /> FutureReadyAI
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-200">
+                  <Code2 className="w-3.5 h-3.5 text-cyan-400" /> Web Development using AI
+                </span>
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-200">
+                  <Award className="w-3.5 h-3.5 text-emerald-400" /> Verified Certificate
+                </span>
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">
-              Technology & AI Skills for the Modern Workplace
-            </h3>
-            <p className="text-xs text-slate-300 leading-relaxed mb-6">
-              Hands-on practical training in Digital Literacy, FutureReadyAI, and Full-Stack Engineering for individuals and corporate teams.
-            </p>
-            <div className="flex flex-col gap-2.5">
+
+            {/* Dual CTA Actions Block */}
+            <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-stretch gap-3 shrink-0 relative z-10 w-full sm:w-auto min-w-[220px]">
               <Button
                 variant="primary"
                 size="md"
                 href="/training"
                 rightIcon={<ArrowRight className="w-4 h-4" />}
-                className="w-full min-h-[48px]"
+                className="w-full sm:w-auto min-h-[48px] justify-center shadow-lg shadow-[#e57804]/20"
+                data-analytics-id="home-training-spotlight-apply-cta"
               >
                 Apply for Training
               </Button>
@@ -546,9 +586,10 @@ export const HomePage: React.FC = () => {
                 variant="outline"
                 size="md"
                 href="/it-training"
-                className="w-full min-h-[48px] text-slate-200 border-white/20 hover:bg-white/5"
+                className="w-full sm:w-auto min-h-[48px] justify-center text-slate-200 border-white/20 hover:border-cyan-400 hover:text-white hover:bg-white/10"
+                data-analytics-id="home-training-spotlight-explore-cta"
               >
-                Explore All Courses
+                Explore IT Training
               </Button>
             </div>
           </div>

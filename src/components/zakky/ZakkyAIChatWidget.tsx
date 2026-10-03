@@ -205,7 +205,7 @@ export const ZakkyAIChatWidget: React.FC = () => {
           type="button"
           onClick={() => setIsOpen(true)}
           className={cn(
-            "group relative flex items-center gap-3 pl-3 pr-4 py-2.5 rounded-full shadow-2xl transition-all duration-300 backdrop-blur-xl hover:scale-[1.03] active:scale-[0.98]",
+            "group relative flex items-center gap-2 md:gap-3 pl-2 pr-3.5 md:pl-3 md:pr-4 py-1.5 md:py-2.5 rounded-full shadow-2xl transition-all duration-300 backdrop-blur-xl hover:scale-[1.03] active:scale-[0.98]",
             isDark
               ? "bg-[#081c38]/90 hover:bg-[#0c2850] text-white border border-[#e57804]/40 hover:border-[#e57804] hover:shadow-[0_0_25px_rgba(229,120,4,0.35)]"
               : "bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 shadow-xl shadow-slate-200/60 hover:border-[#e57804]/60 hover:shadow-slate-300/80"
@@ -213,7 +213,7 @@ export const ZakkyAIChatWidget: React.FC = () => {
           aria-label="Open ZakkyAI Assistant"
         >
           {/* Avatar / Icon Container */}
-          <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white border border-[#e57804]/40 flex items-center justify-center shrink-0 p-0.5 shadow-sm">
+          <div className="relative w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden bg-white border border-[#e57804]/40 flex items-center justify-center shrink-0 p-0.5 shadow-sm">
             <img
               src="/assets/logos/zakky-ai.png"
               alt="ZakkyAI"
@@ -230,10 +230,23 @@ export const ZakkyAIChatWidget: React.FC = () => {
             />
             <Bot className="fallback-bot hidden w-4 h-4 text-[#e57804]" />
             {/* Operational status indicator dot */}
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#081c38]" />
+            <span className="absolute bottom-0 right-0 w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#081c38]" />
           </div>
 
-          <div className="text-left">
+          {/* Mobile Label: round button with logo and label "ask zakkyAI" */}
+          <div className="md:hidden flex items-center">
+            <span
+              className={cn(
+                "text-xs font-semibold tracking-tight group-hover:text-[#e57804] transition-colors whitespace-nowrap",
+                isDark ? "text-white" : "text-slate-900"
+              )}
+            >
+              ask zakkyAI
+            </span>
+          </div>
+
+          {/* Desktop Label: Full title & subtitle */}
+          <div className="hidden md:block text-left">
             <div className="flex items-center gap-1.5">
               <span
                 className={cn(

@@ -14,6 +14,8 @@ const ZakkyAIChatWidget = React.lazy(() =>
   import("@/components/zakky/ZakkyAIChatWidget").then((m) => ({ default: m.ZakkyAIChatWidget }))
 );
 import { useMaintenance } from "@/context/MaintenanceContext";
+import { usePWA } from "@/context/PWAContext";
+import { cn } from "@/lib/utils";
 import { AdminMaintenanceBanner } from "@/components/maintenance/AdminMaintenanceBanner";
 import { MaintenancePage } from "@/components/maintenance/MaintenancePage";
 import { PWAUpdateToast } from "@/components/pwa/PWAUpdateToast";
@@ -27,6 +29,8 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { pathname } = useLocation();
   const { isMaintenanceActive } = useMaintenance();
+  const { isOnline, reconnectedRecently } = usePWA();
+  const showOfflineBanner = !isOnline || reconnectedRecently;
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -48,7 +52,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <PWAOfflineIndicator />
       <AdminMaintenanceBanner />
       <Navbar />
-      <main className="flex-1 pt-24 md:pt-28 pb-20 md:pb-0">{children}</main>
+      <main
+        className={cn(
+          "flex-1 pb-20 md:pb-0 transition-all duration-300",
+          showOfflineBanner ? "pt-28 md:pt-32" : "pt-24 md:pt-28"
+        )}
+      >
+        {children}
+      </main>
       <Footer />
       <MobileTabBar />
       <BackToTop />

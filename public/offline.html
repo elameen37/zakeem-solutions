@@ -157,8 +157,22 @@
         background: rgba(255, 255, 255, 0.08);
         border-color: rgba(255, 255, 255, 0.25);
       }
+      .security-note {
+        margin-top: 1.25rem;
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 0.75rem;
+        line-height: 1.5;
+        color: var(--text-muted);
+        text-align: left;
+      }
+      .security-note strong {
+        color: var(--text-secondary);
+      }
       .status-note {
-        margin-top: 1.5rem;
+        margin-top: 1.25rem;
         font-size: 0.75rem;
         font-family: "JetBrains Mono", monospace;
         color: var(--text-muted);
@@ -191,12 +205,16 @@
       </p>
 
       <div class="actions">
-        <button id="retry-btn" class="btn btn-primary" onclick="window.location.reload()">
+        <button id="retry-btn" class="btn btn-primary" type="button">
           Retry Connection
         </button>
         <a href="/" class="btn btn-outline">
           Return to Home
         </a>
+      </div>
+
+      <div class="security-note">
+        <strong>Security Notice:</strong> Administrative operations, client portal dashboards, and live verification services require an active authenticated connection. Confidential records are not cached offline.
       </div>
 
       <div class="status-note" id="status-text">
@@ -205,12 +223,44 @@
     </div>
 
     <script>
+      function checkAndRetry() {
+        var btn = document.getElementById("retry-btn");
+        var status = document.getElementById("status-text");
+        if (btn) {
+          btn.innerText = "Checking...";
+          btn.disabled = true;
+        }
+        if (status) status.innerText = "Testing connectivity...";
+
+        fetch("/favicon.svg?_zk=" + Date.now(), { method: "HEAD", cache: "no-store" })
+          .then(function (res) {
+            if (res.ok) {
+              if (status) status.innerText = "Connection restored! Reloading...";
+              window.location.reload();
+            } else {
+              throw new Error("Offline");
+            }
+          })
+          .catch(function () {
+            if (status) status.innerText = "Still offline — please check your internet connection.";
+            if (btn) {
+              btn.innerText = "Retry Connection";
+              btn.disabled = false;
+            }
+          });
+      }
+
+      var retryBtn = document.getElementById("retry-btn");
+      if (retryBtn) {
+        retryBtn.onclick = checkAndRetry;
+      }
+
       window.addEventListener("online", function () {
         var status = document.getElementById("status-text");
         if (status) status.innerText = "Connection restored! Reloading...";
         setTimeout(function () {
           window.location.reload();
-        }, 1000);
+        }, 800);
       });
     </script>
   </body>

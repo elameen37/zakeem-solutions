@@ -20,6 +20,7 @@ import {
 import { useTheme } from "@/context/ThemeContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/context/AuthContext";
+import { usePWA } from "@/context/PWAContext";
 
 const XIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg viewBox="0 0 24 24" className={cn("fill-current", className)} aria-hidden="true">
@@ -51,6 +52,7 @@ export const Navbar: React.FC = () => {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const { isAuthenticated, isAdmin, signOut } = useAuth();
+  const { isOnline, reconnectedRecently } = usePWA();
   const [isOpen, setIsOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -222,8 +224,15 @@ export const Navbar: React.FC = () => {
     }
   };
 
+  const showOfflineBanner = !isOnline || reconnectedRecently;
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 pt-3 md:pt-4 px-3 sm:px-4 md:px-6 pointer-events-none transition-all duration-300">
+    <header
+      className={cn(
+        "fixed left-0 right-0 z-50 px-3 sm:px-4 md:px-6 pointer-events-none transition-all duration-300",
+        showOfflineBanner ? "top-11 pt-1 md:pt-2" : "top-0 pt-3 md:pt-4"
+      )}
+    >
       <div className="container mx-auto max-w-7xl">
         <div
           className={cn(

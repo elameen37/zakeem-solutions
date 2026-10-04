@@ -11,6 +11,8 @@ interface BeforeInstallPromptEvent extends Event {
 
 interface PWAContextType {
   isOnline: boolean;
+  isReconnecting: boolean;
+  reconnectedRecently: boolean;
   hasUpdate: boolean;
   canInstall: boolean;
   isInstalled: boolean;
@@ -20,6 +22,7 @@ interface PWAContextType {
   updateApp: () => void;
   dismissUpdate: () => void;
   promptInstall: () => Promise<void>;
+  checkConnection: () => Promise<boolean>;
 }
 
 const PWAContext = createContext<PWAContextType | undefined>(undefined);
@@ -28,6 +31,8 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isOnline, setIsOnline] = useState<boolean>(() =>
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
+  const [isReconnecting, setIsReconnecting] = useState<boolean>(false);
+  const [reconnectedRecently, setReconnectedRecently] = useState<boolean>(false);
   const [hasUpdate, setHasUpdate] = useState<boolean>(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState<boolean>(false);
@@ -39,8 +44,21 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    let restoredTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      setReconnectedRecently(true);
+      restoredTimer = setTimeout(() => {
+        setReconnectedRecently(false);
+      }, 4000);
+      window.dispatchEvent(new CustomEvent("zakeem-online-restored"));
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      setReconnectedRecently(false);
+    };
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
@@ -48,6 +66,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+      if (restoredTimer) clearTimeout(restoredTimer);
     };
   }, []);
 
@@ -173,7 +192,31 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setHasUpdate(false);
   }, []);
 
-  // 6. Install Trigger (Native or iOS modal guide)
+  // 6. Manual Reconnection Check (Zero destructive reload)
+  const checkConnection = useCallback(async (): Promise<boolean> => {
+    setIsReconnecting(true);
+    try {
+      const res = await fetch("/favicon.svg?_zk=" + Date.now(), {
+        method: "HEAD",
+        cache: "no-store",
+      });
+      if (res.ok) {
+        setIsOnline(true);
+        setReconnectedRecently(true);
+        setTimeout(() => setReconnectedRecently(false), 4000);
+        setIsReconnecting(false);
+        window.dispatchEvent(new CustomEvent("zakeem-online-restored"));
+        return true;
+      }
+    } catch {
+      // Still offline
+    }
+    setIsOnline(false);
+    setIsReconnecting(false);
+    return false;
+  }, []);
+
+  // 7. Install Trigger (Native or iOS modal guide)
   const promptInstall = useCallback(async () => {
     if (deferredPrompt) {
       await deferredPrompt.prompt();
@@ -193,6 +236,8 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <PWAContext.Provider
       value={{
         isOnline,
+        isReconnecting,
+        reconnectedRecently,
         hasUpdate,
         canInstall,
         isInstalled,
@@ -202,6 +247,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateApp,
         dismissUpdate,
         promptInstall,
+        checkConnection,
       }}
     >
       {children}

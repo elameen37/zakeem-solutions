@@ -27,8 +27,10 @@ import {
   checkPublicTrainingStatus,
   PublicTrainingStatusData,
 } from "@/lib/trainingService";
+import { usePWA } from "@/context/PWAContext";
 
 export const TrainingStatusPage: React.FC = () => {
+  const { isOnline } = usePWA();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialRef = searchParams.get("ref") || "";
   const initialEmail = searchParams.get("email") || "";
@@ -53,6 +55,11 @@ export const TrainingStatusPage: React.FC = () => {
 
     if (!cleanRef || !cleanEmail) {
       setError("Please provide both your Application Reference and registered Email address.");
+      return;
+    }
+
+    if (!isOnline) {
+      setError("Live status verification requires an active network connection. Please reconnect to check your application status.");
       return;
     }
 
@@ -212,6 +219,24 @@ export const TrainingStatusPage: React.FC = () => {
             data-surface="dark"
             className="p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl bg-[#081c38] border border-white/15 shadow-2xl space-y-6"
           >
+            {!isOnline && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="p-3.5 sm:p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-3"
+              >
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-semibold block text-amber-300">
+                    Live Network Verification Required
+                  </span>
+                  <p className="text-amber-200/90 leading-relaxed text-[11px] sm:text-xs">
+                    Application status verification queries real-time records. Confidential admissions data is not cached offline for security. Please reconnect to check your application status.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={onSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">

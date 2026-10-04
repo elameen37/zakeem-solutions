@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   GraduationCap,
@@ -16,11 +16,20 @@ import {
   Check,
   BookOpen,
   Printer,
+  Save,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { usePWA } from "@/context/PWAContext";
+import {
+  saveFormDraft,
+  loadFormDraft,
+  clearFormDraft,
+  isDraftEmpty,
+} from "@/lib/pwaDraftStorage";
+import { PWADraftNotice } from "@/components/pwa/PWADraftNotice";
 import {
   ApplicantType,
   TRAINING_COURSES,
@@ -91,6 +100,74 @@ export const TrainingPage: React.FC = () => {
     reference?: string;
   } | null>(null);
 
+  // Phase 81.2: PWA Safe Offline Draft State
+  const { isOnline, reconnectedRecently } = usePWA();
+  const [hasSavedDraft, setHasSavedDraft] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [isOfflineBlocked, setIsOfflineBlocked] = useState(false);
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
+  const [isDraftSavedFeedback, setIsDraftSavedFeedback] = useState(false);
+
+  useEffect(() => {
+    const draft = loadFormDraft("training");
+    if (draft && !isDraftEmpty("training", draft.data)) {
+      setHasSavedDraft(true);
+      setDraftSavedAt(draft.savedAt);
+    }
+  }, []);
+
+  const handleRestoreDraft = () => {
+    const draft = loadFormDraft("training");
+    if (draft) {
+      setApplicantType(draft.data.applicantType);
+      setFullName(draft.data.fullName);
+      setEmail(draft.data.email);
+      setOrganizationName(draft.data.organizationName);
+      setBusinessEmail(draft.data.businessEmail);
+      if (draft.data.course) setCourse(draft.data.course as TrainingCourse);
+      setCustomTrainingRequest(draft.data.customTrainingRequest);
+      setPreferredStartDate(draft.data.preferredStartDate);
+      setTrainingDays(draft.data.trainingDays as TrainingDay[]);
+      setPreferredTime(draft.data.preferredTime);
+      setAcknowledgementAccepted(draft.data.acknowledgementAccepted);
+
+      setIsDraftRestored(true);
+      setHasSavedDraft(false);
+      setIsOfflineBlocked(false);
+      setTimeout(() => setIsDraftRestored(false), 4000);
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    clearFormDraft("training");
+    setHasSavedDraft(false);
+    setDraftSavedAt(null);
+    setIsDraftRestored(false);
+    setIsOfflineBlocked(false);
+  };
+
+  const handleManualSaveDraft = () => {
+    const draftData = {
+      applicantType,
+      fullName,
+      email,
+      organizationName,
+      businessEmail,
+      course,
+      customTrainingRequest,
+      preferredStartDate,
+      trainingDays,
+      preferredTime,
+      acknowledgementAccepted,
+    };
+    const res = saveFormDraft("training", draftData);
+    if (res.success) {
+      setDraftSavedAt(res.savedAt);
+      setIsDraftSavedFeedback(true);
+      setTimeout(() => setIsDraftSavedFeedback(false), 3000);
+    }
+  };
+
   // Toggle training days with 3-day max validation
   const toggleTrainingDay = (day: TrainingDay) => {
     setTrainingDays((prev) => {
@@ -145,12 +222,43 @@ export const TrainingPage: React.FC = () => {
       return;
     }
 
+    // Phase 81.2: Offline submission interception
+    if (!isOnline) {
+      const draftData = {
+        applicantType,
+        fullName,
+        email,
+        organizationName,
+        businessEmail,
+        course,
+        customTrainingRequest,
+        preferredStartDate,
+        trainingDays,
+        preferredTime,
+        acknowledgementAccepted,
+      };
+      const res = saveFormDraft("training", draftData);
+      setIsOfflineBlocked(true);
+      setDraftSavedAt(res.savedAt);
+      setErrors({
+        general:
+          "You are currently offline. Application submission requires an active connection. Your details have been safely saved locally. Reconnect to complete enrollment.",
+      });
+      return;
+    }
+
     setErrors({});
     setIsSubmitting(true);
 
     try {
       const res = await submitTrainingApplication(payload);
       if (res.success && res.applicationReference) {
+        // Phase 81.2: Clear local draft on confirmed application
+        clearFormDraft("training");
+        setHasSavedDraft(false);
+        setDraftSavedAt(null);
+        setIsOfflineBlocked(false);
+
         setSubmissionResult({
           success: true,
           reference: res.applicationReference,
@@ -179,6 +287,8 @@ export const TrainingPage: React.FC = () => {
     setAcknowledgementAccepted(false);
     setErrors({});
     setSubmissionResult(null);
+    setIsOfflineBlocked(false);
+    setIsDraftRestored(false);
   };
 
   return (
@@ -412,6 +522,21 @@ export const TrainingPage: React.FC = () => {
                       Prefer a hardcopy? Print this form or save it as PDF, complete it, and submit it through the indicated Zakeem channel.
                     </span>
                   </div>
+
+                  {/* Phase 81.2: PWA Draft Notice */}
+                  <PWADraftNotice
+                    formKey="training"
+                    hasDraft={hasSavedDraft}
+                    draftSavedAt={draftSavedAt}
+                    onRestore={handleRestoreDraft}
+                    onDiscard={handleDiscardDraft}
+                    isOfflineBlocked={isOfflineBlocked}
+                    isReconnected={reconnectedRecently}
+                    onSaveDraft={handleManualSaveDraft}
+                    isDraftRestored={isDraftRestored}
+                    isDraftSavedFeedback={isDraftSavedFeedback}
+                    onDismissBlockedNotice={() => setIsOfflineBlocked(false)}
+                  />
 
                   {errors.general && (
                     <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-center gap-2">
@@ -790,6 +915,17 @@ export const TrainingPage: React.FC = () => {
                         className="w-full sm:flex-1 text-base font-bold shadow-xl"
                       >
                         {isSubmitting ? "Submitting Application..." : "Apply for IT Training"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        onClick={handleManualSaveDraft}
+                        title="Save your application locally without submitting"
+                        className="w-full sm:w-auto min-h-[44px] text-sm px-5 py-3 border-white/20 text-slate-300 hover:text-white hover:bg-white/10 shrink-0"
+                      >
+                        <Save className="w-4 h-4 mr-2 text-[#e57804]" />
+                        Save Draft
                       </Button>
                       <Button
                         type="button"

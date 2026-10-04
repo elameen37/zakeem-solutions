@@ -9,11 +9,20 @@ import {
   Clock,
   ShieldCheck,
   Building2,
+  Save,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { usePWA } from "@/context/PWAContext";
+import {
+  saveFormDraft,
+  loadFormDraft,
+  clearFormDraft,
+  isDraftEmpty,
+} from "@/lib/pwaDraftStorage";
+import { PWADraftNotice } from "@/components/pwa/PWADraftNotice";
 import {
   normalizeCommercialParams,
   getCommercialContextSummary,
@@ -91,6 +100,90 @@ export const RequestDemoPage: React.FC = () => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
+
+  // Phase 81.2: PWA Safe Offline Draft State
+  const { isOnline, reconnectedRecently } = usePWA();
+  const [hasSavedDraft, setHasSavedDraft] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [isOfflineBlocked, setIsOfflineBlocked] = useState(false);
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
+  const [isDraftSavedFeedback, setIsDraftSavedFeedback] = useState(false);
+
+  useEffect(() => {
+    const draft = loadFormDraft("request-demo");
+    if (draft && !isDraftEmpty("request-demo", draft.data)) {
+      setHasSavedDraft(true);
+      setDraftSavedAt(draft.savedAt);
+    }
+  }, []);
+
+  const handleRestoreDraft = () => {
+    const draft = loadFormDraft("request-demo");
+    if (draft) {
+      setFullName(draft.data.fullName);
+      setWorkEmail(draft.data.workEmail);
+      setCompany(draft.data.company);
+      setPhone(draft.data.phone);
+      setJobTitle(draft.data.jobTitle);
+      if (draft.data.interest) setInterest(draft.data.interest);
+      if (draft.data.deploymentType) setDeploymentType(draft.data.deploymentType);
+      if (draft.data.notes) setNotes(draft.data.notes);
+      if (draft.data.selectedDate) setSelectedDate(draft.data.selectedDate);
+      if (draft.data.selectedSlot) {
+        setSelectedSlot({
+          slotDate: draft.data.selectedSlot.slotDate || draft.data.selectedDate || lagosToday,
+          startTime: draft.data.selectedSlot.startTime,
+          endTime: draft.data.selectedSlot.endTime,
+          displayTime: draft.data.selectedSlot.displayTime,
+          displayEndTime: draft.data.selectedSlot.displayEndTime || draft.data.selectedSlot.endTime,
+          isAvailable: draft.data.selectedSlot.isAvailable ?? true,
+        });
+      }
+
+      setIsDraftRestored(true);
+      setHasSavedDraft(false);
+      setIsOfflineBlocked(false);
+      setTimeout(() => setIsDraftRestored(false), 4000);
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    clearFormDraft("request-demo");
+    setHasSavedDraft(false);
+    setDraftSavedAt(null);
+    setIsDraftRestored(false);
+    setIsOfflineBlocked(false);
+  };
+
+  const handleManualSaveDraft = () => {
+    const draftData = {
+      fullName,
+      workEmail,
+      company,
+      phone,
+      jobTitle,
+      interest,
+      deploymentType,
+      notes,
+      selectedDate,
+      selectedSlot: selectedSlot
+        ? {
+            slotDate: selectedSlot.slotDate,
+            startTime: selectedSlot.startTime,
+            endTime: selectedSlot.endTime,
+            displayTime: selectedSlot.displayTime,
+            displayEndTime: selectedSlot.displayEndTime,
+            isAvailable: selectedSlot.isAvailable,
+          }
+        : null,
+    };
+    const res = saveFormDraft("request-demo", draftData);
+    if (res.success) {
+      setDraftSavedAt(res.savedAt);
+      setIsDraftSavedFeedback(true);
+      setTimeout(() => setIsDraftSavedFeedback(false), 3000);
+    }
+  };
 
   useEffect(() => {
     setInterest(getInitialInterest());
@@ -182,6 +275,39 @@ export const RequestDemoPage: React.FC = () => {
         phone: true,
         preferredDate: true,
         preferredTime: true,
+      });
+      return;
+    }
+
+    // Phase 81.2: Offline submission interception
+    if (!isOnline) {
+      const draftData = {
+        fullName,
+        workEmail,
+        company,
+        phone,
+        jobTitle,
+        interest,
+        deploymentType,
+        notes,
+        selectedDate,
+        selectedSlot: selectedSlot
+          ? {
+              slotDate: selectedSlot.slotDate,
+              startTime: selectedSlot.startTime,
+              endTime: selectedSlot.endTime,
+              displayTime: selectedSlot.displayTime,
+              displayEndTime: selectedSlot.displayEndTime,
+              isAvailable: selectedSlot.isAvailable,
+            }
+          : null,
+      };
+      const res = saveFormDraft("request-demo", draftData);
+      setIsOfflineBlocked(true);
+      setDraftSavedAt(res.savedAt);
+      setErrors({
+        general:
+          "You are currently offline. Submission requires an active connection. Your inputs have been safely preserved locally on this device. Reconnect to submit.",
       });
       return;
     }
@@ -302,6 +428,12 @@ export const RequestDemoPage: React.FC = () => {
       });
     }
 
+    // Phase 81.2: Clear local draft on successful booking reservation
+    clearFormDraft("request-demo");
+    setHasSavedDraft(false);
+    setDraftSavedAt(null);
+    setIsOfflineBlocked(false);
+
     setIsSubmitting(false);
     setConfirmedBooking(bookingResult.booking || null);
   };
@@ -318,6 +450,8 @@ export const RequestDemoPage: React.FC = () => {
     setHoneypot("");
     setErrors({});
     setTouched({});
+    setIsOfflineBlocked(false);
+    setIsDraftRestored(false);
     loadSlotsForDate(lagosToday);
   };
 
@@ -506,6 +640,21 @@ export const RequestDemoPage: React.FC = () => {
                       Available Times — WAT
                     </span>
                   </div>
+
+                  {/* Phase 81.2: PWA Draft Notice */}
+                  <PWADraftNotice
+                    formKey="request-demo"
+                    hasDraft={hasSavedDraft}
+                    draftSavedAt={draftSavedAt}
+                    onRestore={handleRestoreDraft}
+                    onDiscard={handleDiscardDraft}
+                    isOfflineBlocked={isOfflineBlocked}
+                    isReconnected={reconnectedRecently}
+                    onSaveDraft={handleManualSaveDraft}
+                    isDraftRestored={isDraftRestored}
+                    isDraftSavedFeedback={isDraftSavedFeedback}
+                    onDismissBlockedNotice={() => setIsOfflineBlocked(false)}
+                  />
 
                   {rescheduleRef && (
                     <div className="p-3.5 rounded-xl bg-[#e57804]/10 border border-[#e57804]/30 flex items-start gap-3">
@@ -902,25 +1051,38 @@ export const RequestDemoPage: React.FC = () => {
                     </p>
                   </div>
 
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    type="submit"
-                    disabled={isSubmitting || !selectedSlot}
-                    className="w-full"
-                    data-analytics-id="demo-submit-cta"
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Reserving Walkthrough...
-                      </span>
-                    ) : selectedSlot ? (
-                      `Confirm & Reserve ${selectedSlot.displayTime} WAT`
-                    ) : (
-                      "Select a Time Slot to Reserve"
-                    )}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      type="submit"
+                      disabled={isSubmitting || !selectedSlot}
+                      className="w-full sm:flex-1"
+                      data-analytics-id="demo-submit-cta"
+                    >
+                      {isSubmitting ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Reserving Walkthrough...
+                        </span>
+                      ) : selectedSlot ? (
+                        `Confirm & Reserve ${selectedSlot.displayTime} WAT`
+                      ) : (
+                        "Select a Time Slot to Reserve"
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      onClick={handleManualSaveDraft}
+                      title="Save your progress locally without submitting"
+                      className="w-full sm:w-auto min-h-[44px] px-4 border-white/20 text-slate-300 hover:text-white hover:bg-white/10 shrink-0 text-xs"
+                    >
+                      <Save className="w-4 h-4 mr-1.5 text-[#e57804]" />
+                      Save Draft
+                    </Button>
+                  </div>
                 </form>
               )}
             </div>

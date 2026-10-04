@@ -14,6 +14,7 @@ import {
   Globe,
   AlertCircle,
   RefreshCw,
+  Save,
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { getContactPageSchema } from "@/config/seo";
@@ -21,6 +22,14 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/Button";
 import { COMPANY_CONTACT, SOCIAL_LINKS } from "@/data/social";
 import { cn } from "@/lib/utils";
+import { usePWA } from "@/context/PWAContext";
+import {
+  saveFormDraft,
+  loadFormDraft,
+  clearFormDraft,
+  isDraftEmpty,
+} from "@/lib/pwaDraftStorage";
+import { PWADraftNotice } from "@/components/pwa/PWADraftNotice";
 import {
   normalizeCommercialParams,
   getCommercialContextSummary,
@@ -115,6 +124,64 @@ export const ContactPage: React.FC = () => {
     contextSummary: string | null;
   } | null>(null);
 
+  // Phase 81.2: PWA Safe Offline Draft State
+  const { isOnline, reconnectedRecently } = usePWA();
+  const [hasSavedDraft, setHasSavedDraft] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [isOfflineBlocked, setIsOfflineBlocked] = useState(false);
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
+  const [isDraftSavedFeedback, setIsDraftSavedFeedback] = useState(false);
+
+  useEffect(() => {
+    const draft = loadFormDraft("contact");
+    if (draft && !isDraftEmpty("contact", draft.data)) {
+      setHasSavedDraft(true);
+      setDraftSavedAt(draft.savedAt);
+    }
+  }, []);
+
+  const handleRestoreDraft = () => {
+    const draft = loadFormDraft("contact");
+    if (draft) {
+      setFullName(draft.data.fullName);
+      setWorkEmail(draft.data.workEmail);
+      setCompany(draft.data.company);
+      setPhone(draft.data.phone);
+      if (draft.data.category) setCategory(draft.data.category);
+      setMessage(draft.data.message);
+
+      setIsDraftRestored(true);
+      setHasSavedDraft(false);
+      setIsOfflineBlocked(false);
+      setTimeout(() => setIsDraftRestored(false), 4000);
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    clearFormDraft("contact");
+    setHasSavedDraft(false);
+    setDraftSavedAt(null);
+    setIsDraftRestored(false);
+    setIsOfflineBlocked(false);
+  };
+
+  const handleManualSaveDraft = () => {
+    const draftData = {
+      fullName,
+      workEmail,
+      company,
+      phone,
+      category,
+      message,
+    };
+    const res = saveFormDraft("contact", draftData);
+    if (res.success) {
+      setDraftSavedAt(res.savedAt);
+      setIsDraftSavedFeedback(true);
+      setTimeout(() => setIsDraftSavedFeedback(false), 3000);
+    }
+  };
+
   useEffect(() => {
     setCategory(getInitialCategory());
   }, [
@@ -165,6 +232,26 @@ export const ContactPage: React.FC = () => {
       return;
     }
 
+    // Phase 81.2: Offline submission interception
+    if (!isOnline) {
+      const draftData = {
+        fullName,
+        workEmail,
+        company,
+        phone,
+        category,
+        message,
+      };
+      const res = saveFormDraft("contact", draftData);
+      setIsOfflineBlocked(true);
+      setDraftSavedAt(res.savedAt);
+      setErrors({
+        general:
+          "You are currently offline. Submission requires an active connection. Your inquiry has been safely preserved locally on this device. Reconnect to send.",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     setErrors({});
 
@@ -202,6 +289,12 @@ export const ContactPage: React.FC = () => {
     setIsSubmitting(false);
 
     if (result.success) {
+      // Phase 81.2: Clear local draft on confirmed submission
+      clearFormDraft("contact");
+      setHasSavedDraft(false);
+      setDraftSavedAt(null);
+      setIsOfflineBlocked(false);
+
       trackContactFormSubmit({ category, contextSummary });
       setSubmittedData({
         fullName: fullName.trim(),
@@ -229,6 +322,8 @@ export const ContactPage: React.FC = () => {
     setHoneypot("");
     setErrors({});
     setTouched({});
+    setIsOfflineBlocked(false);
+    setIsDraftRestored(false);
   };
 
   return (
@@ -405,6 +500,21 @@ export const ContactPage: React.FC = () => {
                       Executive Desk
                     </span>
                   </div>
+
+                  {/* Phase 81.2: PWA Draft Notice */}
+                  <PWADraftNotice
+                    formKey="contact"
+                    hasDraft={hasSavedDraft}
+                    draftSavedAt={draftSavedAt}
+                    onRestore={handleRestoreDraft}
+                    onDiscard={handleDiscardDraft}
+                    isOfflineBlocked={isOfflineBlocked}
+                    isReconnected={reconnectedRecently}
+                    onSaveDraft={handleManualSaveDraft}
+                    isDraftRestored={isDraftRestored}
+                    isDraftSavedFeedback={isDraftSavedFeedback}
+                    onDismissBlockedNotice={() => setIsOfflineBlocked(false)}
+                  />
 
                   {contextSummary && (
                     <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5">
@@ -642,23 +752,36 @@ export const ContactPage: React.FC = () => {
                     </p>
                   </div>
 
-                  <Button
-                    variant="primary"
-                    size="md"
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full"
-                    data-analytics-id="contact-submit-cta"
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Transmitting Inquiry...
-                      </span>
-                    ) : (
-                      "Submit Message"
-                    )}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <Button
+                      variant="primary"
+                      size="md"
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full sm:flex-1"
+                      data-analytics-id="contact-submit-cta"
+                    >
+                      {isSubmitting ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Transmitting Inquiry...
+                        </span>
+                      ) : (
+                        "Submit Message"
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="md"
+                      onClick={handleManualSaveDraft}
+                      title="Save your inquiry locally without transmitting"
+                      className="w-full sm:w-auto min-h-[44px] px-4 border-white/20 text-slate-300 hover:text-white hover:bg-white/10 shrink-0 text-xs"
+                    >
+                      <Save className="w-4 h-4 mr-1.5 text-[#e57804]" />
+                      Save Draft
+                    </Button>
+                  </div>
                 </form>
               )}
             </div>

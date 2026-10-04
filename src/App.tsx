@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { AuthProvider } from "@/context/AuthContext";
 import { MaintenanceProvider } from "@/context/MaintenanceContext";
+import { PWAProvider } from "@/context/PWAContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
@@ -55,7 +56,8 @@ export const App: React.FC = () => {
         <AnalyticsTracker />
         <AuthProvider>
           <MaintenanceProvider>
-          <Layout>
+            <PWAProvider>
+              <Layout>
             <Suspense fallback={<PageSkeleton />}>
               <Routes>
               <Route path="/" element={<HomePage />} />
@@ -212,8 +214,9 @@ export const App: React.FC = () => {
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
-        </Layout>
-        </MaintenanceProvider>
+              </Layout>
+            </PWAProvider>
+          </MaintenanceProvider>
       </AuthProvider>
       </ErrorBoundary>
     </BrowserRouter>

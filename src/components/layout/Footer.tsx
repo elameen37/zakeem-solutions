@@ -7,6 +7,7 @@ import { FOOTER_NAVIGATION } from "@/data/navigation";
 import { SOCIAL_LINKS, COMPANY_CONTACT } from "@/data/social";
 import { Button } from "@/components/ui/Button";
 import { openCookiePreferences } from "@/lib/cookieConsent";
+import { PWAInstallButton } from "@/components/pwa/PWAInstallButton";
 import { cn } from "@/lib/utils";
 
 const XIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -240,6 +241,7 @@ export const Footer: React.FC = () => {
             >
               Cookie Preferences
             </button>
+            <PWAInstallButton />
           </div>
         </div>
       </div>

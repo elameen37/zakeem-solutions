@@ -16,6 +16,9 @@ const ZakkyAIChatWidget = React.lazy(() =>
 import { useMaintenance } from "@/context/MaintenanceContext";
 import { AdminMaintenanceBanner } from "@/components/maintenance/AdminMaintenanceBanner";
 import { MaintenancePage } from "@/components/maintenance/MaintenancePage";
+import { PWAUpdateToast } from "@/components/pwa/PWAUpdateToast";
+import { PWAOfflineIndicator } from "@/components/pwa/PWAOfflineIndicator";
+import { PWAInstallModal } from "@/components/pwa/PWAInstallModal";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -42,6 +45,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] selection:bg-[#e57804] selection:text-white transition-colors duration-200">
+      <PWAOfflineIndicator />
       <AdminMaintenanceBanner />
       <Navbar />
       <main className="flex-1 pt-24 md:pt-28 pb-20 md:pb-0">{children}</main>
@@ -54,6 +58,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </React.Suspense>
       <FontSizeControl />
       <CookieConsentBanner />
+      <PWAUpdateToast />
+      <PWAInstallModal />
     </div>
   );
 };

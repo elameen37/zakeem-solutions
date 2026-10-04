@@ -1,0 +1,76 @@
+{
+  "name": "Zakeem Solutions",
+  "short_name": "Zakeem",
+  "description": "Enterprise software engineering, AI automation, Zakeem Realty ERP, and mission-critical digital infrastructure.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#040e1d",
+  "theme_color": "#040e1d",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "IT Training Academy",
+      "short_name": "IT Training",
+      "description": "Explore cohorts and live online technical curriculum",
+      "url": "/it-training",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Request Demo",
+      "short_name": "Demo",
+      "description": "Schedule a confidential enterprise solution demo",
+      "url": "/request-demo",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Apply for Training",
+      "short_name": "Admissions",
+      "description": "Online application for Zakeem IT Training programmes",
+      "url": "/training",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

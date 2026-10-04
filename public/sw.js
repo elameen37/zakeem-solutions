@@ -67,23 +67,30 @@ function isSecurityExcluded(request, url) {
     return true;
   }
 
-  // Supabase Backend / Database / Auth / Storage / Functions
+  // Supabase Backend / Database / Auth / Storage / Functions / RPC / API endpoints
   if (
     url.hostname.includes("supabase.co") ||
     url.pathname.includes("/auth/") ||
     url.pathname.includes("/rest/") ||
     url.pathname.includes("/functions/") ||
-    url.pathname.includes("/storage/")
+    url.pathname.includes("/storage/") ||
+    url.pathname.includes("/rpc/") ||
+    url.pathname.startsWith("/api/")
   ) {
     return true;
   }
 
-  // Authorization headers check
-  if (request.headers.has("authorization") || request.headers.has("apikey")) {
+  // Authorization and authentication headers check
+  if (
+    request.headers.has("authorization") ||
+    request.headers.has("apikey") ||
+    request.headers.has("x-api-key") ||
+    request.headers.has("x-supabase-auth")
+  ) {
     return true;
   }
 
-  // Sensitive URL parameters
+  // Sensitive URL parameters that must NEVER enter Cache Storage
   const search = url.search.toLowerCase();
   if (
     search.includes("token=") ||
@@ -91,8 +98,16 @@ function isSecurityExcluded(request, url) {
     search.includes("refresh_token=") ||
     search.includes("secret=") ||
     search.includes("api_key=") ||
+    search.includes("apikey=") ||
+    search.includes("password=") ||
+    search.includes("pwd=") ||
+    search.includes("authorization=") ||
+    search.includes("session=") ||
+    search.includes("session_token=") ||
     search.includes("code=") ||
-    search.includes("state=")
+    search.includes("state=") ||
+    search.includes("email=") ||
+    search.includes("ref=")
   ) {
     return true;
   }
@@ -195,12 +210,18 @@ self.addEventListener("fetch", (event) => {
     return; // Browser executes standard fetch
   }
 
+  const isSameOrigin = url.origin === self.location.origin;
+  const isApprovedThirdParty =
+    url.hostname === "fonts.googleapis.com" ||
+    url.hostname === "fonts.gstatic.com";
+
   // 2. Navigation Requests: Network First with Cached Page -> App Shell -> Offline Fallback
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
         .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
+          // Strictly only cache successful same-origin navigation responses
+          if (isSameOrigin && networkResponse && networkResponse.status === 200) {
             const copy = networkResponse.clone();
             caches.open(CACHE_PUBLIC_PAGES).then((cache) => {
               cache.put(request, copy);
@@ -236,11 +257,11 @@ self.addEventListener("fetch", (event) => {
 
   // 3. Static Assets: Cache First with Background Revalidation
   const isStaticAsset =
-    url.pathname.startsWith("/assets/") ||
-    url.pathname.startsWith("/icons/") ||
-    url.pathname.startsWith("/favicon.") ||
-    url.hostname === "fonts.googleapis.com" ||
-    url.hostname === "fonts.gstatic.com";
+    (isSameOrigin &&
+      (url.pathname.startsWith("/assets/") ||
+       url.pathname.startsWith("/icons/") ||
+       url.pathname.startsWith("/favicon."))) ||
+    isApprovedThirdParty;
 
   if (isStaticAsset) {
     event.respondWith(

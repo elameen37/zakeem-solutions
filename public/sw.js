@@ -15,7 +15,7 @@
  * - Sensitive query parameters (tokens, keys, secrets)
  */
 
-const SW_VERSION = "zakeem-pwa-v1.1.0";
+const SW_VERSION = "zakeem-pwa-v1.3.0";
 const CACHE_APP_SHELL = `${SW_VERSION}-shell`;
 const CACHE_STATIC_ASSETS = `${SW_VERSION}-static`;
 const CACHE_PUBLIC_PAGES = `${SW_VERSION}-pages`;
@@ -33,6 +33,7 @@ const PRECACHE_ASSETS = [
   "/request-demo",
   "/contact",
   "/manifest.webmanifest",
+  "/manifest.json",
   "/favicon.svg",
   "/favicon.png",
   "/icons/icon-192x192.png",

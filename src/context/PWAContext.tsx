@@ -14,6 +14,7 @@ interface PWAContextType {
   isReconnecting: boolean;
   reconnectedRecently: boolean;
   hasUpdate: boolean;
+  isUpdating: boolean;
   canInstall: boolean;
   isInstalled: boolean;
   isIOS: boolean;
@@ -33,12 +34,24 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
   const [isReconnecting, setIsReconnecting] = useState<boolean>(false);
   const [reconnectedRecently, setReconnectedRecently] = useState<boolean>(false);
-  const [hasUpdate, setHasUpdate] = useState<boolean>(false);
+  const [hasUpdateRaw, setHasUpdateRaw] = useState<boolean>(false);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [updateDismissed, setUpdateDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return sessionStorage.getItem("zakeem:pwa:update_dismissed_session") === "true";
+    } catch {
+      return false;
+    }
+  });
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState<boolean>(false);
   const [isIOS, setIsIOS] = useState<boolean>(false);
   const [showIOSInstallGuide, setShowIOSInstallGuide] = useState<boolean>(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+
+  // Suppress update prompt when offline or dismissed in the active session
+  const hasUpdate = hasUpdateRaw && !updateDismissed && isOnline;
 
   // 1. Online / Offline Status
   useEffect(() => {
@@ -128,6 +141,8 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
 
+    let updateInterval: ReturnType<typeof setInterval> | undefined;
+
     // Register service worker after page load to not compete with critical resources
     const registerSW = () => {
       navigator.serviceWorker
@@ -136,7 +151,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           // If a worker is already waiting, an update is ready
           if (registration.waiting) {
             setWaitingWorker(registration.waiting);
-            setHasUpdate(true);
+            setHasUpdateRaw(true);
           }
 
           // Detect new worker being discovered
@@ -147,26 +162,43 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             installing.addEventListener("statechange", () => {
               if (installing.state === "installed" && navigator.serviceWorker.controller) {
                 setWaitingWorker(installing);
-                setHasUpdate(true);
+                setHasUpdateRaw(true);
               }
             });
           });
 
-          // Check for service worker updates periodically (e.g., hourly)
-          setInterval(() => {
-            registration.update().catch(() => {});
+          // Check for service worker updates periodically (e.g., hourly) when online
+          updateInterval = setInterval(() => {
+            if (navigator.onLine) {
+              registration.update().catch(() => {});
+            }
           }, 60 * 60 * 1000);
         })
         .catch((err) => {
           console.warn("[PWA] Service worker registration error:", err);
         });
 
-      // Reload smoothly when new worker takes over
+      // Reload smoothly when new worker takes over with loop prevention
       let refreshing = false;
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (!refreshing) {
           refreshing = true;
-          window.location.reload();
+          const lastReload = (() => {
+            try {
+              return parseInt(sessionStorage.getItem("zakeem:pwa:last_sw_reload") || "0", 10);
+            } catch {
+              return 0;
+            }
+          })();
+          const now = Date.now();
+          if (now - lastReload > 5000) {
+            try {
+              sessionStorage.setItem("zakeem:pwa:last_sw_reload", String(now));
+            } catch {}
+            window.location.reload();
+          } else {
+            console.warn("[PWA] Controllerchange reload suppressed to prevent reload loop.");
+          }
         }
       });
     };
@@ -175,21 +207,40 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       registerSW();
     } else {
       window.addEventListener("load", registerSW);
-      return () => window.removeEventListener("load", registerSW);
     }
+
+    return () => {
+      window.removeEventListener("load", registerSW);
+      if (updateInterval) clearInterval(updateInterval);
+    };
   }, []);
 
   // 5. Update Application Trigger
   const updateApp = useCallback(() => {
+    if (!isOnline) return;
+    setIsUpdating(true);
     if (waitingWorker) {
       waitingWorker.postMessage({ type: "SKIP_WAITING" });
+      // Safety fallback: If controllerchange does not fire within 3.5s, trigger reload
+      setTimeout(() => {
+        try {
+          sessionStorage.setItem("zakeem:pwa:last_sw_reload", String(Date.now()));
+        } catch {}
+        window.location.reload();
+      }, 3500);
     } else {
+      try {
+        sessionStorage.setItem("zakeem:pwa:last_sw_reload", String(Date.now()));
+      } catch {}
       window.location.reload();
     }
-  }, [waitingWorker]);
+  }, [waitingWorker, isOnline]);
 
   const dismissUpdate = useCallback(() => {
-    setHasUpdate(false);
+    setUpdateDismissed(true);
+    try {
+      sessionStorage.setItem("zakeem:pwa:update_dismissed_session", "true");
+    } catch {}
   }, []);
 
   // 6. Manual Reconnection Check (Zero destructive reload)
@@ -239,6 +290,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isReconnecting,
         reconnectedRecently,
         hasUpdate,
+        isUpdating,
         canInstall,
         isInstalled,
         isIOS,

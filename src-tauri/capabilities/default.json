@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.tauri.app/config/2/capability",
+  "identifier": "default-capability",
+  "description": "Least-privilege capability configuration for Zakeem Solutions native shell",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-set-title",
+    "core:window:allow-center",
+    "core:window:allow-set-size",
+    "core:event:default",
+    "core:path:default",
+    "core:webview:allow-set-zoom"
+  ]
+}

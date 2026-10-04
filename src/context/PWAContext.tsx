@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { isNativeApp } from "../lib/nativeBridge";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -17,6 +18,7 @@ interface PWAContextType {
   isUpdating: boolean;
   canInstall: boolean;
   isInstalled: boolean;
+  isNative: boolean;
   isIOS: boolean;
   showIOSInstallGuide: boolean;
   setShowIOSInstallGuide: (show: boolean) => void;
@@ -29,6 +31,7 @@ interface PWAContextType {
 const PWAContext = createContext<PWAContextType | undefined>(undefined);
 
 export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isNative = isNativeApp();
   const [isOnline, setIsOnline] = useState<boolean>(() =>
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
@@ -45,7 +48,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState<boolean>(false);
+  const [isInstalled, setIsInstalled] = useState<boolean>(isNative);
   const [isIOS, setIsIOS] = useState<boolean>(false);
   const [showIOSInstallGuide, setShowIOSInstallGuide] = useState<boolean>(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
@@ -87,36 +90,37 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Detect standalone mode (already installed)
+    // Detect standalone mode (already installed) or native wrapper
     const isStandaloneMode =
+      isNative ||
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
       document.referrer.includes("android-app://");
 
     setIsInstalled(isStandaloneMode);
 
-    // Detect iOS / iPadOS
+    // Detect iOS / iPadOS browser (only when NOT in native wrapper and NOT already installed)
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isAppleDevice =
       /iphone|ipad|ipod/.test(userAgent) ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
-    setIsIOS(isAppleDevice && !isStandaloneMode);
+    setIsIOS(!isNative && isAppleDevice && !isStandaloneMode);
 
     const displayModeQuery = window.matchMedia("(display-mode: standalone)");
     const handleDisplayModeChange = (e: MediaQueryListEvent) => {
-      setIsInstalled(e.matches);
+      setIsInstalled(isNative || e.matches);
     };
 
     displayModeQuery.addEventListener?.("change", handleDisplayModeChange);
     return () => {
       displayModeQuery.removeEventListener?.("change", handleDisplayModeChange);
     };
-  }, []);
+  }, [isNative]);
 
   // 3. BeforeInstallPrompt Capture (Chromium / Android / Desktop)
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || isNative) return;
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -135,11 +139,11 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
-  }, []);
+  }, [isNative]);
 
   // 4. Service Worker Registration & Update Detection
   useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    if (isNative || typeof window === "undefined" || !("serviceWorker" in navigator)) return;
 
     let updateInterval: ReturnType<typeof setInterval> | undefined;
 
@@ -269,6 +273,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 7. Install Trigger (Native or iOS modal guide)
   const promptInstall = useCallback(async () => {
+    if (isNative) return;
     if (deferredPrompt) {
       await deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
@@ -279,9 +284,9 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } else if (isIOS) {
       setShowIOSInstallGuide(true);
     }
-  }, [deferredPrompt, isIOS]);
+  }, [deferredPrompt, isIOS, isNative]);
 
-  const canInstall = Boolean(deferredPrompt) || (isIOS && !isInstalled);
+  const canInstall = !isNative && (Boolean(deferredPrompt) || (isIOS && !isInstalled));
 
   return (
     <PWAContext.Provider
@@ -293,6 +298,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isUpdating,
         canInstall,
         isInstalled,
+        isNative,
         isIOS,
         showIOSInstallGuide,
         setShowIOSInstallGuide,

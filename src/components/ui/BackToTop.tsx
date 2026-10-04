@@ -43,7 +43,7 @@ export const BackToTop: React.FC = () => {
   return (
     <div
       className={cn(
-        "fixed bottom-20 left-4 sm:left-6 z-40 md:hidden transition-all duration-300",
+        "fixed bottom-20 left-4 sm:left-6 md:bottom-8 md:left-8 z-40 transition-all duration-300",
         isVisible
           ? "opacity-100 translate-y-0 pointer-events-auto"
           : "opacity-0 translate-y-6 pointer-events-none"

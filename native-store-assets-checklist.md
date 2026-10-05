@@ -100,15 +100,44 @@ This document serves as the operational gate for marketing, design, and release 
 
 ---
 
-## 7. Action Plan Summary for Media & Creative Teams
+---
+
+## 7. Deterministic Store Screenshot Plan & Specifications
+
+The following table provides the exact capture instructions for marketing and creative teams. In accordance with release integrity guidelines, screenshots are **NOT fabricated** and must be captured from verified running environments.
+
+| Screen Category | Target Platform | Required Dimensions | Exact Route | Required State / Conditions | Capture Instructions & Visual Focus | Current Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :---: |
+| **1. Homepage / Executive Experience** | Android Phone, iPhone 6.7", Desktop | 1080x2400 (Android)<br>1290x2796 (iOS)<br>1920x1080 (Desktop) | `/` | Default loaded state, light/dark hero view | Capture hero section with headline "Enterprise Software, AI & Digital Infrastructure", primary CTA buttons, and Trust Metrics badges. | `NEEDS ASSET` |
+| **2. Services / Enterprise Solutions** | Android Phone, iPhone 6.7", Desktop | 1080x2400 (Android)<br>1290x2796 (iOS)<br>1920x1080 (Desktop) | `/services` | Scrolled to Enterprise Solutions section | Showcase service cards (Custom Software Engineering, Zakeem Realty ERP, AI Automation, Cloud Infrastructure) with amber accent lighting. | `NEEDS ASSET` |
+| **3. IT Training Academy** | Android Phone, iPhone 6.7", Desktop | 1080x2400 (Android)<br>1290x2796 (iOS)<br>1920x1080 (Desktop) | `/it-training` | Course catalog view | Display IT Training tracks (Full-Stack, Cloud DevOps, AI Engineering) with syllabus cards, pricing badges, and enrollment CTAs. | `NEEDS ASSET` |
+| **4. Training Application** | Android Phone, iPhone 6.7", Desktop | 1080x2400 (Android)<br>1290x2796 (iOS)<br>1920x1080 (Desktop) | `/training` | Blank application form or pre-filled sample | Capture clean multi-step admissions form showing personal info, track selection, scholarship options, and draft protection notice. | `NEEDS ASSET` |
+| **5. Training Application Status** | Android Phone, iPhone 6.7", Desktop | 1080x2400 (Android)<br>1290x2796 (iOS)<br>1920x1080 (Desktop) | `/training/status` | Inquiry form view with reference code inputs | Capture status lookup interface showing reference code verification and confidential records protection badge. | `NEEDS ASSET` |
+| **6. Client Portal / Authenticated Experience** | Android Phone, iPhone 6.7", Desktop | 1080x2400 (Android)<br>1290x2796 (iOS)<br>1920x1080 (Desktop) | `/portal` | Authenticated client session or demo dashboard | Showcase client milestones dashboard, project deliverables, invoice status, and engineering collaboration feed. | `NEEDS ASSET` |
+
+### Google Play Feature Graphic Specification
+- **Dimensions:** 1024 x 500 px (Landscape)
+- **Format:** PNG or JPEG (no transparency)
+- **Maximum File Size:** 15 MB
+- **Visual Composition:** Deep Architectural Navy background (`#040e1d` / `#06152b`), amber glow accents (`#e57804`), official Zakeem Solutions logo centered or left-aligned, and typography: *"Enterprise Digital Solutions & IT Training"*.
+- **Status:** `NEEDS ASSET`
+
+### Apple Promotional & App Preview Specification
+- **App Store Subtitle:** *"Enterprise Digital Solutions"* (30 characters max, verified in `native-store-metadata.md`).
+- **Promotional Text:** *"Streamline your enterprise operations with Zakeem Solutions. Access business software, AI automation, client portals, scheduling, and IT training in one unified platform."* (170 characters max).
+- **App Preview Video (Optional):** 30-second walkthrough of real application navigation across services, training, and client portal.
+- **Status:** `READY FOR CAPTURE`
+
+---
+
+## 8. Action Plan Summary for Media & Creative Teams
 
 To transition all items marked `NEEDS ASSET` to `READY`:
-1. **Produce 6 High-Fidelity App Screenshots:**
-   - Screen 1: Executive Homepage & Enterprise Solutions overview.
-   - Screen 2: Zakeem Realty ERP Showcase & architectural capabilities.
-   - Screen 3: ZakkyAI conversational assistant in action.
-   - Screen 4: IT Training & Academy curriculum view.
-   - Screen 5: Client Portal authentication and project tracking.
-   - Screen 6: Light / Dark theme ergonomics and responsive UI.
+1. **Execute Screenshot Capture Workflow:**
+   - Launch application on test devices or simulators (Pixel 8 Pro, iPhone 15 Pro Max, 1080p Desktop).
+   - Navigate to each of the 6 exact routes listed above in both Light and Dark themes.
+   - Capture clean uncompressed PNGs at native device resolution.
 2. **Produce Google Play Feature Graphic (1024 x 500 px):**
    - Brand Navy background (`#030e21` / `#020817`), orange accent lighting (`#e57804`), Zakeem Solutions logo, and headline: "Enterprise Solutions & Digital Infrastructure".
+3. **Commit Assets to Repository:**
+   - Save production screenshots to `resources/store/android/` and `resources/store/ios/`.

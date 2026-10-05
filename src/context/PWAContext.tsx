@@ -26,6 +26,8 @@ interface PWAContextType {
   dismissUpdate: () => void;
   promptInstall: () => Promise<void>;
   checkConnection: () => Promise<boolean>;
+  installDismissed: boolean;
+  dismissInstallInvitation: () => void;
 }
 
 const PWAContext = createContext<PWAContextType | undefined>(undefined);
@@ -43,6 +45,16 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (typeof window === "undefined") return false;
     try {
       return sessionStorage.getItem("zakeem:pwa:update_dismissed_session") === "true";
+    } catch {
+      return false;
+    }
+  });
+  const [installDismissed, setInstallDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const sessionDismissed = sessionStorage.getItem("zakeem:pwa:install_dismissed_session") === "true";
+      const localUntil = parseInt(localStorage.getItem("zakeem:pwa:install_dismissed_until") || "0", 10);
+      return sessionDismissed || (localUntil > Date.now());
     } catch {
       return false;
     }
@@ -286,6 +298,15 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [deferredPrompt, isIOS, isNative]);
 
+  const dismissInstallInvitation = useCallback(() => {
+    setInstallDismissed(true);
+    try {
+      sessionStorage.setItem("zakeem:pwa:install_dismissed_session", "true");
+      // 7-day cooldown
+      localStorage.setItem("zakeem:pwa:install_dismissed_until", String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    } catch {}
+  }, []);
+
   const canInstall = !isNative && (Boolean(deferredPrompt) || (isIOS && !isInstalled));
 
   return (
@@ -306,6 +327,8 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dismissUpdate,
         promptInstall,
         checkConnection,
+        installDismissed,
+        dismissInstallInvitation,
       }}
     >
       {children}

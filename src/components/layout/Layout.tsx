@@ -21,6 +21,7 @@ import { MaintenancePage } from "@/components/maintenance/MaintenancePage";
 import { PWAUpdateToast } from "@/components/pwa/PWAUpdateToast";
 import { PWAOfflineIndicator } from "@/components/pwa/PWAOfflineIndicator";
 import { PWAInstallModal } from "@/components/pwa/PWAInstallModal";
+import { PWAInstallInvitation } from "@/components/pwa/PWAInstallInvitation";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -71,6 +72,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <CookieConsentBanner />
       <PWAUpdateToast />
       <PWAInstallModal />
+      <PWAInstallInvitation />
     </div>
   );
 };

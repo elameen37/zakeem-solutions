@@ -1,0 +1,25 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "CONFIGURATION_REQUIRED_PENDING_APPLE_TEAM_ID.com.zakeemsolutions.app",
+        "paths": [
+          "/services*",
+          "/products*",
+          "/request-demo*",
+          "/it-training*",
+          "/training*",
+          "/contact*",
+          "/portal*",
+          "/admin*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "CONFIGURATION_REQUIRED_PENDING_APPLE_TEAM_ID.com.zakeemsolutions.app"
+    ]
+  }
+}

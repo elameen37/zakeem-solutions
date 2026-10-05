@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { isNativeApp } from "../lib/nativeBridge";
+import { resolvePWAUpdateNotes, type PWAUpdateRelease } from "../lib/pwaUpdateNotes";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -28,6 +29,8 @@ interface PWAContextType {
   checkConnection: () => Promise<boolean>;
   installDismissed: boolean;
   dismissInstallInvitation: () => void;
+  updateRelease: PWAUpdateRelease;
+  detectedVersion: string | null;
 }
 
 const PWAContext = createContext<PWAContextType | undefined>(undefined);
@@ -64,6 +67,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isIOS, setIsIOS] = useState<boolean>(false);
   const [showIOSInstallGuide, setShowIOSInstallGuide] = useState<boolean>(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+  const [detectedVersion, setDetectedVersion] = useState<string | null>(null);
 
   // Suppress update prompt when offline or dismissed in the active session
   const hasUpdate = hasUpdateRaw && !updateDismissed && isOnline;
@@ -159,6 +163,21 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     let updateInterval: ReturnType<typeof setInterval> | undefined;
 
+    const queryWorkerVersion = (worker: ServiceWorker | null) => {
+      if (!worker) return;
+      try {
+        const channel = new MessageChannel();
+        channel.port1.onmessage = (event) => {
+          if (event.data?.version && typeof event.data.version === "string") {
+            setDetectedVersion(event.data.version);
+          }
+        };
+        worker.postMessage({ type: "GET_VERSION" }, [channel.port2]);
+      } catch {
+        // Fallback silently if MessageChannel is unsupported
+      }
+    };
+
     // Register service worker after page load to not compete with critical resources
     const registerSW = () => {
       navigator.serviceWorker
@@ -168,6 +187,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (registration.waiting) {
             setWaitingWorker(registration.waiting);
             setHasUpdateRaw(true);
+            queryWorkerVersion(registration.waiting);
           }
 
           // Detect new worker being discovered
@@ -179,6 +199,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               if (installing.state === "installed" && navigator.serviceWorker.controller) {
                 setWaitingWorker(installing);
                 setHasUpdateRaw(true);
+                queryWorkerVersion(installing);
               }
             });
           });
@@ -230,6 +251,19 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (updateInterval) clearInterval(updateInterval);
     };
   }, []);
+
+  useEffect(() => {
+    if (!waitingWorker) return;
+    try {
+      const channel = new MessageChannel();
+      channel.port1.onmessage = (event) => {
+        if (event.data?.version && typeof event.data.version === "string") {
+          setDetectedVersion(event.data.version);
+        }
+      };
+      waitingWorker.postMessage({ type: "GET_VERSION" }, [channel.port2]);
+    } catch {}
+  }, [waitingWorker]);
 
   // 5. Update Application Trigger
   const updateApp = useCallback(() => {
@@ -308,6 +342,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const canInstall = !isNative && (Boolean(deferredPrompt) || (isIOS && !isInstalled));
+  const updateRelease = resolvePWAUpdateNotes(detectedVersion);
 
   return (
     <PWAContext.Provider
@@ -329,6 +364,8 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         checkConnection,
         installDismissed,
         dismissInstallInvitation,
+        updateRelease,
+        detectedVersion,
       }}
     >
       {children}

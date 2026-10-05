@@ -190,11 +190,16 @@ self.addEventListener("activate", (event) => {
 });
 
 // =============================================================================
-// LIFECYCLE: MESSAGE (SKIP WAITING UPDATE HOOK)
+// LIFECYCLE: MESSAGE (SKIP WAITING UPDATE HOOK & VERSION QUERY)
 // =============================================================================
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
+  }
+  if (event.data && event.data.type === "GET_VERSION") {
+    if (event.ports && event.ports[0]) {
+      event.ports[0].postMessage({ version: SW_VERSION });
+    }
   }
 });
 

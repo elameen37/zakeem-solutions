@@ -62,7 +62,7 @@ export const Footer: React.FC = () => {
             <Link to="/" className="inline-block group">
               <div className="bg-white p-2.5 px-4 rounded-xl border border-white/20 shadow-lg shadow-black/40 inline-flex items-center group-hover:shadow-[#e57804]/25 group-hover:border-[#e57804]/50 transition-all">
                 <img
-                  src="/assets/logos/footer-logo.png"
+                  src="/assets/logos/footer-logo.png?v=2"
                   alt="Zakeem Solutions"
                   width={180}
                   height={48}

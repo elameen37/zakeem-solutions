@@ -272,8 +272,9 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
         if (cachedResponse) {
-          // Revalidate in background for non-hashed resources
-          if (!url.pathname.includes("-") && !url.pathname.startsWith("/assets/")) {
+          // Revalidate in background for non-hashed resources and static logos
+          const isHashedAsset = url.pathname.includes("-") && !url.pathname.startsWith("/assets/logos/");
+          if (!isHashedAsset) {
             fetch(request)
               .then((fresh) => {
                 if (fresh && fresh.status === 200) {

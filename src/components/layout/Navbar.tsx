@@ -258,7 +258,7 @@ export const Navbar: React.FC = () => {
           <Link to="/" className="flex items-center group py-0.5">
             <div className="relative h-8 md:h-9 w-auto flex items-center">
               <img
-                src={isDark ? "/assets/logos/logo-white.png" : "/assets/logos/logo-color.png"}
+                src={isDark ? "/assets/logos/logo-white.png?v=3" : "/assets/logos/logo-color.png?v=3"}
                 alt="Zakeem Solutions"
                 width={180}
                 height={36}

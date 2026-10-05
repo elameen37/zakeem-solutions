@@ -957,7 +957,7 @@ export const TrainingPage: React.FC = () => {
         <div className="border-b-2 border-slate-900 pb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
-              src="/assets/logos/logo-color.png"
+              src="/assets/logos/logo-color.png?v=2"
               alt="Zakeem Solutions"
               width={103}
               height={48}

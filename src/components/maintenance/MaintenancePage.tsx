@@ -37,7 +37,7 @@ export const MaintenancePage: React.FC = () => {
         <Link to="/" className="flex items-center group">
           <div className="relative h-9 w-auto flex items-center">
             <img
-              src={isDark ? "/assets/logos/logo-white.png" : "/assets/logos/logo-color.png"}
+              src={isDark ? "/assets/logos/logo-white.png?v=2" : "/assets/logos/logo-color.png?v=2"}
               alt="Zakeem Solutions"
               width={180}
               height={36}

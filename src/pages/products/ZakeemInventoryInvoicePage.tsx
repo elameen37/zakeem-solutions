@@ -386,7 +386,7 @@ export const ZakeemInventoryInvoicePage: React.FC = () => {
       />
 
       {/* Hero Section */}
-      <section className="relative pt-12 pb-16 md:pt-20 md:pb-24 overflow-hidden border-b border-white/10">
+      <section className="relative pt-12 pb-16 md:pt-20 md:pb-24 overflow-hidden border-b border-slate-200 dark:border-white/10">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[720px] h-[360px] bg-[#e57804]/12 rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute -top-24 right-1/4 w-[400px] h-[300px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
 
@@ -399,7 +399,7 @@ export const ZakeemInventoryInvoicePage: React.FC = () => {
                 <span>Commercial Platform</span>
               </Badge>
               <Badge variant="neutral">Release 1.0 Enterprise</Badge>
-              <Badge variant="neutral" className="border-amber-500/30 text-amber-300 bg-amber-500/10">
+              <Badge variant="neutral" className="border-amber-500/30 text-amber-700 dark:text-amber-300 bg-amber-500/10">
                 Designed for Modern Nigerian Businesses
               </Badge>
             </div>
@@ -436,29 +436,29 @@ export const ZakeemInventoryInvoicePage: React.FC = () => {
                 size="lg"
                 href="/contact?product=inventory-invoice"
                 data-analytics-id="inventory-hero-contact-cta"
-                className="min-h-[48px] px-6 text-sm md:text-base font-medium bg-white/10 hover:bg-white/15 text-white border-white/15"
+                className="min-h-[48px] px-6 text-sm md:text-base font-medium bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-300 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white dark:border-white/15"
               >
                 Talk to Engineering
               </Button>
             </div>
 
             {/* Core Capability Highlights */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-white/10">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-slate-200 dark:border-white/10">
               <div>
-                <div className="text-base sm:text-lg font-bold font-mono text-white">Perpetual</div>
-                <div className="text-xs text-slate-400 mt-0.5">Stock Tracking Architecture</div>
+                <div className="text-base sm:text-lg font-bold font-mono text-slate-950 dark:text-white">Perpetual</div>
+                <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Stock Tracking Architecture</div>
               </div>
               <div>
                 <div className="text-base sm:text-lg font-bold font-mono text-[#e57804]">Streamlined</div>
-                <div className="text-xs text-slate-400 mt-0.5">Professional Invoicing</div>
+                <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Professional Invoicing</div>
               </div>
               <div>
-                <div className="text-base sm:text-lg font-bold font-mono text-emerald-400">Configurable</div>
-                <div className="text-xs text-slate-400 mt-0.5">Tax &amp; VAT Fields</div>
+                <div className="text-base sm:text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400">Configurable</div>
+                <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Tax &amp; VAT Fields</div>
               </div>
               <div>
-                <div className="text-base sm:text-lg font-bold font-mono text-sky-400">Multi-Node</div>
-                <div className="text-xs text-slate-400 mt-0.5">Multi-Branch Readiness</div>
+                <div className="text-base sm:text-lg font-bold font-mono text-sky-600 dark:text-sky-400">Multi-Node</div>
+                <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Multi-Branch Readiness</div>
               </div>
             </div>
           </div>
@@ -844,7 +844,7 @@ export const ZakeemInventoryInvoicePage: React.FC = () => {
       </section>
 
       {/* 8 Core Capabilities Section */}
-      <section className="py-16 md:py-24 border-b border-white/10">
+      <section className="py-16 md:py-24 border-b border-slate-200 dark:border-white/10">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <SectionHeader
             badge="Architecture &amp; Features"
@@ -984,18 +984,18 @@ export const ZakeemInventoryInvoicePage: React.FC = () => {
       </section>
 
       {/* Nigeria-First Commercial Readiness Section */}
-      <section className="py-16 md:py-24 border-b border-white/10 relative overflow-hidden">
+      <section className="py-16 md:py-24 border-b border-slate-200 dark:border-white/10 relative overflow-hidden">
         <div className="absolute -bottom-20 -left-20 w-[450px] h-[350px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none" />
 
         <div className="container mx-auto px-4 md:px-6 max-w-7xl relative z-10">
           <div className="max-w-3xl mb-12">
-            <Badge variant="neutral" className="mb-3 text-emerald-300 border-emerald-500/20 bg-emerald-500/10">
+            <Badge variant="neutral" className="mb-3 text-emerald-700 dark:text-emerald-300 border-emerald-500/20 bg-emerald-500/10">
               Commercial Localization
             </Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-950 dark:text-white tracking-tight">
               Designed for Modern Nigerian Businesses.
             </h2>
-            <p className="text-sm sm:text-base text-slate-300 mt-4 leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 mt-4 leading-relaxed">
               Standard generic inventory software fails when exposed to Nigerian trade realities: erratic connectivity,
               commercial tax calculations, multi-branch store-to-warehouse transfers across Lagos, Abuja, Port Harcourt,
               and cash-to-bank settlements. Zakeem Inventory and Invoice is architected specifically for local market
@@ -1070,7 +1070,7 @@ export const ZakeemInventoryInvoicePage: React.FC = () => {
       </section>
 
       {/* 5 Business Value Pillars */}
-      <section className="py-16 md:py-24 border-b border-white/10">
+      <section className="py-16 md:py-24 border-b border-slate-200 dark:border-white/10">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <SectionHeader
             badge="Business Outcomes"
@@ -1164,7 +1164,7 @@ export const ZakeemInventoryInvoicePage: React.FC = () => {
       </section>
 
       {/* Conceptual AI Roadmap Section */}
-      <section className="py-16 md:py-24 border-b border-white/10 relative">
+      <section className="py-16 md:py-24 border-b border-slate-200 dark:border-white/10 relative">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <div className="p-6 sm:p-10 rounded-2xl border border-purple-500/20 bg-gradient-to-b from-[#0a1428] to-[#06152b] relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />

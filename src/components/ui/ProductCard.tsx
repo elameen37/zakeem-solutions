@@ -2,7 +2,7 @@ import React from "react";
 import { 
   ArrowUpRight, CheckCircle2, Building2, BrainCircuit, Workflow, ShieldCheck, 
   Layers, Scale, ExternalLink, CalendarDays, Fuel, TrendingUp, UserCheck, 
-  Bot, MessageSquare, Lock 
+  Bot, MessageSquare, Lock, Boxes 
 } from "lucide-react";
 import { ZakeemApplication } from "@/data/ecosystem";
 import { Badge } from "./Badge";
@@ -42,6 +42,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featured = fa
         return <MessageSquare className="w-6 h-6 text-[#e57804]" />;
       case "Lock":
         return <Lock className="w-6 h-6 text-emerald-400" />;
+      case "Boxes":
+        return <Boxes className="w-6 h-6 text-[#e57804]" />;
       default:
         return <Layers className="w-6 h-6 text-[#e57804]" />;
     }

@@ -13,6 +13,7 @@ const HomePage = React.lazy(() => import("@/pages/HomePage").then((m) => ({ defa
 const AboutPage = React.lazy(() => import("@/pages/AboutPage").then((m) => ({ default: m.AboutPage })));
 const ProductsIndexPage = React.lazy(() => import("@/pages/products/ProductsIndexPage").then((m) => ({ default: m.ProductsIndexPage })));
 const ZakeemRealtyERPPage = React.lazy(() => import("@/pages/products/ZakeemRealtyERPPage").then((m) => ({ default: m.ZakeemRealtyERPPage })));
+const ZakeemInventoryInvoicePage = React.lazy(() => import("@/pages/products/ZakeemInventoryInvoicePage").then((m) => ({ default: m.ZakeemInventoryInvoicePage })));
 const ProductDetailPage = React.lazy(() => import("@/pages/products/ProductDetailPage").then((m) => ({ default: m.ProductDetailPage })));
 const SolutionsIndexPage = React.lazy(() => import("@/pages/solutions/SolutionsIndexPage").then((m) => ({ default: m.SolutionsIndexPage })));
 const SolutionDetailPage = React.lazy(() => import("@/pages/solutions/SolutionDetailPage").then((m) => ({ default: m.SolutionDetailPage })));
@@ -66,6 +67,7 @@ export const App: React.FC = () => {
               {/* Products */}
               <Route path="/products" element={<ProductsIndexPage />} />
               <Route path="/products/zakeem-realty-erp" element={<ZakeemRealtyERPPage />} />
+              <Route path="/products/inventory-invoice" element={<ZakeemInventoryInvoicePage />} />
               <Route path="/products/:slug" element={<ProductDetailPage />} />
 
               {/* Solutions */}

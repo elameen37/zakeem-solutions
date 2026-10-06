@@ -91,7 +91,57 @@ export const ZAKEEM_APPLICATIONS: ZakeemApplication[] = [
     seoDescription: "Flagship multi-tenant ERP for African real estate developers, property managers, land registries, and lease accounting.",
   },
 
-  // 2. Zakeem Events Booking (Available)
+  // 2. Zakeem Inventory and Invoice (Available)
+  {
+    id: "zakeem-inventory-invoice",
+    name: "Zakeem Inventory and Invoice",
+    slug: "inventory-invoice",
+    tagline: "Comprehensive Inventory Control, Multi-Location Stock & Professional Invoicing",
+    description:
+      "A unified enterprise operations platform engineered for modern businesses to manage stock visibility, organize product catalogs, model multi-location branches, issue professional tax-ready invoices, and track customer receivables.",
+    shortDescription:
+      "Enterprise inventory management, multi-location stock control, item cataloging, and professional invoicing for modern businesses.",
+    longDescription:
+      "Zakeem Inventory and Invoice is an enterprise operational platform designed for Nigerian and pan-African SMEs, retailers, wholesalers, and distributors. It is built to connect stockrooms, retail counters, and management offices by modeling stock balances across warehouses, generating professional invoices in Nigerian Naira (NGN), supporting configurable tax and VAT fields, and maintaining audit-ready receivables workflows.",
+    primaryValueProp: "Know your stock, invoice faster, track receivables, and operate multi-branch businesses with complete confidence.",
+    targetAudience: "SMEs, retail stores, wholesalers, distributors, service agencies, procurement teams, and multi-branch commercial enterprises.",
+    capabilities: [
+      "Product & Item Catalog with SKU & Dual Pricing",
+      "Inventory Control & Low-Stock Alerts",
+      "Multi-Location & Multi-Branch Stock Tracking",
+      "Professional Invoicing & Configurable Tax Fields",
+      "Customer Receivables & Payment Ledger",
+      "Supplier Procurement & Replenishment Workflows",
+      "Valuation Modeling & Sales Reporting",
+      "Audit-Ready Commercial Shrinkage Tracking",
+    ],
+    category: "Enterprise ERP",
+    status: "Available",
+    statusDetail: "v1.0 Enterprise Commercial Release",
+    featured: true,
+    version: "1.0 Enterprise",
+    iconName: "Boxes",
+    route: "/products/inventory-invoice",
+    internalPath: "/products/inventory-invoice",
+    ctaText: "Request a Demo",
+    ctaDestination: "/request-demo?product=inventory-invoice",
+    stats: [
+      { label: "Stock Tracking", value: "Multi-SKU" },
+      { label: "Invoicing Engine", value: "Streamlined" },
+      { label: "Branch Operations", value: "Multi-Node" },
+    ],
+    highlights: [
+      "Multi-Location Inventory & Warehouse Workflows",
+      "Professional Invoicing with Configurable Tax & VAT Fields",
+      "Low-Stock Reorder Alerts & SKU Tracking Workflows",
+      "Customer Receivables Tracking & Follow-up Workflows",
+      "Designed for Modern Nigerian Businesses (NGN-First)",
+    ],
+    seoTitle: "Zakeem Inventory and Invoice | Inventory, Stock & Invoicing Software",
+    seoDescription: "Zakeem Inventory and Invoice helps businesses manage products, stock, customers, invoices, payments and reporting from one modern platform.",
+  },
+
+  // 3. Zakeem Events Booking (Available)
   {
     id: "zakeem-events-booking",
     name: "Zakeem Events Booking",

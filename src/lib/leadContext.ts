@@ -41,6 +41,7 @@ export function normalizeCommercialParams(searchParams: URLSearchParams): Normal
     else if (p.includes("flow")) product = "flow-procure";
     else if (p.includes("vault")) product = "vault-pay";
     else if (p.includes("realty")) product = "zakeem-realty-erp";
+    else if (p.includes("inventory") || p.includes("invoice")) product = "inventory-invoice";
     else product = p;
   }
 
@@ -148,6 +149,7 @@ export function getCommercialContextSummary(params: NormalizedCommercialParams):
     else if (params.product === "flow-procure") parts.push("Zakeem Flow (Procurement Hub Briefing)");
     else if (params.product === "vault-pay") parts.push("Zakeem Vault (Settlement & Treasury Briefing)");
     else if (params.product === "zakeem-realty-erp") parts.push("Zakeem Realty ERP Flagship");
+    else if (params.product === "inventory-invoice" || params.product === "zakeem-inventory-invoice") parts.push("Zakeem Inventory and Invoice");
     else parts.push(`Product: ${params.product}`);
   } else if (params.solution) {
     if (params.solution.includes("legal")) parts.push("e-Legal & Justice Platform");

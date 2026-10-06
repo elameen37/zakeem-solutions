@@ -458,6 +458,8 @@ export const RequestDemoPage: React.FC = () => {
   const getInterestLabel = (val: string) => {
     switch (val) {
       case "zakeem-realty-erp": return "Zakeem Realty ERP (Available v2.4)";
+      case "inventory-invoice": return "Zakeem Inventory and Invoice (Available)";
+      case "zakeem-inventory-invoice": return "Zakeem Inventory and Invoice (Available)";
       case "events-booking": return "Zakeem Events Booking (Available)";
       case "forecourt": return "Zakeem Forecourt (Available)";
       case "smart-attendance": return "Zakeem Smart Attendance (Available)";
@@ -853,6 +855,7 @@ export const RequestDemoPage: React.FC = () => {
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#06152b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#e57804]"
                       >
                         <option value="zakeem-realty-erp">Zakeem Realty ERP (Available v2.4)</option>
+                        <option value="inventory-invoice">Zakeem Inventory and Invoice (Available)</option>
                         <option value="events-booking">Zakeem Events Booking (Available)</option>
                         <option value="forecourt">Zakeem Forecourt (Available)</option>
                         <option value="smart-attendance">Zakeem Smart Attendance (Available)</option>

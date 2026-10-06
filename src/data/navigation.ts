@@ -78,6 +78,13 @@ export const MAIN_NAVIGATION: NavItem[] = [
         badge: "v2.4 Live"
       },
       {
+        label: "Zakeem Inventory and Invoice",
+        href: "/products/inventory-invoice",
+        description: "Comprehensive inventory control, product catalog, multi-location stock, and professional invoicing.",
+        icon: "Boxes",
+        badge: "New"
+      },
+      {
         label: "Zakeem Forecourt",
         href: "/products/forecourt",
         description: "Downstream petroleum retail, nozzle automation, and station POS operations.",
@@ -194,6 +201,7 @@ export const MAIN_NAVIGATION: NavItem[] = [
 export const FOOTER_NAVIGATION = {
   products: [
     { label: "Zakeem Realty ERP", href: "/products/zakeem-realty-erp" },
+    { label: "Zakeem Inventory and Invoice", href: "/products/inventory-invoice" },
     { label: "Zakeem Forecourt", href: "/products/forecourt" },
     { label: "Zakeem Smart Attendance", href: "/products/smart-attendance" },
     { label: "Zakeem Events Booking", href: "/products/events-booking" },

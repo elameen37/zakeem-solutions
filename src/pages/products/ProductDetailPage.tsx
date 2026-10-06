@@ -3,7 +3,7 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { 
   ArrowLeft, CheckCircle2, ArrowRight, ShieldCheck, Layers, Building2, 
   ExternalLink, CalendarDays, Fuel, TrendingUp, UserCheck, Bot, 
-  MessageSquare, Lock 
+  MessageSquare, Lock, Boxes 
 } from "lucide-react";
 import { SEO } from "@/components/seo/SEO";
 import { Button } from "@/components/ui/Button";
@@ -16,9 +16,12 @@ import { trackProductView } from "@/lib/analytics";
 export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
 
-  // Flagship Realty ERP has its own dedicated rich landing page
+  // Dedicated product pages
   if (slug === "zakeem-realty-erp") {
     return <Navigate to="/products/zakeem-realty-erp" replace />;
+  }
+  if (slug === "inventory-invoice" || slug === "zakeem-inventory-invoice") {
+    return <Navigate to="/products/inventory-invoice" replace />;
   }
 
   const product = ZAKEEM_APPLICATIONS.find((p) => p.slug === slug);
@@ -71,6 +74,8 @@ export const ProductDetailPage: React.FC = () => {
         return <MessageSquare className={iconClass} />;
       case "Lock":
         return <Lock className="w-8 h-8 text-emerald-400" />;
+      case "Boxes":
+        return <Boxes className={iconClass} />;
       default:
         return <Layers className={iconClass} />;
     }

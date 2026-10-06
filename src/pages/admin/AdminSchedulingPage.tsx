@@ -97,6 +97,7 @@ type DrawerTab = "details" | "reschedule" | "audit" | "notifications";
 const PRODUCT_FILTER_OPTIONS = [
   { value: "all", label: "All Products & Solutions" },
   { value: "zakeem-realty-erp", label: "Zakeem Realty ERP" },
+  { value: "inventory-invoice", label: "Zakeem Inventory and Invoice" },
   { value: "events-booking", label: "Zakeem Events Booking" },
   { value: "forecourt", label: "Zakeem Forecourt" },
   { value: "smart-attendance", label: "Zakeem Smart Attendance" },
